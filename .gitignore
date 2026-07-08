@@ -1,0 +1,62 @@
+# Token & Secrets
+config/.githubtoken.txt
+config/*.token
+*.token
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+venv/
+.venv/
+env/
+
+# Machine Learning / Model files
+models/
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.onnx
+
+# Data files
+data/
+*.wav
+*.mp3
+*.mp4
+*.mkv
+*.avi
+
+# Output files
+output/
+*.srt
+*.ass
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+
+# Docker
+docker-compose.override.yml
+
+# OS
+desktop.ini
