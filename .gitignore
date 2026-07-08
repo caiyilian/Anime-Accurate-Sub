@@ -17,6 +17,13 @@ venv/
 .venv/
 env/
 
+# Internal tooling
+.omo/
+run-continuation/
+
+# Downloaded WHL files
+*.whl
+
 # Machine Learning / Model files
 models/
 *.pt

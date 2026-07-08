@@ -1,0 +1,27 @@
+[project]
+name = "anime-accurate-sub"
+version = "0.1.0"
+description = "精准的动漫中文字幕嵌入工具"
+requires-python = ">=3.11"
+
+dependencies = [
+    "torch>=2.0",
+    "faster-whisper>=1.0",
+    "pysubs2>=1.7",
+    "ollama>=0.4",
+    "jiwer>=3.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
