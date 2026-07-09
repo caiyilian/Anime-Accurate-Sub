@@ -28,11 +28,13 @@
 - 支持 ASS/SRT 等常见字幕格式
 - 字幕样式美观（字体、大小、位置、描边等）
 - 支持双语字幕（日语原文 + 中文翻译）可选
-
 ### 4. 本地运行 (Local Execution)
+
 - **必须支持通过 Ollama 运行本地模型**，不需要依赖云端 API
-- 也可选支持调用云端 API（如 OpenAI、Claude 等）作为备选
+- 也可选支持调用云端 API（如 OpenAI、Claude、DeepSeek 等）作为备选
 - 敏感数据不上传外部服务
+
+> **当前状态**: Ollama 模型下载因网络问题暂时搁置，先用 Sensenova API（商汤大装置，免费额度 1500 次/5 小时）作为临时翻译后端。API 兼容 OpenAI 格式，后续切回 Ollama 只需改 base_url。
 
 ## 技术栈方向
 

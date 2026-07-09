@@ -1,6 +1,8 @@
 # Token & Secrets
 config/.githubtoken.txt
 config/*.token
+config/*_apikeys*
+config/*_key*
 *.token
 
 # Python
