@@ -165,21 +165,21 @@
 
 **子阶段**：4 个（P0.1-P0.4）
 
-| 子阶段 | 内容 | 工作量 |
-|--------|------|--------|
-| P0.1 | Python 虚拟环境 + `pyproject.toml` + 核心依赖 | ~30min |
-| P0.2 | FFmpeg 安装确认（含 libass）+ ffprobe + mkvmerge | ~30min |
-| P0.3 | Ollama 服务 + 下载 Sakura-7B/14B + Anime Whisper + GalTransl + Qwen2.5 | ~2h（下载时间） |
-| P0.4 | 测试数据集准备：公开字幕+3 段 gold standard + OP/ED/BGM 测试段 | ~3h |
+| 子阶段 | 内容 | 工作量 | 状态 |
+|--------|------|--------|------|
+| P0.1 | Python 虚拟环境 + `pyproject.toml` + 核心依赖 + Torch CUDA | ~30min | ✅ 已完成 |
+| P0.2 | FFmpeg 安装确认（含 libass）+ ffprobe | ~30min | ✅ 已完成 |
+| P0.3 | Ollama 服务 + 下载 Sakura-7B/14B + GalTransl + Qwen2.5 | ~2h（下载时间） | ⏳ 模型下载中 |
+| P0.4 | 测试数据集准备：HF v2 日语语音 200 条 + K-On! 视频下载 + Kitsunekko 字幕 | ~3h | ⏳ 视频下载中 |
 
 **过渡到 Sprint 1**：环境就绪 → 开始评估现有项目。
 
 **验收**：
-- [ ] `pip install -e .` 安装成功，`import faster_whisper` 等无报错
-- [ ] `torch.cuda.is_available()` 返回 True
-- [ ] FFmpeg 可提取 16kHz mono WAV
-- [ ] Ollama 至少一个模型能响应
-- [ ] 测试数据就绪（gold standard 3 段 + 完整一集）
+- [x] `pip install -e .` 安装成功，`import faster_whisper` 等无报错
+- [x] `torch.cuda.is_available()` 返回 True
+- [x] FFmpeg 可提取 16kHz mono WAV
+- [ ] Ollama 至少一个模型能响应（下载中）
+- [ ] 测试数据就绪（200 条 HF 语音 + K-On! 视频 + Kitsunekko 字幕）（视频下载中）
 
 ---
 
