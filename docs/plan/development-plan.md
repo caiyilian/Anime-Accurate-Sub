@@ -170,7 +170,7 @@
 | P0.1 | Python 虚拟环境 + `pyproject.toml` + 核心依赖 + Torch CUDA | ~30min | ✅ 已完成 |
 | P0.2 | FFmpeg 安装确认（含 libass）+ ffprobe | ~30min | ✅ 已完成 |
 | P0.3 | Ollama 服务 + 模型下载（暂时搁置，改用 Sensenova API） | ~2h | ⏸️ 暂时搁置 |
-| P0.4 | 测试数据集准备：HF v2 日语语音 200 条 + K-On! 视频下载 + Kitsunekko 字幕 | ~3h | ⏳ 视频下载中 |
+| P0.4 | 测试数据集准备：HF v2 日语语音 200 条 + K-On! 视频下载 + Kitsunekko 字幕 | ~3h | ✅ 已完成 |
 
 **过渡到 Sprint 1**：环境就绪 → 开始评估现有项目。
 
@@ -178,8 +178,8 @@
 - [x] `pip install -e .` 安装成功，`import faster_whisper` 等无报错
 - [x] `torch.cuda.is_available()` 返回 True
 - [x] FFmpeg 可提取 16kHz mono WAV
-- [ ] Ollama 至少一个模型能响应（下载中）
-- [ ] 测试数据就绪（200 条 HF 语音 + K-On! 视频 + Kitsunekko 字幕）（视频下载中）
+- [ ] Ollama 至少一个模型能响应（暂时搁置，改用 Sensenova API）
+- [x] 测试数据就绪（200 条 HF 语音 + K-On! 视频 + Kitsunekko 字幕）
 
 ---
 
