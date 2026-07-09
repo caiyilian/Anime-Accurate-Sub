@@ -169,7 +169,7 @@
 |--------|------|--------|------|
 | P0.1 | Python 虚拟环境 + `pyproject.toml` + 核心依赖 + Torch CUDA | ~30min | ✅ 已完成 |
 | P0.2 | FFmpeg 安装确认（含 libass）+ ffprobe | ~30min | ✅ 已完成 |
-| P0.3 | Ollama 服务 + 下载 Sakura-7B/14B + GalTransl + Qwen2.5 | ~2h（下载时间） | ⏳ 模型下载中 |
+| P0.3 | Ollama 服务 + 模型下载（暂时搁置，改用 Sensenova API） | ~2h | ⏸️ 暂时搁置 |
 | P0.4 | 测试数据集准备：HF v2 日语语音 200 条 + K-On! 视频下载 + Kitsunekko 字幕 | ~3h | ⏳ 视频下载中 |
 
 **过渡到 Sprint 1**：环境就绪 → 开始评估现有项目。
