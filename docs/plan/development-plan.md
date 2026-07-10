@@ -193,7 +193,9 @@
 |--------|------|------|---------|:----:|
 | S1.1 | **pyVideoTrans** — 安装 + 跑通全流程 + 评估替换 ASR/翻译的可行性 | 1 天 | ✅ | ✅ |
 | S1.2 | **VideoLingo** — 安装 + 跑通 + 评估三步翻译机制 | 1 天 | ✅ | ✅ |
-| S1.3 | **WhisperJAV** — anime pipeline 跑通 + VAD/分段逻辑评估 | 0.5 天 | ✅ | ⏳ |
+| S1.3 | **WhisperJAV** — anime pipeline 跑通 + VAD/分段逻辑评估 | 0.5 天 | ✅ | ✅ |
+
+**Sprint 1 验收总览**：S1.1、S1.2、S1.3 全部完成，三个项目评估报告已归档。详见 `docs/evaluation/` 目录。
 
 **过渡到 Sprint 2**：对底座项目有初步判断 → 继续评估专项工具补充信息。
 
@@ -206,8 +208,8 @@
 - [x] 文档化：三步翻译机制、时间轴对齐、断句逻辑（详见 `docs/evaluation/S1.2_VideoLingo.md`）
 
 **S1.3 验收**：
-- [ ] `whisperjav video.mp4 --pipeline anime` 跑通
-- [ ] 文档化：其 VAD/分段/时间戳处理逻辑
+- [x] `whisperjav video.mp4 --mode faster/balanced` 跑通
+- [x] 文档化：管线架构、场景检测、VAD 分段、幻觉过滤（详见 `docs/evaluation/S1.3_WhisperJAV.md`）
 
 ---
 
