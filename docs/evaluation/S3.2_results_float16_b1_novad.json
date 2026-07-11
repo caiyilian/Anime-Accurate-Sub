@@ -1,0 +1,15 @@
+{
+  "label": "float16_b1_novad",
+  "compute_type": "float16",
+  "batch_size": 1,
+  "vad": false,
+  "model": "E:\\projects\\Anime-Accurate-Sub\\.omo\\anime-whisper-ct2",
+  "samples": 200,
+  "load_time_s": 4.369178056716919,
+  "total_asr_s": 101.52841687202454,
+  "total_audio_s": 904.0783125,
+  "rtf": 0.1123,
+  "avg_cer": 0.1505,
+  "median_cer": 0.0755,
+  "p90_cer": 0.4
+}

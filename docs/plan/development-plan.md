@@ -272,9 +272,16 @@
 - [x] 产出评估报告 docs/evaluation/S3.1_ASR_Evaluation.md
 
 **S3.2 验收**：
-- [ ] 确定最优 batch_size 和量化级别
-- [ ] 确定是否启用 VAD
-- [ ] 记录各配置下的 RTF
+- [x] 确定最优 batch_size 和量化级别：int8_float16 + batch_size=8
+- [x] 确定是否启用 VAD：**关闭 VAD**（短片段场景下 VAD 漏语音，CER 翻倍）
+- [x] 记录各配置下的 RTF
+- [x] 最终推荐配置：int8_float16 + batch_size=8 + VAD=OFF → CER=0.1299, RTF=0.1022（~10 倍实时）
+
+**S3 汇总**：
+- ASR 主力选定: Anime Whisper (quantumcookie/anime-whisper-ct2-fp16)
+- 最优推理配置: int8_float16, batch_size=8, VAD=OFF
+- 最终 RTF: ~0.10（10 倍实时）, CER: ~0.13（中位数 ~0.06）
+- 报告: docs/evaluation/S3.1_ASR_Evaluation.md + S3.2_Inference_Optimization.md
 
 ---
 
