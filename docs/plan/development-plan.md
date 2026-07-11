@@ -221,7 +221,7 @@
 
 | 子阶段 | 内容 | 耗时 | 状态 |
 |--------|------|------|:----:|
-| S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 | ⏳ 下载待测 |
+| S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 | ✅ |
 | S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 | ⏳ |
 | S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 | ⏳ |
 
