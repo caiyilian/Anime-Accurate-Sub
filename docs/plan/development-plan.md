@@ -223,7 +223,7 @@
 |--------|------|------|:----:|
 | S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 | ✅ |
 | **S2.1.1** | **统一环境升级**：所有项目 venv 升级到 Python 3.13 + torch 2.11.0+cu128 | 0.3 天 | ⏳ |
-| S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 | ⏳ |
+| S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 | ✅ |
 | S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 | ⏳ |
 
 **过渡到 Sprint 3**：知道了哪个项目可作底座 → 开始评估核心 ASR 模块。
@@ -235,7 +235,11 @@
 - AnimeTranslator: 25.4s 处理 30s 片段，OP/ED 检测逻辑可独立提取
 
 **S2.2 验收**：
-- [ ] 每个项目至少运行一次，记录关键可复用点
+- [x] 每个项目至少运行一次，记录关键可复用点
+- SubFlow: ✅ Python 3.13 测试通过（OpenAI Whisper + 智能切分），歌曲逐字歌词模式独特
+- N46Whisper: ⏸️ Colab 笔记本，代码分析完成，核心仅为 faster-whisper + VAD
+- LinguaGacha: ⏸️ Electron 文本翻译器（非 ASR），术语表功能值得参考
+- SubForge: ✅ Rust 构建成功（68s），SaT 分割 + GEMBA-MQM 质量评估
 
 **S2.3 验收**：
 - [ ] 明确的底座选型结论：基于某个项目二次开发 / 从零搭建
