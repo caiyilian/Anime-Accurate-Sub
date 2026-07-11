@@ -265,8 +265,10 @@
 **S3.1 验收**：
 - [x] faster-whisper 成功加载 large-v3（CTranslate2 格式）
 - [x] 记录 large-v3 CER 基线：平均 0.3848，中位数 0.2344，P90 1.0（200 条测试集）
-- [x] 调研发现 Anime Whisper 多个 CT2 模型（quantumcookie/anime-whisper-ct2-fp16 等），官方报告降低 CER 23%
-- [ ] 记录 Anime Whisper CER — ⏳ 网络受限未能下载，待补测
+- [x] 成功加载 Anime Whisper（quantumcookie/anime-whisper-ct2-fp16）
+- [x] 记录 Anime Whisper CER：平均 0.2989，中位数 0.1111，P90 1.0
+- [x] 对比结论：Anime Whisper 中位数 CER 降低 53%（0.2344 → 0.1111），RTF 快 51%
+- [x] 选定 Anime Whisper 作为主力 ASR 模型
 - [x] 产出评估报告 docs/evaluation/S3.1_ASR_Evaluation.md
 
 **S3.2 验收**：
