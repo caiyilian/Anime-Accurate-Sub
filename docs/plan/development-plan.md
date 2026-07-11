@@ -219,11 +219,11 @@
 
 **子阶段**：3 个（S2.1-S2.3），可并行
 
-| 子阶段 | 内容 | 耗时 |
-|--------|------|------|
-| S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 |
-| S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 |
-| S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 |
+| 子阶段 | 内容 | 耗时 | 状态 |
+|--------|------|------|:----:|
+| S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 | ⏳ 下载待测 |
+| S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 | ⏳ |
+| S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 | ⏳ |
 
 **过渡到 Sprint 3**：知道了哪个项目可作底座 → 开始评估核心 ASR 模块。
 
