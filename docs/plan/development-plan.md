@@ -222,7 +222,7 @@
 | 子阶段 | 内容 | 耗时 | 状态 |
 |--------|------|------|:----:|
 | S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 | ✅ |
-| **S2.1.1** | **统一环境升级**：所有项目 venv 升级到 Python 3.13 + torch 2.11.0+cu128 | 0.3 天 | ⏳ |
+| **S2.1.1** | **统一环境升级**：所有项目 venv 升级到 Python 3.13 + torch 2.11.0+cu128 | 0.3 天 | ✅ |
 | S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 | ✅ |
 | S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 | ⏳ |
 
