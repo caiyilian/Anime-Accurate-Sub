@@ -228,7 +228,10 @@
 **过渡到 Sprint 3**：知道了哪个项目可作底座 → 开始评估核心 ASR 模块。
 
 **S2.1 验收**：
-- [ ] 记录 JAVTrans SpeechBoundary 和 AnimeTranslator 四层防御是否可以独立复用
+- [x] 记录 JAVTrans SpeechBoundary 和 AnimeTranslator 四层防御是否可以独立复用
+- JAVTrans: 完整管道跑通（39.1s 处理 30s 片段），Qwen3-ASR 1.7B 动漫微调版输出 7 句日语字幕。
+  SpeechBoundary-JA 5 模型边界检测与 Mamba2/CUDA 深度绑定，难以独立复用。
+- AnimeTranslator: 25.4s 处理 30s 片段，OP/ED 检测逻辑可独立提取
 
 **S2.2 验收**：
 - [ ] 每个项目至少运行一次，记录关键可复用点
