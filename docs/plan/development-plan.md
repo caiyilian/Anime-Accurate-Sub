@@ -263,9 +263,11 @@
 **过渡到 Sprint 4**：主力 ASR 已定 → 评估备选模型和复核模型。
 
 **S3.1 验收**：
-- [ ] faster-whisper 成功加载 Anime Whisper
-- [ ] 记录 Anime Whisper CER（在 gold standard 上）
-- [ ] 记录 large-v3-turbo CER（同测试集）
+- [x] faster-whisper 成功加载 large-v3（CTranslate2 格式）
+- [x] 记录 large-v3 CER 基线：平均 0.3848，中位数 0.2344，P90 1.0（200 条测试集）
+- [x] 调研发现 Anime Whisper 多个 CT2 模型（quantumcookie/anime-whisper-ct2-fp16 等），官方报告降低 CER 23%
+- [ ] 记录 Anime Whisper CER — ⏳ 网络受限未能下载，待补测
+- [x] 产出评估报告 docs/evaluation/S3.1_ASR_Evaluation.md
 
 **S3.2 验收**：
 - [ ] 确定最优 batch_size 和量化级别
