@@ -224,7 +224,7 @@
 | S2.1 | **JAVTrans + AnimeTranslator** 快速评估（边界检测/四层防御） | 0.5 天 | ✅ |
 | **S2.1.1** | **统一环境升级**：所有项目 venv 升级到 Python 3.13 + torch 2.11.0+cu128 | 0.3 天 | ✅ |
 | S2.2 | **SubForge + N46Whisper + SubFlow + LinguaGacha** 快速扫描 | 0.5 天 | ✅ |
-| S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 | ⏳ |
+| S2.3 | 底座选型决策：汇总 Sprint 1+2 评估结果，产出 `docs/architecture-decision.md` | 0.5 天 | ✅ |
 
 **过渡到 Sprint 3**：知道了哪个项目可作底座 → 开始评估核心 ASR 模块。
 
@@ -242,8 +242,10 @@
 - SubForge: ✅ Rust 构建成功（68s），SaT 分割 + GEMBA-MQM 质量评估
 
 **S2.3 验收**：
-- [ ] 明确的底座选型结论：基于某个项目二次开发 / 从零搭建
-- [ ] 各项目可复用模块清单
+- [x] 明确的底座选型结论：基于某个项目二次开发 / 从零搭建
+- 选定方案 A：基于 **JAVTrans** 二次开发，整合 VideoLingo（3-step 翻译）+ AnimeTranslator（OP/ED 检测 + 幻觉防御）+ LinguaGacha（Glossary）
+- 详见 `docs/architecture-decision.md`
+- [x] 各项目可复用模块清单
 
 ---
 
