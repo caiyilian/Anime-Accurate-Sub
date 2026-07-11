@@ -1,0 +1,15 @@
+{
+  "label": "int8_b1_vad",
+  "compute_type": "int8",
+  "batch_size": 1,
+  "vad": true,
+  "model": "E:\\projects\\Anime-Accurate-Sub\\.omo\\anime-whisper-ct2",
+  "samples": 200,
+  "load_time_s": 7.694705247879028,
+  "total_asr_s": 92.94822454452515,
+  "total_audio_s": 904.0783125,
+  "rtf": 0.1028,
+  "avg_cer": 0.2805,
+  "median_cer": 0.1111,
+  "p90_cer": 1.0
+}
