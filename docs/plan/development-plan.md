@@ -301,7 +301,7 @@
 
 **S4.1 验收**：
 - [x] SenseVoice 的 CER 和速度数据：CER=0.3307, RTF=0.017, 速度快但精度不足
-- [x] whisper-ja-anime-v0.3 的 CER 对比：网络受限未能下载（待补测）
+- [x] whisper-ja-anime-v0.3 的 CER 对比：CER=0.2778, Med=0.1056, RTF=0.089, 不如 Anime Whisper
 - [x] SenseVoice AED 可用于 OP/ED 检测：输出含 Speech/Cry/BGM 标签，可区分语音与非语音
 - [x] 结论：Anime Whisper 保持主力，SenseVoice 可做辅助 AED 分类
 
