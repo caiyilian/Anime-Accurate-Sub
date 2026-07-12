@@ -1,0 +1,15 @@
+{
+  "samples": [
+    {
+      "reference": "k-on_ep01.mp4",
+      "target": "k-on_ep02.mp4",
+      "target_duration": 1548.8,
+      "ref_op_duration": 90.0,
+      "ref_ed_duration": 90.0,
+      "methods": {
+        "cross-correlation": {
+          "op": {
+            "position_s": 27.0,
+            "confidence": 0.0179,
+            "duration_s": 90.0,
+            "detected": 
