@@ -380,7 +380,12 @@
 **过渡到 Sprint 8**：音频域全部完成（ASR → 分离 → 说话人 → OP/ED）→ 进入文本域（翻译）。
 
 **S7.1 验收**：
-- [ ] SenseVoice AED / PANNs / YAMNet 的 OP/ED 检测准确率
+- [x] SenseVoice AED 因 funasr→editdistance 编译依赖不可安装
+- [x] PANNs CNN14 评估：33% 准确率，无法识别动漫 J-pop 音乐
+- [x] 能量特征法评估：67% 准确率（最佳基线），但对话带 BGM 时误报
+- [x] YAMNet 因 torchaudio 2.11.0 不再内置
+- [x] 评估报告：`docs/evaluation/S7.1_OPED_Detection.md`
+- [x] 结论：现有音频事件分类方案效果有限，S7.2 评估专有工具
 
 **S7.2 验收**：
 - [ ] AniChapters / needle 的 OP/ED 检测准确率

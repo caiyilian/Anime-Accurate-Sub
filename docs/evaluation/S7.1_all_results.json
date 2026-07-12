@@ -1,0 +1,166 @@
+{
+  "samples": [
+    {
+      "clip": "op",
+      "file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\oped_k-on_ep01_op.wav",
+      "duration": 90.0,
+      "expected": "music",
+      "methods": {
+        "energy-based": {
+          "method": "energy-based",
+          "is_music": true,
+          "music_score": 39.942,
+          "features": {
+            "spectral_centroid_mean": 1221.8,
+            "high_freq_energy": 397.1468,
+            "spectral_flatness": 0.017
+          }
+        },
+        "panns-cnn14": {
+          "method": "panns-cnn14",
+          "is_music": false,
+          "music_probability": 0.0702,
+          "speech_probability": 0.3495,
+          "top_classes": [
+            {
+              "class": "Class_137",
+              "probability": 0.7851
+            },
+            {
+              "class": "Speech",
+              "probability": 0.3495
+            },
+            {
+              "class": "Class_498",
+              "probability": 0.0743
+            },
+            {
+              "class": "Class_277",
+              "probability": 0.0734
+            },
+            {
+              "class": "Class_519",
+              "probability": 0.048
+            }
+          ],
+          "inference_time_s": 0.323
+        },
+        "spectral-ratio": {
+          "method": "spectral-ratio",
+          "is_music": false,
+          "music_speech_ratio": 0.2617,
+          "speech_band_energy": 903.5644,
+          "music_band_energy": 236.4542
+        }
+      }
+    },
+    {
+      "clip": "ed",
+      "file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\oped_k-on_ep01_ed.wav",
+      "duration": 90.0,
+      "expected": "music",
+      "methods": {
+        "energy-based": {
+          "method": "energy-based",
+          "is_music": true,
+          "music_score": 46.26,
+          "features": {
+            "spectral_centroid_mean": 1083.7,
+            "high_freq_energy": 460.6128,
+            "spectral_flatness": 0.0181
+          }
+        },
+        "panns-cnn14": {
+          "method": "panns-cnn14",
+          "is_music": false,
+          "music_probability": 0.1168,
+          "speech_probability": 0.7144,
+          "top_classes": [
+            {
+              "class": "Class_137",
+              "probability": 0.8243
+            },
+            {
+              "class": "Speech",
+              "probability": 0.7144
+            },
+            {
+              "class": "Class_3",
+              "probability": 0.2903
+            },
+            {
+              "class": "Class_252",
+              "probability": 0.1811
+            },
+            {
+              "class": "Class_498",
+              "probability": 0.1708
+            }
+          ],
+          "inference_time_s": 0.063
+        },
+        "spectral-ratio": {
+          "method": "spectral-ratio",
+          "is_music": false,
+          "music_speech_ratio": 0.2634,
+          "speech_band_energy": 887.7892,
+          "music_band_energy": 233.8665
+        }
+      }
+    },
+    {
+      "clip": "dialogue",
+      "file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\oped_k-on_ep01_dialogue.wav",
+      "duration": 89.8,
+      "expected": "speech",
+      "methods": {
+        "energy-based": {
+          "method": "energy-based",
+          "is_music": true,
+          "music_score": 25.8397,
+          "features": {
+            "spectral_centroid_mean": 818.7,
+            "high_freq_energy": 257.0025,
+            "spectral_flatness": 0.0243
+          }
+        },
+        "panns-cnn14": {
+          "method": "panns-cnn14",
+          "is_music": false,
+          "music_probability": 0.0469,
+          "speech_probability": 0.8454,
+          "top_classes": [
+            {
+              "class": "Class_137",
+              "probability": 0.8653
+            },
+            {
+              "class": "Speech",
+              "probability": 0.8454
+            },
+            {
+              "class": "Class_498",
+              "probability": 0.5819
+            },
+            {
+              "class": "Class_252",
+              "probability": 0.362
+            },
+            {
+              "class": "Class_3",
+              "probability": 0.2474
+            }
+          ],
+          "inference_time_s": 0.064
+        },
+        "spectral-ratio": {
+          "method": "spectral-ratio",
+          "is_music": false,
+          "music_speech_ratio": 0.1215,
+          "speech_band_energy": 1183.9932,
+          "music_band_energy": 143.8628
+        }
+      }
+    }
+  ]
+}
