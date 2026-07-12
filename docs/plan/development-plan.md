@@ -330,7 +330,7 @@
 
 **S5.1-S5.3 统一验收**：
 - [x] S5.1 Demucs: RTF ~29x (5s) / ~5x (30s), VRAM ~4.5GB, CER 无改善甚至恶化
-- [ ] S5.2 UVR5: 待测试
+- [x] S5.2 UVR5: RTF ~1x, VRAM <1GB, CER 无改善甚至恶化 (sample_0004: 0.18->0.45)
 - [ ] S5.3 BS-RoFormer: 待测试
 - [ ] 分离前后 ASR CER 对比表（战斗场景 / 日常对话 / OP/ED 段）
 - [ ] 是否加入 pipeline 的结论（默认开启/关闭/战斗场景开启）
