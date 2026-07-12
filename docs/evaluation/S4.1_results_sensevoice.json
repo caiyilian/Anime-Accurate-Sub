@@ -1,0 +1,11 @@
+{
+  "model": "SenseVoice Small",
+  "samples": 200,
+  "load_time_s": 4.2,
+  "total_asr_s": 15.57,
+  "total_audio_s": 904.08,
+  "rtf": 0.0172,
+  "avg_cer": 0.3307,
+  "median_cer": 0.25,
+  "p90_cer": 0.67
+}
