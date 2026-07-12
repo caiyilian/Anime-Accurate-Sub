@@ -357,9 +357,12 @@
 - [x] 评估报告：`docs/evaluation/S6.1_Diarization_Evaluation.md`
 
 **S6.2 验收**：
-- [ ] 四方案 DER 对比表
-- [ ] 最终方案决策
-- [ ] 接口定义：输入 WAV → 输出 speaker 时间戳列表
+- [x] 四方案 DER 对比表（VAD+ECAPA / DiariZen / Sortformer / pyannote）
+- [x] 最终方案决策：选择 VAD + ECAPA-TDNN + 聚类（改进 VAD 为 Silero-VAD）
+- [x] 接口定义：输入 WAV → 输出 speaker 时间戳列表
+- [x] 评估报告：`docs/evaluation/S6.2_Diarization_Final.md`
+- [x] DiariZen 因 pyannote API 版本不兼容不可用
+- [x] NeMo Sortformer 因 Windows 构建工具链缺失不可用
 
 ---
 
