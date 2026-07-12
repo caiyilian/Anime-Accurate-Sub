@@ -1,0 +1,33 @@
+{
+  "audio_file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\k-on_multi_01.wav",
+  "duration": 60.0,
+  "speakers_found": [
+    "SPEAKER_00",
+    "SPEAKER_01",
+    "SPEAKER_02",
+    "SPEAKER_03"
+  ],
+  "num_speakers": 4,
+  "segments": [
+    {
+      "speaker": "SPEAKER_00",
+      "text": "以前、クラブ見学?軽音部?軽音部だよ軽音部!でも私、文芸部に入るつもりだし、え?入部希望希望の紙も書いたし…ちゅる。正確には廃部寸前年に部員はみんな卒業しちゃって。今月中に4人に入部しないと廃部になっちゃうの。だから誰もいなかったんだ音楽�室音楽室になっちゃうの音",
+      "start": 8.34,
+      "end": 9.0
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "���苦苦苦苦苦苦苦苦苦苦",
+      "start": 54.37,
+      "end": 55.01
+    }
+  ],
+  "elapsed_s": 2.85,
+  "rtf": 0.048,
+  "stats": {
+    "asr_s": 2.02,
+    "embed_s": 0.41,
+    "cluster_s": 0.43,
+    "assign_s": 0.0
+  }
+}
