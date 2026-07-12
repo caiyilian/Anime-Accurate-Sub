@@ -1,0 +1,35 @@
+[
+  {
+    "file": "sample_0000.wav",
+    "ref": "ひと～つ、人の生き血をすすり",
+    "orig_text": "ひとーつ、人の生き血をすすり",
+    "orig_cer": 0.0714,
+    "orig_time": 0.81,
+    "vocals_text": "ひとーつ、人の生き血をすすり",
+    "vocals_cer": 0.0714,
+    "sep_time": 8.3,
+    "cer_change": 0.0
+  },
+  {
+    "file": "sample_0004.wav",
+    "ref": "み～つ、醜き江都の鬼を",
+    "orig_text": "みーつ、醜き江戸の鬼を",
+    "orig_cer": 0.1818,
+    "orig_time": 0.48,
+    "vocals_text": "みーつ、醜き江都の鬼を",
+    "vocals_cer": 0.0909,
+    "sep_time": 5.5,
+    "cer_change": -0.0909
+  },
+  {
+    "file": "sample_0104.wav",
+    "ref": "パンがなければお菓子を食べればいいじゃない",
+    "orig_text": "パンがなければお菓子を食べればいいじゃない",
+    "orig_cer": 0.0,
+    "orig_time": 0.48,
+    "vocals_text": "パンがなければお菓子を食べればいいじゃない",
+    "vocals_cer": 0.0,
+    "sep_time": 5.4,
+    "cer_change": 0.0
+  }
+]
