@@ -1,0 +1,30 @@
+{
+  "audio_file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\k-on_multi_02.wav",
+  "duration": 60.0,
+  "speakers_found": [
+    "SPEAKER_00"
+  ],
+  "num_speakers": 1,
+  "segments": [
+    {
+      "speaker": "SPEAKER_00",
+      "text": "え?ご一緒にポテトもいかがですかって言われるの憧れてたんです。あ、すみません。はじめてください。よし、作戦会議開始!今月中に部員あと一人獲得するために!いったいなんです!よし、作戦会議開始!今月中に部員をあと一人獲得するために!",
+      "start": 0.0,
+      "end": 10.13
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "つ?それをおいおい、それをおいおい、もしゃい、あっ、お、おいしい、あとがいぞ、おごにゃ、おい、はい。すごい、おはい、おご持い、おごい、お、愛愛愛愛愛愛愛だ、おお、おごい、おもある。",
+      "start": 42.29,
+      "end": 60.0
+    }
+  ],
+  "elapsed_s": 2.86,
+  "rtf": 0.048,
+  "stats": {
+    "asr_s": 2.8,
+    "embed_s": 0.06,
+    "cluster_s": 0.0,
+    "assign_s": 0.0
+  }
+}

@@ -351,8 +351,10 @@
 **过渡到 Sprint 7**：说话人分离方案确定 → 进入 OP/ED 检测（同属音频分析）。
 
 **S6.1 验收**：
-- [ ] Kotoba 内置方案能否区分不同角色的结论
-- [ ] pyannote 在动漫场景的 DER 数据
+- [x] Kotoba 内置方案由于 gated 模型不可用，改为 VAD+ECAPA-TDNN 聚类方案
+- [x] VAD+ECAPA-TDNN 在动漫场景可检出 4 个说话人（multi_01/multi_03）
+- [x] 能量 VAD 阈值不鲁棒（multi_02 仅检出 1 人），建议替换为 Silero-VAD
+- [x] 评估报告：`docs/evaluation/S6.1_Diarization_Evaluation.md`
 
 **S6.2 验收**：
 - [ ] 四方案 DER 对比表

@@ -1,0 +1,27 @@
+{
+  "audio_file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\k-on_multi_03.wav",
+  "duration": 60.0,
+  "speakers_found": [
+    "SPEAKER_00",
+    "SPEAKER_01",
+    "SPEAKER_02",
+    "SPEAKER_03"
+  ],
+  "num_speakers": 4,
+  "segments": [
+    {
+      "speaker": "SPEAKER_00",
+      "text": "何やってるの?あなたが平沢結衣さん?は、はい。入部希望の…いたしますわ。よし、麦!お茶の準備だ!はい!どうぞ、召し上がって",
+      "start": 1.39,
+      "end": 1.81
+    }
+  ],
+  "elapsed_s": 0.7,
+  "rtf": 0.012,
+  "stats": {
+    "asr_s": 0.63,
+    "embed_s": 0.08,
+    "cluster_s": 0.0,
+    "assign_s": 0.0
+  }
+}
