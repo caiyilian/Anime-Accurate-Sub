@@ -300,9 +300,10 @@
 **过渡到 Sprint 5**：ASR 全方案确定 → 现在做音频分离（ASR 前置优化）。
 
 **S4.1 验收**：
-- [ ] SenseVoice 的 CER 和速度数据
-- [ ] whisper-ja-anime-v0.3 的 CER 对比
-- [ ] SenseVoice AED 能否用于 OP/ED 检测
+- [x] SenseVoice 的 CER 和速度数据：CER=0.3307, RTF=0.017, 速度快但精度不足
+- [x] whisper-ja-anime-v0.3 的 CER 对比：CER=0.2778, Med=0.1056, RTF=0.089, 不如 Anime Whisper
+- [x] SenseVoice AED 可用于 OP/ED 检测：输出含 Speech/Cry/BGM 标签，可区分语音与非语音
+- [x] 结论：Anime Whisper 保持主力，SenseVoice 可做辅助 AED 分类
 
 **S4.2 验收**：
 - [ ] Qwen3 vs Anime Whisper 在专有名词上的准确率差异
