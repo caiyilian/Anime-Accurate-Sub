@@ -1,0 +1,1616 @@
+{
+  "model": "E:\\projects\\Anime-Accurate-Sub\\.omo\\efwkjn-anime-whisper",
+  "compute_type": "float16",
+  "beam_size": 5,
+  "language": "ja",
+  "num_samples": 200,
+  "load_time_seconds": 2.548548698425293,
+  "total_asr_time_seconds": 80.5362958908081,
+  "total_audio_duration_seconds": 904.0783125,
+  "real_time_factor": 0.08908110589237048,
+  "avg_cer": 0.27778151875012136,
+  "median_cer": 0.10555555555555556,
+  "p90_cer": 1.0,
+  "results": [
+    {
+      "sample": "sample_0000.wav",
+      "reference": "ひと～つ、人の生き血をすすり",
+      "transcription": "人を人の生き血をすすり……",
+      "cer": 0.5,
+      "asr_time": 0.6571652889251709,
+      "audio_duration": 4.9070625
+    },
+    {
+      "sample": "sample_0001.wav",
+      "reference": "うぅ…ひっく、ひっく…行っちゃやですぅ",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07764363288879395,
+      "audio_duration": 7.0499375
+    },
+    {
+      "sample": "sample_0002.wav",
+      "reference": "ふた～つ、不埒な悪行三昧",
+      "transcription": "ふたぁ……不埒な悪行三昧",
+      "cer": 0.25,
+      "asr_time": 0.4382145404815674,
+      "audio_duration": 4.904625
+    },
+    {
+      "sample": "sample_0003.wav",
+      "reference": "うえぇぇぇんっ！ええぇぇぇんっ！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.38033437728881836,
+      "audio_duration": 6.2946875
+    },
+    {
+      "sample": "sample_0004.wav",
+      "reference": "み～つ、醜き江都の鬼を",
+      "transcription": "……みい。醜き江都の鬼を",
+      "cer": 0.45454545454545453,
+      "asr_time": 0.43143534660339355,
+      "audio_duration": 4.6984375
+    },
+    {
+      "sample": "sample_0005.wav",
+      "reference": "魔神アンゴルモアよ",
+      "transcription": "魔人ハングルモアよ",
+      "cer": 0.3333333333333333,
+      "asr_time": 0.4118380546569824,
+      "audio_duration": 1.938875
+    },
+    {
+      "sample": "sample_0006.wav",
+      "reference": "ふにゃふにゃ…にいさぁん",
+      "transcription": "にい、さん……",
+      "cer": 0.8333333333333334,
+      "asr_time": 0.39688992500305176,
+      "audio_duration": 11.2845
+    },
+    {
+      "sample": "sample_0007.wav",
+      "reference": "退治してくれよう、桃太郎ッ！",
+      "transcription": "退治してくれよう、桃太郎!",
+      "cer": 0.14285714285714285,
+      "asr_time": 0.434279203414917,
+      "audio_duration": 3.5495625
+    },
+    {
+      "sample": "sample_0008.wav",
+      "reference": "このような姿に成り果ててまで、おぬしは何を求めたのじゃ",
+      "transcription": "このような姿に成り果ててまで、おぬしは何を求めたのじゃ?",
+      "cer": 0.037037037037037035,
+      "asr_time": 0.46717333793640137,
+      "audio_duration": 5.650125
+    },
+    {
+      "sample": "sample_0009.wav",
+      "reference": "んん…知ってまふ",
+      "transcription": "んん…… 視点は……",
+      "cer": 0.75,
+      "asr_time": 0.4325597286224365,
+      "audio_duration": 3.8641875
+    },
+    {
+      "sample": "sample_0010.wav",
+      "reference": "わかっておる",
+      "transcription": "わかっておる",
+      "cer": 0.0,
+      "asr_time": 0.36699557304382324,
+      "audio_duration": 1.146
+    },
+    {
+      "sample": "sample_0011.wav",
+      "reference": "刀を捨てて神妙にお縄につきなさい。命だけは助けましょう",
+      "transcription": "刀を捨てて神妙にお縄につきなさい。命だけは助けましょう",
+      "cer": 0.0,
+      "asr_time": 0.4762098789215088,
+      "audio_duration": 5.1108125
+    },
+    {
+      "sample": "sample_0012.wav",
+      "reference": "へへ、悪いですね兄さん。このベッド、二人用なのれす",
+      "transcription": "ふふっ、いいですね、優人。このベッド。二人オナナイショ",
+      "cer": 0.56,
+      "asr_time": 0.4764432907104492,
+      "audio_duration": 9.389625
+    },
+    {
+      "sample": "sample_0013.wav",
+      "reference": "きゃあ！？",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.0593411922454834,
+      "audio_duration": 0.874875
+    },
+    {
+      "sample": "sample_0014.wav",
+      "reference": "だからこそ、最期は妾の手で",
+      "transcription": "だからこそ、最後は妾の手で",
+      "cer": 0.07692307692307693,
+      "asr_time": 0.41832613945007324,
+      "audio_duration": 4.090625
+    },
+    {
+      "sample": "sample_0015.wav",
+      "reference": "んん…むにゃむにゃ",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.0795438289642334,
+      "audio_duration": 3.2471875
+    },
+    {
+      "sample": "sample_0016.wav",
+      "reference": "けほけほっ！煙幕とは卑怯ですよっ！",
+      "transcription": "煙幕とは卑怯ですよ!",
+      "cer": 0.47058823529411764,
+      "asr_time": 0.41115522384643555,
+      "audio_duration": 3.001125
+    },
+    {
+      "sample": "sample_0017.wav",
+      "reference": "さらばじゃ。",
+      "transcription": "さらばじゃ",
+      "cer": 0.16666666666666666,
+      "asr_time": 0.39826083183288574,
+      "audio_duration": 4.8685
+    },
+    {
+      "sample": "sample_0018.wav",
+      "reference": "うにゃ…そんなのお口に入らないですよぉ",
+      "transcription": "……お口に貼る",
+      "cer": 0.7894736842105263,
+      "asr_time": 0.39316296577453613,
+      "audio_duration": 6.723
+    },
+    {
+      "sample": "sample_0019.wav",
+      "reference": "なんじゃ。おっぱいをご所望か",
+      "transcription": "なんじゃ、おっぱいをご所望か?",
+      "cer": 0.14285714285714285,
+      "asr_time": 0.4383552074432373,
+      "audio_duration": 4.2129375
+    },
+    {
+      "sample": "sample_0020.wav",
+      "reference": "お辰！",
+      "transcription": "お辰",
+      "cer": 0.3333333333333333,
+      "asr_time": 0.36824464797973633,
+      "audio_duration": 1.1165625
+    },
+    {
+      "sample": "sample_0021.wav",
+      "reference": "ふにぃ",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.3639640808105469,
+      "audio_duration": 1.4673125
+    },
+    {
+      "sample": "sample_0022.wav",
+      "reference": "しょうがないにゃあ。よいぞ",
+      "transcription": "しょうがないにゃあ",
+      "cer": 0.3076923076923077,
+      "asr_time": 0.4317507743835449,
+      "audio_duration": 4.4235625
+    },
+    {
+      "sample": "sample_0023.wav",
+      "reference": "申し訳ありません。取り逃がしました",
+      "transcription": "申し訳ありません。取り逃がしました",
+      "cer": 0.0,
+      "asr_time": 0.41304802894592285,
+      "audio_duration": 2.9604375
+    },
+    {
+      "sample": "sample_0024.wav",
+      "reference": "あ…兄さん、おハローございまふ",
+      "transcription": "あ、兄さん。おハローございまふ",
+      "cer": 0.13333333333333333,
+      "asr_time": 0.4362020492553711,
+      "audio_duration": 5.45575
+    },
+    {
+      "sample": "sample_0025.wav",
+      "reference": "ふふふ。はーやとおはようなのじゃ",
+      "transcription": "えへへ、そうなのじゃん",
+      "cer": 0.75,
+      "asr_time": 0.3833582401275635,
+      "audio_duration": 5.5520625
+    },
+    {
+      "sample": "sample_0026.wav",
+      "reference": "巷を騒がす、かみかくしで間違いないでしょう",
+      "transcription": "巷を騒がす、かみかくして間違いないでしょう",
+      "cer": 0.047619047619047616,
+      "asr_time": 0.46453356742858887,
+      "audio_duration": 3.676625
+    },
+    {
+      "sample": "sample_0027.wav",
+      "reference": "それよりも今は、怪我人の手当を",
+      "transcription": "それよりも今は怪我人の手当を?",
+      "cer": 0.13333333333333333,
+      "asr_time": 0.44690680503845215,
+      "audio_duration": 2.4043125
+    },
+    {
+      "sample": "sample_0028.wav",
+      "reference": "なにって、愛する息子の背中を洗っておるのじゃが？",
+      "transcription": "なにって、愛する息子の背中を洗っておるのじゃが?",
+      "cer": 0.041666666666666664,
+      "asr_time": 0.45136213302612305,
+      "audio_duration": 5.300625
+    },
+    {
+      "sample": "sample_0029.wav",
+      "reference": "んん…まだねむいれす",
+      "transcription": "マラネーソ……",
+      "cer": 1.0,
+      "asr_time": 0.4186387062072754,
+      "audio_duration": 4.2945625
+    },
+    {
+      "sample": "sample_0030.wav",
+      "reference": "丸裸よりスク水の方が興奮するじゃろ？",
+      "transcription": "丸裸よりスク水の方が興奮するじゃろ?",
+      "cer": 0.05555555555555555,
+      "asr_time": 0.4530503749847412,
+      "audio_duration": 4.766125
+    },
+    {
+      "sample": "sample_0031.wav",
+      "reference": "おい、キミ！しっかりしなさいっ！",
+      "transcription": "おいキミ、しっかりしなさい!",
+      "cer": 0.25,
+      "asr_time": 0.4282243251800537,
+      "audio_duration": 2.2093125
+    },
+    {
+      "sample": "sample_0032.wav",
+      "reference": "んにんに…にいさぁん、もふもふしてくださーい",
+      "transcription": "兄さ〜ん、もふもふしてくださ〜い",
+      "cer": 0.4090909090909091,
+      "asr_time": 0.45508503913879395,
+      "audio_duration": 7.103
+    },
+    {
+      "sample": "sample_0033.wav",
+      "reference": "失礼します",
+      "transcription": "失礼します",
+      "cer": 0.0,
+      "asr_time": 0.3677399158477783,
+      "audio_duration": 1.36975
+    },
+    {
+      "sample": "sample_0034.wav",
+      "reference": "妾が",
+      "transcription": "妾が",
+      "cer": 0.0,
+      "asr_time": 0.385526180267334,
+      "audio_duration": 2.0616875
+    },
+    {
+      "sample": "sample_0035.wav",
+      "reference": "もふもふ、してくれないんですか？",
+      "transcription": "もふもふ、してくれないんですか?",
+      "cer": 0.0625,
+      "asr_time": 0.44501566886901855,
+      "audio_duration": 4.573125
+    },
+    {
+      "sample": "sample_0036.wav",
+      "reference": "よかった。お元気そうですね",
+      "transcription": "よかった。お元気そうですね",
+      "cer": 0.0,
+      "asr_time": 0.40726351737976074,
+      "audio_duration": 2.6143125
+    },
+    {
+      "sample": "sample_0037.wav",
+      "reference": "よいからお世話させろ。一度こういうプレイをしてみたかったのじゃ",
+      "transcription": "よいからお世話させろ。一度こういうプレイをしてみたかったのじゃ",
+      "cer": 0.0,
+      "asr_time": 0.4432203769683838,
+      "audio_duration": 6.457625
+    },
+    {
+      "sample": "sample_0038.wav",
+      "reference": "兄さんの手で、優しく撫で撫でしてくださいよぅ",
+      "transcription": "この手で、優しく撫で撫でしてくださいよぉ……",
+      "cer": 0.2727272727272727,
+      "asr_time": 0.446016788482666,
+      "audio_duration": 6.3276875
+    },
+    {
+      "sample": "sample_0039.wav",
+      "reference": "くくくっ。そうやって嫌がられると余計に悪戯したくなるのぅ",
+      "transcription": "そうやって嫌がられると、余計に悪戯したくなるのぉ",
+      "cer": 0.25,
+      "asr_time": 0.4660305976867676,
+      "audio_duration": 7.2009375
+    },
+    {
+      "sample": "sample_0040.wav",
+      "reference": "こんにちは。珠樹さんもお変わりなく",
+      "transcription": "こんにちは。珠樹さんもお変わりなく",
+      "cer": 0.0,
+      "asr_time": 0.43857550621032715,
+      "audio_duration": 2.9100625
+    },
+    {
+      "sample": "sample_0041.wav",
+      "reference": "やふぅ～～！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.0656123161315918,
+      "audio_duration": 1.7685625
+    },
+    {
+      "sample": "sample_0042.wav",
+      "reference": "いえ。武士として当然のことをしたまでです",
+      "transcription": "いえ。武士として当然のことをしたまでです",
+      "cer": 0.0,
+      "asr_time": 0.438183069229126,
+      "audio_duration": 3.5414375
+    },
+    {
+      "sample": "sample_0043.wav",
+      "reference": "それそれ～ママが背中を洗ってやるぞ",
+      "transcription": "それそれ〜、ママが背中を洗ってやるぞ〜",
+      "cer": 0.17647058823529413,
+      "asr_time": 0.46014881134033203,
+      "audio_duration": 6.010625
+    },
+    {
+      "sample": "sample_0044.wav",
+      "reference": "えへへ～、兄さんのもふもふ気持ちいいですぅ",
+      "transcription": "えへへ、兄さんのもふもふ気持ちいいです",
+      "cer": 0.09523809523809523,
+      "asr_time": 0.4456353187561035,
+      "audio_duration": 5.2670625
+    },
+    {
+      "sample": "sample_0045.wav",
+      "reference": "どうかしましたか？",
+      "transcription": "どうかしましたか?",
+      "cer": 0.1111111111111111,
+      "asr_time": 0.406099796295166,
+      "audio_duration": 1.636125
+    },
+    {
+      "sample": "sample_0046.wav",
+      "reference": "あわあわスク水おっぱいで、気持ちよくなるのじゃ",
+      "transcription": "あわあわスク水おっぱいで、気持ち良くなるのじゃ",
+      "cer": 0.043478260869565216,
+      "asr_time": 0.465116024017334,
+      "audio_duration": 5.285
+    },
+    {
+      "sample": "sample_0047.wav",
+      "reference": "いいえ、違います。兄さんのは特別なんです。癖になるんです",
+      "transcription": "いいえ、違います。兄さんのは特別なんです。癖になるんです",
+      "cer": 0.0,
+      "asr_time": 0.46392345428466797,
+      "audio_duration": 6.2443125
+    },
+    {
+      "sample": "sample_0048.wav",
+      "reference": "ひどい紹介の仕方ですね",
+      "transcription": "ひどい紹介の仕方ですね",
+      "cer": 0.0,
+      "asr_time": 0.41782116889953613,
+      "audio_duration": 2.8099375
+    },
+    {
+      "sample": "sample_0049.wav",
+      "reference": "くすっ。生娘のような声をあげよって",
+      "transcription": "ふふっ、生娘のような声をあげよって",
+      "cer": 0.17647058823529413,
+      "asr_time": 0.4436807632446289,
+      "audio_duration": 5.267625
+    },
+    {
+      "sample": "sample_0050.wav",
+      "reference": "ですから、その…ご迷惑でなければ、もっと甘えていいですか？",
+      "transcription": "ですから、その……ご迷惑でなければ、もっと甘えていいですか?",
+      "cer": 0.06896551724137931,
+      "asr_time": 0.460219144821167,
+      "audio_duration": 9.369875
+    },
+    {
+      "sample": "sample_0051.wav",
+      "reference": "ほんに隼斗は可愛いのぅ。うりうり～",
+      "transcription": "うりゅり〜",
+      "cer": 0.8235294117647058,
+      "asr_time": 0.39966702461242676,
+      "audio_duration": 6.167375
+    },
+    {
+      "sample": "sample_0052.wav",
+      "reference": "私は徳田 義宗。貧乏旗本の三女…ということにしておきます",
+      "transcription": "私は徳田義宗。貧乏旗本の三女を、ということにしておきます",
+      "cer": 0.07407407407407407,
+      "asr_time": 0.49684977531433105,
+      "audio_duration": 7.0814375
+    },
+    {
+      "sample": "sample_0053.wav",
+      "reference": "きゃふー！もふもふー！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.06903433799743652,
+      "audio_duration": 3.0051875
+    },
+    {
+      "sample": "sample_0054.wav",
+      "reference": "い、いえ。何でもありません",
+      "transcription": "い、いえ。何でもありません",
+      "cer": 0.0,
+      "asr_time": 0.41255974769592285,
+      "audio_duration": 2.923625
+    },
+    {
+      "sample": "sample_0055.wav",
+      "reference": "ほほ～う？息子の息子が今日も元気いっぱいじゃな",
+      "transcription": "ほほーう? 息子の息子が今日も元気いっぱいじゃ……!",
+      "cer": 0.21739130434782608,
+      "asr_time": 0.4527735710144043,
+      "audio_duration": 7.4560625
+    },
+    {
+      "sample": "sample_0056.wav",
+      "reference": "えへへ～、にいさ～ん",
+      "transcription": "兄さ〜ん",
+      "cer": 0.8,
+      "asr_time": 0.39269328117370605,
+      "audio_duration": 3.0915625
+    },
+    {
+      "sample": "sample_0057.wav",
+      "reference": "ああん？妾以外のおっぱいで欲情しておったじゃと？",
+      "transcription": "妾以外も、おっぱいで欲情しておったじゃと!?",
+      "cer": 0.3333333333333333,
+      "asr_time": 0.4491403102874756,
+      "audio_duration": 5.586875
+    },
+    {
+      "sample": "sample_0058.wav",
+      "reference": "そんなところは立ちませんっ",
+      "transcription": "そんなところは立ちません!",
+      "cer": 0.07692307692307693,
+      "asr_time": 0.4202897548675537,
+      "audio_duration": 2.2425
+    },
+    {
+      "sample": "sample_0059.wav",
+      "reference": "やぁん、やめてください。くすぐったいですよぅ",
+      "transcription": "やめてください。くすぐったいですよ",
+      "cer": 0.22727272727272727,
+      "asr_time": 0.41267871856689453,
+      "audio_duration": 4.8269375
+    },
+    {
+      "sample": "sample_0060.wav",
+      "reference": "剣の腕も諸先輩方に比べたら、まだまだです",
+      "transcription": "剣の腕も、諸先輩方に比べたらまだまだです",
+      "cer": 0.1,
+      "asr_time": 0.44431185722351074,
+      "audio_duration": 3.94725
+    },
+    {
+      "sample": "sample_0061.wav",
+      "reference": "この親不孝者めっ。そんな放蕩息子に育てた覚えはないぞ",
+      "transcription": "この親不孝、そんな本当の息子に育てた覚えはないぞ!",
+      "cer": 0.3076923076923077,
+      "asr_time": 0.44904470443725586,
+      "audio_duration": 5.7378125
+    },
+    {
+      "sample": "sample_0062.wav",
+      "reference": "そういうことすると、兄さんの匂いも嗅いじゃいますぞ？",
+      "transcription": "そういうことすると、兄さんの匂いも嗅いじゃいますぞ?",
+      "cer": 0.038461538461538464,
+      "asr_time": 0.4624669551849365,
+      "audio_duration": 5.428
+    },
+    {
+      "sample": "sample_0063.wav",
+      "reference": "や、やめてください。もうっ",
+      "transcription": "や、やめてください。もうっ",
+      "cer": 0.0,
+      "asr_time": 0.4097445011138916,
+      "audio_duration": 2.6953125
+    },
+    {
+      "sample": "sample_0064.wav",
+      "reference": "罰として、くすぐり地獄に堕としてくれるわ！",
+      "transcription": "罰として、薬獄に堕としてくれるわ",
+      "cer": 0.2857142857142857,
+      "asr_time": 0.42213869094848633,
+      "audio_duration": 4.6929375
+    },
+    {
+      "sample": "sample_0065.wav",
+      "reference": "やや！？冗談ですよ。本当に脱がないでください、はしたない！",
+      "transcription": "冗談ですよ。本当にな……",
+      "cer": 0.6551724137931034,
+      "asr_time": 0.4280519485473633,
+      "audio_duration": 5.1898125
+    },
+    {
+      "sample": "sample_0066.wav",
+      "reference": "そ～れ、こちょこちょ～",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.0736544132232666,
+      "audio_duration": 3.9440625
+    },
+    {
+      "sample": "sample_0067.wav",
+      "reference": "神泉殿の容態は？",
+      "transcription": "神泉殿の容態は?",
+      "cer": 0.125,
+      "asr_time": 0.40103793144226074,
+      "audio_duration": 1.9294375
+    },
+    {
+      "sample": "sample_0068.wav",
+      "reference": "ややややっ！なんてところを大きくしてるですか！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07179880142211914,
+      "audio_duration": 3.6330625
+    },
+    {
+      "sample": "sample_0069.wav",
+      "reference": "よかった。お話を窺っても問題なさそうですね",
+      "transcription": "よかった。お話を伺っても問題なさそうですね",
+      "cer": 0.047619047619047616,
+      "asr_time": 0.4449737071990967,
+      "audio_duration": 4.197625
+    },
+    {
+      "sample": "sample_0070.wav",
+      "reference": "隼斗もすっかり逞しくなったな。胸板もこんなに厚くなって",
+      "transcription": "隼斗もすっかり逞しくなったな。胸板もこんなに厚くなって",
+      "cer": 0.0,
+      "asr_time": 0.451688289642334,
+      "audio_duration": 7.3649375
+    },
+    {
+      "sample": "sample_0071.wav",
+      "reference": "妹によくじょーするなんて、兄さんは大変なヘンタイさんです！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07975888252258301,
+      "audio_duration": 4.592875
+    },
+    {
+      "sample": "sample_0072.wav",
+      "reference": "ママ、もう我慢できない。食べてもよいか？あむあむ",
+      "transcription": "よいか?あむ",
+      "cer": 0.7916666666666666,
+      "asr_time": 0.42549586296081543,
+      "audio_duration": 9.07775
+    },
+    {
+      "sample": "sample_0073.wav",
+      "reference": "不躾で申し訳ありませんが、少々訊きたいことがありまして",
+      "transcription": "不躾で申し訳ありませんが、少々訊きたいことがありまして",
+      "cer": 0.0,
+      "asr_time": 0.4445793628692627,
+      "audio_duration": 4.950125
+    },
+    {
+      "sample": "sample_0074.wav",
+      "reference": "早く隠してください。目の毒です！ぽいずんです！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07189059257507324,
+      "audio_duration": 4.49675
+    },
+    {
+      "sample": "sample_0075.wav",
+      "reference": "あっ、そうでした。申し訳ありません",
+      "transcription": "あ、そうでした。申し訳ありません",
+      "cer": 0.058823529411764705,
+      "asr_time": 0.40741658210754395,
+      "audio_duration": 3.5945625
+    },
+    {
+      "sample": "sample_0076.wav",
+      "reference": "ちぇー。つれないのぅ",
+      "transcription": "ちぇー、つれないのぉ",
+      "cer": 0.2,
+      "asr_time": 0.4326140880584717,
+      "audio_duration": 3.4864375
+    },
+    {
+      "sample": "sample_0077.wav",
+      "reference": "いえいえいえいえ！そういう問題じゃありません！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07653045654296875,
+      "audio_duration": 4.421
+    },
+    {
+      "sample": "sample_0078.wav",
+      "reference": "小石川養生所は、幕府が建てた無料診療所なんです",
+      "transcription": "小石川養生所は、幕府が建てた無料診療所なんです",
+      "cer": 0.0,
+      "asr_time": 0.47309207916259766,
+      "audio_duration": 4.4039375
+    },
+    {
+      "sample": "sample_0079.wav",
+      "reference": "母と子の貴重な触れあいタイムだというのに",
+      "transcription": "母と子の貴重な触れ合いタイムだというのに",
+      "cer": 0.05,
+      "asr_time": 0.4226701259613037,
+      "audio_duration": 4.542
+    },
+    {
+      "sample": "sample_0080.wav",
+      "reference": "大人な人が、大人になった子供さんを見せちゃダメなんです！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07928013801574707,
+      "audio_duration": 4.892375
+    },
+    {
+      "sample": "sample_0081.wav",
+      "reference": "そんなことないぞ。これが我が家の普通じゃ",
+      "transcription": "そんなことないぞ。これが我が家の普通じゃ",
+      "cer": 0.0,
+      "asr_time": 0.4285123348236084,
+      "audio_duration": 4.72775
+    },
+    {
+      "sample": "sample_0082.wav",
+      "reference": "きっかけは一年前の流行病でした。病を止めるため庄船先生が中心となり、養生所を設立したのです",
+      "transcription": "きっかけは一年前の流行病でした。病を止めるため庄船先生が中心となり、養生所を設立したのです",
+      "cer": 0.0,
+      "asr_time": 0.5229642391204834,
+      "audio_duration": 8.4585
+    },
+    {
+      "sample": "sample_0083.wav",
+      "reference": "やややーー！破廉恥です！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07724690437316895,
+      "audio_duration": 2.4828125
+    },
+    {
+      "sample": "sample_0084.wav",
+      "reference": "おぬしも小さい頃はママーと甘えながら、妾と湯船に浸かっておったではないか",
+      "transcription": "おぬしも小さい頃はママだと思いながら、妾と湯船に浸かっておったではないか",
+      "cer": 0.08333333333333333,
+      "asr_time": 0.4987204074859619,
+      "audio_duration": 7.7071875
+    },
+    {
+      "sample": "sample_0085.wav",
+      "reference": "永崎からいらした南蛮…ホランダ人の女医です",
+      "transcription": "長崎からいらした南蛮……ホランダ人の女医です",
+      "cer": 0.09523809523809523,
+      "asr_time": 0.4782290458679199,
+      "audio_duration": 4.007375
+    },
+    {
+      "sample": "sample_0086.wav",
+      "reference": "神をも怖れぬその所行！兄さんは悪魔に魂を売ったのですね！",
+      "transcription": "神をも恐れぬその所行!兄さんは悪魔に魂を売ったので……",
+      "cer": 0.17857142857142858,
+      "asr_time": 0.45968031883239746,
+      "audio_duration": 6.0895
+    },
+    {
+      "sample": "sample_0087.wav",
+      "reference": "ははーん。さては、大きくなったナニを見られるのが嫌なんじゃな？",
+      "transcription": "ははーん さては、大きくなったナニを見られるのが嫌なんじゃな?",
+      "cer": 0.06451612903225806,
+      "asr_time": 0.49600863456726074,
+      "audio_duration": 7.8218125
+    },
+    {
+      "sample": "sample_0088.wav",
+      "reference": "女性のお医者さまは世間から認められていないので、江都へ越してきたのでしょう",
+      "transcription": "女性のお医者さまは世間から認められていないので、江都へ越してきたのでしょう",
+      "cer": 0.0,
+      "asr_time": 0.4923591613769531,
+      "audio_duration": 5.5175
+    },
+    {
+      "sample": "sample_0089.wav",
+      "reference": "とにかく、早くその立派なモノをしまってください。目のやり場に困っちゃうです",
+      "transcription": "とにかく、早くその立派なものをしまってください。目のやり場に困っちゃうです",
+      "cer": 0.05405405405405406,
+      "asr_time": 0.4922323226928711,
+      "audio_duration": 6.6271875
+    },
+    {
+      "sample": "sample_0090.wav",
+      "reference": "いまの江都は若干ではありますが、女性の地位が向上していますから",
+      "transcription": "今の江都は若干ではありますが、女性の地位が向上していますから",
+      "cer": 0.06451612903225806,
+      "asr_time": 0.4736819267272949,
+      "audio_duration": 4.95225
+    },
+    {
+      "sample": "sample_0091.wav",
+      "reference": "おぬしの精通を手伝ったのは妾だぞ？いまさら何を恥ずかしがる",
+      "transcription": "おぬしの精通を手伝ったのは妾だぞ。いまさら何を恥ずかしがる",
+      "cer": 0.034482758620689655,
+      "asr_time": 0.4804389476776123,
+      "audio_duration": 6.4634375
+    },
+    {
+      "sample": "sample_0092.wav",
+      "reference": "褒めてます！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.06638693809509277,
+      "audio_duration": 1.528
+    },
+    {
+      "sample": "sample_0093.wav",
+      "reference": "ふふ。あの時のこと今でも覚えておるぞ",
+      "transcription": "あの時のこと、今でも覚えておるぞ",
+      "cer": 0.2222222222222222,
+      "asr_time": 0.42101621627807617,
+      "audio_duration": 6.8485
+    },
+    {
+      "sample": "sample_0094.wav",
+      "reference": "もう昼九ツですか。少し急ぎましょう",
+      "transcription": "もう昼九つですか。少し急ぎましょう",
+      "cer": 0.058823529411764705,
+      "asr_time": 0.42664194107055664,
+      "audio_duration": 3.8301875
+    },
+    {
+      "sample": "sample_0095.wav",
+      "reference": "それはその…おパンツ越しにもわかる、形の良さと言いますか",
+      "transcription": "パンツ越しにもわかる、形の良さと言いますか……",
+      "cer": 0.32142857142857145,
+      "asr_time": 0.45862531661987305,
+      "audio_duration": 8.6659375
+    },
+    {
+      "sample": "sample_0096.wav",
+      "reference": "いえいえ。見廻りは趣味のようなものですから",
+      "transcription": "いえいえ。見回りは趣味のようなものですから",
+      "cer": 0.047619047619047616,
+      "asr_time": 0.44234395027160645,
+      "audio_duration": 3.7711875
+    },
+    {
+      "sample": "sample_0097.wav",
+      "reference": "アソコを大きくして困り果てておったおぬしに、妾が手取りナニ取り",
+      "transcription": "アソコを大きくして困り果てておったおぬしに、わらわが手取り何取り――",
+      "cer": 0.22580645161290322,
+      "asr_time": 0.5081591606140137,
+      "audio_duration": 6.6315
+    },
+    {
+      "sample": "sample_0098.wav",
+      "reference": "って、ややや！なんてこと言わせるですか！？裁判長、今のはゆーどーじんもんです！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.08701610565185547,
+      "audio_duration": 6.1596875
+    },
+    {
+      "sample": "sample_0099.wav",
+      "reference": "その呼び方はやめてくださいねー",
+      "transcription": "その呼び方はやめてくださいね〜",
+      "cer": 0.06666666666666667,
+      "asr_time": 0.4114949703216553,
+      "audio_duration": 2.9115625
+    },
+    {
+      "sample": "sample_0100.wav",
+      "reference": "いつもすまぬな。いただきま～",
+      "transcription": "いつもすまぬな いただきま――",
+      "cer": 0.21428571428571427,
+      "asr_time": 0.40863871574401855,
+      "audio_duration": 3.7465625
+    },
+    {
+      "sample": "sample_0101.wav",
+      "reference": "むー。兄さんは本当に破廉恥さんです",
+      "transcription": "あぅぅ……兄さんは本さんです",
+      "cer": 0.5882352941176471,
+      "asr_time": 0.43855834007263184,
+      "audio_duration": 5.23375
+    },
+    {
+      "sample": "sample_0102.wav",
+      "reference": "って、どうしてキャベツだけなのじゃ？",
+      "transcription": "って、どうしてキャベツだけなのじゃ?",
+      "cer": 0.05555555555555555,
+      "asr_time": 0.42279767990112305,
+      "audio_duration": 3.3936875
+    },
+    {
+      "sample": "sample_0103.wav",
+      "reference": "あれは天守閣です。５０年前に焼失したのを再建して、今の姿になったそうです",
+      "transcription": "あれは天守閣です。50年前に焼失したのを再建して、今の姿になったそうです",
+      "cer": 0.05555555555555555,
+      "asr_time": 0.5008838176727295,
+      "audio_duration": 6.4189375
+    },
+    {
+      "sample": "sample_0104.wav",
+      "reference": "パンがなければお菓子を食べればいいじゃない",
+      "transcription": "いなければ、お菓子を食べればいいじゃな〜い",
+      "cer": 0.23809523809523808,
+      "asr_time": 0.4270343780517578,
+      "audio_duration": 3.8253125
+    },
+    {
+      "sample": "sample_0105.wav",
+      "reference": "立派でしょう？私も気に入っています。江都復興の象徴として、町民に愛されているんです",
+      "transcription": "立派でしょう?私も気に入っています。江都復興の象徴として、町民に愛されているんです",
+      "cer": 0.024390243902439025,
+      "asr_time": 0.5135500431060791,
+      "audio_duration": 7.4073125
+    },
+    {
+      "sample": "sample_0106.wav",
+      "reference": "おハローです、杏璃",
+      "transcription": "おハローです、杏璃",
+      "cer": 0.0,
+      "asr_time": 0.40212249755859375,
+      "audio_duration": 2.21575
+    },
+    {
+      "sample": "sample_0107.wav",
+      "reference": "ほうこの炒め物はイケておるな。塩辛くて酒に合いそうじゃ",
+      "transcription": "うん、塩辛くて酒に合いそうじゃん",
+      "cer": 0.5555555555555556,
+      "asr_time": 0.4527900218963623,
+      "audio_duration": 6.9224375
+    },
+    {
+      "sample": "sample_0108.wav",
+      "reference": "丸山の大火事です。江都城を含めた周囲一帯は、壊滅的な被害を受けました",
+      "transcription": "丸山の大火事です。江都城を含めた周囲一帯は、壊滅的な被害を受けました",
+      "cer": 0.0,
+      "asr_time": 0.49091506004333496,
+      "audio_duration": 6.6986875
+    },
+    {
+      "sample": "sample_0109.wav",
+      "reference": "くすっ、可愛い欠伸ですね",
+      "transcription": "可愛い欠伸ですね",
+      "cer": 0.3333333333333333,
+      "asr_time": 0.40004563331604004,
+      "audio_duration": 3.473875
+    },
+    {
+      "sample": "sample_0110.wav",
+      "reference": "江都は人口が多く、建物も密集していますからね。今も火事に悩まされています",
+      "transcription": "江都は人口が多く、建物も密集していますからね。今も火事に悩まされています",
+      "cer": 0.0,
+      "asr_time": 0.492112398147583,
+      "audio_duration": 6.7408125
+    },
+    {
+      "sample": "sample_0111.wav",
+      "reference": "安心せい。役所に届けを出さねばならぬからな。さすがに自重するわ",
+      "transcription": "安心せい。役所に届けを出さねばならぬからな。さすがに自重するわ",
+      "cer": 0.0,
+      "asr_time": 0.46406126022338867,
+      "audio_duration": 6.2035
+    },
+    {
+      "sample": "sample_0112.wav",
+      "reference": "兄さんのもふもふ、気持ちいいですよ",
+      "transcription": "兄さんのもふもふ、気持ちいいですよ",
+      "cer": 0.0,
+      "asr_time": 0.4362664222717285,
+      "audio_duration": 4.0640625
+    },
+    {
+      "sample": "sample_0113.wav",
+      "reference": "除霊に使ったのじゃ",
+      "transcription": "除霊に使ったのじゃ",
+      "cer": 0.0,
+      "asr_time": 0.4076237678527832,
+      "audio_duration": 1.81775
+    },
+    {
+      "sample": "sample_0114.wav",
+      "reference": "ですが、私が来たからにはもう安心！大火事など起こさせません！",
+      "transcription": "ですが、私が来たからにはもう安心!大火事など起こさせません",
+      "cer": 0.06666666666666667,
+      "asr_time": 0.46697306632995605,
+      "audio_duration": 5.6645625
+    },
+    {
+      "sample": "sample_0115.wav",
+      "reference": "昨日のこと覚えてないんですか？",
+      "transcription": "昨日のこと覚えてないんですか?",
+      "cer": 0.06666666666666667,
+      "asr_time": 0.41143131256103516,
+      "audio_duration": 3.414625
+    },
+    {
+      "sample": "sample_0116.wav",
+      "reference": "清酒をふりかけ、ちょちょいとな",
+      "transcription": "青春ふりかけ、ちょちょいとな",
+      "cer": 0.2,
+      "asr_time": 0.4349172115325928,
+      "audio_duration": 2.644375
+    },
+    {
+      "sample": "sample_0117.wav",
+      "reference": "め組と組んで、新たな防火策を考えているんです。話が進めば、江都の町はより住みやすくなるでしょう！",
+      "transcription": "め組と組んで、新たな防火策を考えているんです。話が進めば、江都の町はより住みやすくなるでしょう",
+      "cer": 0.020833333333333332,
+      "asr_time": 0.49460291862487793,
+      "audio_duration": 8.065375
+    },
+    {
+      "sample": "sample_0118.wav",
+      "reference": "そうそう、そうしたら杏璃が一人で眠れないって言い出したんですよ",
+      "transcription": "そうそう。そうしたら杏璃が、一人で眠れないって言い出したんですよ",
+      "cer": 0.06451612903225806,
+      "asr_time": 0.4507730007171631,
+      "audio_duration": 6.190625
+    },
+    {
+      "sample": "sample_0119.wav",
+      "reference": "物わかりがよい仏さんじゃったぞ",
+      "transcription": "頃わかりがよい仏さんじゃったぞ",
+      "cer": 0.06666666666666667,
+      "asr_time": 0.43549036979675293,
+      "audio_duration": 2.718875
+    },
+    {
+      "sample": "sample_0120.wav",
+      "reference": "あっ！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.05930328369140625,
+      "audio_duration": 0.908875
+    },
+    {
+      "sample": "sample_0121.wav",
+      "reference": "妹のために身体を張る兄さん、素敵です",
+      "transcription": "妹のために身体を張る兄さん。素敵です",
+      "cer": 0.05555555555555555,
+      "asr_time": 0.43158411979675293,
+      "audio_duration": 3.9655625
+    },
+    {
+      "sample": "sample_0122.wav",
+      "reference": "妾が見える者とわかった途端、住宅ローンの苦労を喋り倒してな",
+      "transcription": "妾が見える者とわかった途端、住宅ローンの苦労を喋り倒してな",
+      "cer": 0.0,
+      "asr_time": 0.4998180866241455,
+      "audio_duration": 5.581125
+    },
+    {
+      "sample": "sample_0123.wav",
+      "reference": "失礼しました。何のことやらですよね",
+      "transcription": "失礼しました。何のことやらですよね",
+      "cer": 0.0,
+      "asr_time": 0.41426610946655273,
+      "audio_duration": 4.058
+    },
+    {
+      "sample": "sample_0124.wav",
+      "reference": "寝言と言えば、怖がる杏璃が可愛かったです",
+      "transcription": "寝言といえば、怖がる杏璃が可愛かったです",
+      "cer": 0.05,
+      "asr_time": 0.44254589080810547,
+      "audio_duration": 4.992
+    },
+    {
+      "sample": "sample_0125.wav",
+      "reference": "本当にごめんなさい。どうにも先走る癖があるみたいで",
+      "transcription": "本当にごめんなさい。どうにも先走る癖があるみたいで",
+      "cer": 0.0,
+      "asr_time": 0.4422626495361328,
+      "audio_duration": 5.171625
+    },
+    {
+      "sample": "sample_0126.wav",
+      "reference": "この家は大事に使う。後は任せろと言ったら、満足気に昇天しおった",
+      "transcription": "この家は大事に使う。後は任せろと言ったら、満足気に昇天しおった",
+      "cer": 0.0,
+      "asr_time": 0.4855647087097168,
+      "audio_duration": 6.087625
+    },
+    {
+      "sample": "sample_0127.wav",
+      "reference": "怖いよ杏鈴、怖いよお兄ちゃんと、ひと晩中わたしに抱きついて",
+      "transcription": "怖いよ杏鈴、怖いよお兄ちゃんと、ひと晩中あたしに抱きついて",
+      "cer": 0.034482758620689655,
+      "asr_time": 0.4757504463195801,
+      "audio_duration": 6.8565
+    },
+    {
+      "sample": "sample_0128.wav",
+      "reference": "隼斗は今日から学校じゃな",
+      "transcription": "隼斗は今日から学校じゃな",
+      "cer": 0.0,
+      "asr_time": 0.39636945724487305,
+      "audio_duration": 2.1969375
+    },
+    {
+      "sample": "sample_0129.wav",
+      "reference": "面目ありません",
+      "transcription": "面目ありません",
+      "cer": 0.0,
+      "asr_time": 0.4069223403930664,
+      "audio_duration": 2.0585625
+    },
+    {
+      "sample": "sample_0130.wav",
+      "reference": "またまた。素直じゃないんですからぁ",
+      "transcription": "またまた、素直じゃないんですから",
+      "cer": 0.11764705882352941,
+      "asr_time": 0.439253568649292,
+      "audio_duration": 4.0148125
+    },
+    {
+      "sample": "sample_0131.wav",
+      "reference": "ステーキ！お刺身！ポン酒！",
+      "transcription": "お刺身、ポンシュー",
+      "cer": 0.6923076923076923,
+      "asr_time": 0.40102076530456543,
+      "audio_duration": 3.1290625
+    },
+    {
+      "sample": "sample_0132.wav",
+      "reference": "江都城を知らないとは。先生が仰っていた通り、記憶を失っているのですね",
+      "transcription": "江都城を知らないとは。先生が仰っていた通り、記憶を失っているのですね",
+      "cer": 0.0,
+      "asr_time": 0.48867154121398926,
+      "audio_duration": 6.3443125
+    },
+    {
+      "sample": "sample_0133.wav",
+      "reference": "ほ～ら、怒っちゃダメですよ。笑って笑って。ぷにぷにー",
+      "transcription": "ほーら、怒っちゃダメですよ。笑って笑って。ぷにぷに",
+      "cer": 0.07692307692307693,
+      "asr_time": 0.47223758697509766,
+      "audio_duration": 6.6838125
+    },
+    {
+      "sample": "sample_0134.wav",
+      "reference": "そうですか",
+      "transcription": "そうですか……",
+      "cer": 0.4,
+      "asr_time": 0.36952710151672363,
+      "audio_duration": 2.099625
+    },
+    {
+      "sample": "sample_0135.wav",
+      "reference": "ぶー！野菜なら毎日食べておるであろう",
+      "transcription": "ぶー。野菜なら毎日食べておるであろう",
+      "cer": 0.05555555555555555,
+      "asr_time": 0.43382763862609863,
+      "audio_duration": 3.87775
+    },
+    {
+      "sample": "sample_0136.wav",
+      "reference": "へぇ～、そうなんですか。兄さんにねぇ、ニヤニヤ",
+      "transcription": "えー、兄さんにね。ニヤニヤ",
+      "cer": 0.5652173913043478,
+      "asr_time": 0.45125484466552734,
+      "audio_duration": 8.171
+    },
+    {
+      "sample": "sample_0137.wav",
+      "reference": "何かとご不便でしょう。手伝えることがあれば、遠慮なく仰ってください",
+      "transcription": "何かとご不便でしょう。手伝えることがあれば、遠慮なく仰ってください",
+      "cer": 0.0,
+      "asr_time": 0.4656193256378174,
+      "audio_duration": 5.1634375
+    },
+    {
+      "sample": "sample_0138.wav",
+      "reference": "引越祝いに贅沢したいのじゃ！お～に～く～～！",
+      "transcription": "引越祝いに贅沢したいのじゃ。いっくー!",
+      "cer": 0.36363636363636365,
+      "asr_time": 0.45946717262268066,
+      "audio_duration": 7.320125
+    },
+    {
+      "sample": "sample_0139.wav",
+      "reference": "うん、バッチリ",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07049441337585449,
+      "audio_duration": 1.8384375
+    },
+    {
+      "sample": "sample_0140.wav",
+      "reference": "江都は私の庭のようなもの。神泉殿の力になれると思います",
+      "transcription": "江都は私の庭のようなもの。神泉殿の力になれると思います",
+      "cer": 0.0,
+      "asr_time": 0.4663689136505127,
+      "audio_duration": 5.2981875
+    },
+    {
+      "sample": "sample_0141.wav",
+      "reference": "わーい！",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07017374038696289,
+      "audio_duration": 1.5325
+    },
+    {
+      "sample": "sample_0142.wav",
+      "reference": "あ、待ってくださいよ、わたしも行きます～",
+      "transcription": "あ、待ってくださいよ。私も行きます",
+      "cer": 0.25,
+      "asr_time": 0.44850945472717285,
+      "audio_duration": 4.1194375
+    },
+    {
+      "sample": "sample_0143.wav",
+      "reference": "瘴気か？",
+      "transcription": "瘴気か",
+      "cer": 0.25,
+      "asr_time": 0.38460850715637207,
+      "audio_duration": 1.23725
+    },
+    {
+      "sample": "sample_0144.wav",
+      "reference": "いいんですよ。困った時はお互い様です",
+      "transcription": "いいんですよ。困った時はお互いさまです",
+      "cer": 0.1111111111111111,
+      "asr_time": 0.41948819160461426,
+      "audio_duration": 3.43175
+    },
+    {
+      "sample": "sample_0145.wav",
+      "reference": "ではでは、兄さん。また後で",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07114076614379883,
+      "audio_duration": 3.1458125
+    },
+    {
+      "sample": "sample_0146.wav",
+      "reference": "なんでしょうか？",
+      "transcription": "なんでしょうか?",
+      "cer": 0.125,
+      "asr_time": 0.3799464702606201,
+      "audio_duration": 1.3259375
+    },
+    {
+      "sample": "sample_0147.wav",
+      "reference": "ははーん。なるほどなるほど",
+      "transcription": "ははーん。なるほどなるほど",
+      "cer": 0.0,
+      "asr_time": 0.44053220748901367,
+      "audio_duration": 3.4363125
+    },
+    {
+      "sample": "sample_0148.wav",
+      "reference": "ごめんなさい、ごめんなさい",
+      "transcription": "ごめんなさい……",
+      "cer": 0.5384615384615384,
+      "asr_time": 0.40149474143981934,
+      "audio_duration": 5.8404375
+    },
+    {
+      "sample": "sample_0149.wav",
+      "reference": "昨日の減点は厄介事に巻き込まれたからじゃな",
+      "transcription": "昨日の減点は厄介事に巻き込まれたからじゃな",
+      "cer": 0.0,
+      "asr_time": 0.427809476852417,
+      "audio_duration": 3.959
+    },
+    {
+      "sample": "sample_0150.wav",
+      "reference": "わかりました。でしたら、私も義宗とお呼びください",
+      "transcription": "わかりました。でしたら、私も義宗とお呼びください",
+      "cer": 0.0,
+      "asr_time": 0.44208312034606934,
+      "audio_duration": 4.675
+    },
+    {
+      "sample": "sample_0151.wav",
+      "reference": "じゃじゃーん見てください、兄さん。おにゅーの制服ですよ",
+      "transcription": "じゃじゃーん!見てください、兄さん。おニューの制服ですよ",
+      "cer": 0.1111111111111111,
+      "asr_time": 0.4580662250518799,
+      "audio_duration": 5.552125
+    },
+    {
+      "sample": "sample_0152.wav",
+      "reference": "さすがは隼斗。引っ越し早々面倒を起こすとは",
+      "transcription": "さすがは隼斗。引っ越し早々面倒を起こすとは",
+      "cer": 0.0,
+      "asr_time": 0.4671163558959961,
+      "audio_duration": 5.0181875
+    },
+    {
+      "sample": "sample_0153.wav",
+      "reference": "こちらこそよろしくお願いします。信行殿",
+      "transcription": "こちらこそよろしくお願いします、信行殿",
+      "cer": 0.05263157894736842,
+      "asr_time": 0.39760661125183105,
+      "audio_duration": 3.2414375
+    },
+    {
+      "sample": "sample_0154.wav",
+      "reference": "どうですか、どうですか？似合ってます？",
+      "transcription": "どうですか?似合ってます?",
+      "cer": 0.42105263157894735,
+      "asr_time": 0.4239845275878906,
+      "audio_duration": 3.4190625
+    },
+    {
+      "sample": "sample_0155.wav",
+      "reference": "ふふっ。思っていたより素直な方ですね。頼られるのは悪い気がしません",
+      "transcription": "思っていたより素直な方ですね。頼られるのは悪い気がしません",
+      "cer": 0.12121212121212122,
+      "asr_time": 0.447098970413208,
+      "audio_duration": 6.28525
+    },
+    {
+      "sample": "sample_0156.wav",
+      "reference": "魔法は使ったのか？",
+      "transcription": "魔法は使ったのか?",
+      "cer": 0.1111111111111111,
+      "asr_time": 0.3804776668548584,
+      "audio_duration": 1.800125
+    },
+    {
+      "sample": "sample_0157.wav",
+      "reference": "えへへ～、ありがとうございます",
+      "transcription": "えへへ ありがとうございます",
+      "cer": 0.13333333333333333,
+      "asr_time": 0.3984982967376709,
+      "audio_duration": 3.27375
+    },
+    {
+      "sample": "sample_0158.wav",
+      "reference": "た、珠樹さん。いけませんよ。いくら許嫁でも、往来の真ん中で破廉恥な",
+      "transcription": "だ、黙っ―― いけませんよ。いくら許嫁でも、往来の真ん中で破廉恥な",
+      "cer": 0.18181818181818182,
+      "asr_time": 0.5172393321990967,
+      "audio_duration": 6.631375
+    },
+    {
+      "sample": "sample_0159.wav",
+      "reference": "ならばよい",
+      "transcription": "ならばよい",
+      "cer": 0.0,
+      "asr_time": 0.3544888496398926,
+      "audio_duration": 1.274375
+    },
+    {
+      "sample": "sample_0160.wav",
+      "reference": "わーいほら、杏璃こっちこっち",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.07145905494689941,
+      "audio_duration": 3.397
+    },
+    {
+      "sample": "sample_0161.wav",
+      "reference": "私も拝見しました。昼夜を問わず、信行殿の手を握り締めていたのですよ",
+      "transcription": "私も拝見しました。昼夜を問わず、信行殿の手を握り締めていたのですよ",
+      "cer": 0.0,
+      "asr_time": 0.49480319023132324,
+      "audio_duration": 6.501875
+    },
+    {
+      "sample": "sample_0162.wav",
+      "reference": "面倒を起こして１点の減点で済んだのなら、よくやった方じゃ",
+      "transcription": "面倒を起こして一点の減点で済んだのなら、よくやった方じゃ",
+      "cer": 0.03571428571428571,
+      "asr_time": 0.4891324043273926,
+      "audio_duration": 4.848625
+    },
+    {
+      "sample": "sample_0163.wav",
+      "reference": "なんですか、妹遺産って？",
+      "transcription": "何ですか、妹遺産って",
+      "cer": 0.25,
+      "asr_time": 0.4304380416870117,
+      "audio_duration": 3.427625
+    },
+    {
+      "sample": "sample_0164.wav",
+      "reference": "信行殿の汗を拭い、そばに寄り添い無事を祈り続ける珠樹さん",
+      "transcription": "信行殿の汗を拭い、そばに寄り添い無事を祈り続ける珠樹さん。その姿は献身的な愛に溢れ、こちらの目頭が熱くなるほどでした",
+      "cer": 1.0714285714285714,
+      "asr_time": 0.5949690341949463,
+      "audio_duration": 11.2290625
+    },
+    {
+      "sample": "sample_0165.wav",
+      "reference": "よく見てみろ。二歩下がって一歩前進しておる",
+      "transcription": "よく見てみろ。二歩下がって一歩前進しておる",
+      "cer": 0.0,
+      "asr_time": 0.45137524604797363,
+      "audio_duration": 4.3438125
+    },
+    {
+      "sample": "sample_0166.wav",
+      "reference": "その姿は献身的な愛に溢れ、こちらの目頭が熱くなるほどでした",
+      "transcription": "信行殿の汗を拭い、そばに寄り添い無事を祈り続ける珠樹さん。その姿は献身的な愛に溢れ、こちらの目頭が熱くなるほどでした",
+      "cer": 1.0,
+      "asr_time": 0.6065692901611328,
+      "audio_duration": 11.2290625
+    },
+    {
+      "sample": "sample_0167.wav",
+      "reference": "ややっ！？さも当然のように言われました。わたしが遅れていたんでしょうか",
+      "transcription": "やや!?さも当然のように言われました。私が遅れていたんでしょうか",
+      "cer": 0.17142857142857143,
+      "asr_time": 0.4674828052520752,
+      "audio_duration": 6.6829375
+    },
+    {
+      "sample": "sample_0168.wav",
+      "reference": "可愛らしいですね。お似合いのご夫婦です",
+      "transcription": "可愛らしいですね。お似合いのご夫婦です",
+      "cer": 0.0,
+      "asr_time": 0.44646382331848145,
+      "audio_duration": 3.286125
+    },
+    {
+      "sample": "sample_0169.wav",
+      "reference": "面倒のついでに、善行も働いたみたいじゃな",
+      "transcription": "面倒のついでに、善行も働いたみたいじゃな",
+      "cer": 0.0,
+      "asr_time": 0.4592251777648926,
+      "audio_duration": 3.9155625
+    },
+    {
+      "sample": "sample_0170.wav",
+      "reference": "いえーい",
+      "transcription": "えいっ",
+      "cer": 0.75,
+      "asr_time": 0.3659689426422119,
+      "audio_duration": 1.5348125
+    },
+    {
+      "sample": "sample_0171.wav",
+      "reference": "ふむ",
+      "transcription": "ふむ……",
+      "cer": 1.0,
+      "asr_time": 0.3616218566894531,
+      "audio_duration": 1.44625
+    },
+    {
+      "sample": "sample_0172.wav",
+      "reference": "昨日は何があったのじゃ？",
+      "transcription": "昨日は何があったのじゃ?",
+      "cer": 0.08333333333333333,
+      "asr_time": 0.40340733528137207,
+      "audio_duration": 2.052125
+    },
+    {
+      "sample": "sample_0173.wav",
+      "reference": "あはは。杏璃ノリノリでしたね。可愛かったです",
+      "transcription": "杏璃ノリノリでしたね。可愛かったです",
+      "cer": 0.18181818181818182,
+      "asr_time": 0.43521666526794434,
+      "audio_duration": 5.1698125
+    },
+    {
+      "sample": "sample_0174.wav",
+      "reference": "ご立派ですね",
+      "transcription": "ご立派ですね",
+      "cer": 0.0,
+      "asr_time": 0.3631136417388916,
+      "audio_duration": 1.5795
+    },
+    {
+      "sample": "sample_0175.wav",
+      "reference": "むむ？何を隠しておる",
+      "transcription": "……なにを隠しておる?",
+      "cer": 0.5,
+      "asr_time": 0.40354394912719727,
+      "audio_duration": 3.9960625
+    },
+    {
+      "sample": "sample_0176.wav",
+      "reference": "おハローです、紫苑さん",
+      "transcription": "ハローです、紫苑さん",
+      "cer": 0.09090909090909091,
+      "asr_time": 0.446727991104126,
+      "audio_duration": 2.3050625
+    },
+    {
+      "sample": "sample_0177.wav",
+      "reference": "じぃ～",
+      "transcription": "……つーん",
+      "cer": 1.6666666666666667,
+      "asr_time": 0.3911716938018799,
+      "audio_duration": 2.4236875
+    },
+    {
+      "sample": "sample_0178.wav",
+      "reference": "妾はおぬしの母であるのと同時に、監督役でもあるのじゃぞ",
+      "transcription": "妾はおぬしの母であるのと同時に、監督役でもあるのじゃぞ",
+      "cer": 0.0,
+      "asr_time": 0.46533632278442383,
+      "audio_duration": 5.035
+    },
+    {
+      "sample": "sample_0179.wav",
+      "reference": "手伝いますよー",
+      "transcription": "手伝いますよ",
+      "cer": 0.14285714285714285,
+      "asr_time": 0.3974020481109619,
+      "audio_duration": 1.839
+    },
+    {
+      "sample": "sample_0180.wav",
+      "reference": "洗いざらい吐け。でないと股間をくすぐるぞ",
+      "transcription": "洗いざらい吐け。でないと股間をくすぐるぞ",
+      "cer": 0.0,
+      "asr_time": 0.4632279872894287,
+      "audio_duration": 5.2303125
+    },
+    {
+      "sample": "sample_0181.wav",
+      "reference": "ふむふむ。アソコがああなって…実に興味深い",
+      "transcription": "ふむふむ。アソコがああなって、実に興味深い",
+      "cer": 0.047619047619047616,
+      "asr_time": 0.44070005416870117,
+      "audio_duration": 6.312625
+    },
+    {
+      "sample": "sample_0182.wav",
+      "reference": "紫苑さんったら、またそういう水くさいこと言って",
+      "transcription": "紫苑さんったら、またそういう水くさいこと言って",
+      "cer": 0.0,
+      "asr_time": 0.4493708610534668,
+      "audio_duration": 4.887375
+    },
+    {
+      "sample": "sample_0183.wav",
+      "reference": "ふふっ。それはとんだ災難じゃったな",
+      "transcription": "ふふっ。それはとんだ災難じゃったな",
+      "cer": 0.0,
+      "asr_time": 0.4314241409301758,
+      "audio_duration": 4.5254375
+    },
+    {
+      "sample": "sample_0184.wav",
+      "reference": "え？",
+      "transcription": "",
+      "cer": 1.0,
+      "asr_time": 0.06784296035766602,
+      "audio_duration": 0.776125
+    },
+    {
+      "sample": "sample_0185.wav",
+      "reference": "いいんです。わたしがしたいからするんです。やらせてください",
+      "transcription": "いいんです。わたしがしたいからするんです。やらせてください",
+      "cer": 0.0,
+      "asr_time": 0.4266064167022705,
+      "audio_duration": 5.2393125
+    },
+    {
+      "sample": "sample_0186.wav",
+      "reference": "けれど、良いクスリになったのではないか？",
+      "transcription": "けれど、よい薬になったのではないか?",
+      "cer": 0.25,
+      "asr_time": 0.4384489059448242,
+      "audio_duration": 3.2195625
+    },
+    {
+      "sample": "sample_0187.wav",
+      "reference": "ああっ！申し訳ありません。ご立派だったので、つい見惚れてしまいました",
+      "transcription": "ご立派だったので、つい見惚れてしまいました",
+      "cer": 0.38235294117647056,
+      "asr_time": 0.4260249137878418,
+      "audio_duration": 5.429875
+    },
+    {
+      "sample": "sample_0188.wav",
+      "reference": "は～い任せてください",
+      "transcription": "はーい。任せてください",
+      "cer": 0.2,
+      "asr_time": 0.40988850593566895,
+      "audio_duration": 2.8315625
+    },
+    {
+      "sample": "sample_0189.wav",
+      "reference": "えっち？",
+      "transcription": "血?",
+      "cer": 1.0,
+      "asr_time": 0.3782675266265869,
+      "audio_duration": 1.2179375
+    },
+    {
+      "sample": "sample_0190.wav",
+      "reference": "人を噂や見かけだけで判断するのが、どれだけ愚かなことか",
+      "transcription": "人を噂や見かけだけで判断するのが、どれだけ愚かなことか",
+      "cer": 0.0,
+      "asr_time": 0.46059441566467285,
+      "audio_duration": 5.450875
+    },
+    {
+      "sample": "sample_0191.wav",
+      "reference": "おいしくなーれ、おいしくなーれ",
+      "transcription": "おいしくな〜れ、おいしくな〜れ",
+      "cer": 0.13333333333333333,
+      "asr_time": 0.43399691581726074,
+      "audio_duration": 4.7355625
+    },
+    {
+      "sample": "sample_0192.wav",
+      "reference": "それは、おぬしもよく理解しておるはずじゃ",
+      "transcription": "それはおぬしもよく理解しておるはずじゃ",
+      "cer": 0.05,
+      "asr_time": 0.4211282730102539,
+      "audio_duration": 3.6039375
+    },
+    {
+      "sample": "sample_0193.wav",
+      "reference": "よくわかりませんが誤解です。喋る刀が珍しいと思っただけです",
+      "transcription": "よくわかりませんが、誤解です。喋る刀が珍しいと思っただけです",
+      "cer": 0.034482758620689655,
+      "asr_time": 0.46714138984680176,
+      "audio_duration": 5.4585
+    },
+    {
+      "sample": "sample_0194.wav",
+      "reference": "紫苑さんが教えてくれたんです。こうしてラブを込めた方が美味しくなるって",
+      "transcription": "紫苑さんが教えてくれたんです。こうして、ラブを込めた方が美味しくなるって",
+      "cer": 0.02857142857142857,
+      "asr_time": 0.4793665409088135,
+      "audio_duration": 7.8134375
+    },
+    {
+      "sample": "sample_0195.wav",
+      "reference": "やけに素直じゃな",
+      "transcription": "やけに素直じゃな",
+      "cer": 0.0,
+      "asr_time": 0.4131200313568115,
+      "audio_duration": 2.0750625
+    },
+    {
+      "sample": "sample_0196.wav",
+      "reference": "てっきり何ですか？",
+      "transcription": "てっきり何ですか?",
+      "cer": 0.1111111111111111,
+      "asr_time": 0.39489030838012695,
+      "audio_duration": 2.38775
+    },
+    {
+      "sample": "sample_0197.wav",
+      "reference": "はい、できました。食前の一杯をどうぞ",
+      "transcription": "はい、できました。食前の一杯をどうぞ",
+      "cer": 0.0,
+      "asr_time": 0.438309907913208,
+      "audio_duration": 4.2754375
+    },
+    {
+      "sample": "sample_0198.wav",
+      "reference": "失礼しました",
+      "transcription": "失礼しました",
+      "cer": 0.0,
+      "asr_time": 0.39285993576049805,
+      "audio_duration": 2.09825
+    },
+    {
+      "sample": "sample_0199.wav",
+      "reference": "ほほう？隼斗に説教を垂れる女子がおるとは",
+      "transcription": "ほほう。隼斗に説教を垂れる女子がおるとは",
+      "cer": 0.05,
+      "asr_time": 0.4783658981323242,
+      "audio_duration": 5.3348125
+    }
+  ]
+}
