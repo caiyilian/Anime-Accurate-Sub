@@ -412,8 +412,13 @@
 **过渡到 Sprint 9**：选定了翻译模型 → 开始实现上下文窗口和术语表。
 
 **S8.1 验收**：
-- [ ] Sakura-7B vs 14B 的显存/速度/质量对比数据
-- [ ] 确定本地硬件用 7B 还是 14B
+- [x] Sakura-7B vs GalTransl-7B vs Qwen2.5:7b 翻译质量/速度/VRAM 对比
+- [x] Sakura-7B 最优（0.35s/句，翻译质量高），但 VRAM 占用 9.5GB
+- [x] GalTransl-7B 风格备选（萌系翻译风格）
+- [x] Qwen2.5:7b 不适合 ACGN 翻译（解释性输出、误译多）
+- [x] Sakura-14B 需服务器环境（本机网络不可达）
+- [x] 确定本机方案：Sakura-7B 主力 + GalTransl-7B 备选
+- [x] 评估报告：`docs/evaluation/S8.1_Sakura_Evaluation.md`
 
 **S8.2 验收**：
 - [ ] GalTransl vs Sakura 风格差异
