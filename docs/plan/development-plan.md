@@ -310,7 +310,7 @@
 - [x] 不推荐作为复核模型：精度不如 AW，额外资源消耗不划算
 
 **S4.3 验收**：
-- [ ] 决策：WhisperX / stable-ts / 不启用
+- [x] 决策：不启用 WhisperX / stable-ts。faster-whisper word_timestamps 已足够，后续集成 JAVTrans Boundary
 
 ---
 
