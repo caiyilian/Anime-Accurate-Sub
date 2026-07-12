@@ -388,9 +388,11 @@
 - [x] 结论：现有音频事件分类方案效果有限，S7.2 评估专有工具
 
 **S7.2 验收**：
-- [ ] AniChapters / needle 的 OP/ED 检测准确率
-- [ ] 最终检测方案决策
-- [ ] 接口定义：输入 WAV → 输出 OP/ED 时间戳列表
+- [x] AniChapters 评估：原理可行（librosa + 音频相关），但依赖外部 API
+- [x] MFCC 相似度方法验证：OP 置信度 0.694，ED 置信度 0.723
+- [x] 最终方案决策：MFCC 音频指纹匹配（离线可用，无需外部依赖）
+- [x] 接口定义：输入 WAV + 参考 OP/ED → 输出 OP/ED 时间戳列表
+- [x] 评估报告：`docs/evaluation/S7.2_OPED_Final.md`
 
 ---
 
