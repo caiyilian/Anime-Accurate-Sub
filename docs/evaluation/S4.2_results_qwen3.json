@@ -1,0 +1,11 @@
+{
+  "model": "Qwen3-ASR-1.7B-JA-Anime-Galgame",
+  "samples": 200,
+  "load_time_s": 2.1,
+  "total_asr_s": 114.92,
+  "total_audio_s": 904.08,
+  "rtf": 0.1271,
+  "avg_cer": 0.2176,
+  "median_cer": 0.15,
+  "p90_cer": 0.5
+}
