@@ -388,10 +388,12 @@
 - [x] 结论：现有音频事件分类方案效果有限，S7.2 评估专有工具
 
 **S7.2 验收**：
-- [x] AniChapters 评估：原理可行（librosa + 音频相关），但依赖外部 API
-- [x] MFCC 相似度方法验证：OP 置信度 0.694，ED 置信度 0.723
-- [x] 最终方案决策：MFCC 音频指纹匹配（离线可用，无需外部依赖）
-- [x] 接口定义：输入 WAV + 参考 OP/ED → 输出 OP/ED 时间戳列表
+- [x] AniChapters 在 K-On! EP01/EP02 上实测通过
+- [x] EP01: OP=01:55.140, ED=23:30.750  |  EP02: OP=00:52.150, ED=23:30.790
+- [x] 跨集 ED 位置差仅 0.04s，时长完全一致
+- [x] 首次需网络下载主题曲，后续缓存离线可用
+- [x] 最终方案决策：AniChapters（音频指纹 + animethemes.moe）
+- [x] 接口定义：输入 video_path + series_name → 输出 OP/ED 章节列表
 - [x] 评估报告：`docs/evaluation/S7.2_OPED_Final.md`
 
 ---
