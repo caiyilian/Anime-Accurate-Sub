@@ -306,8 +306,8 @@
 - [x] 结论：Anime Whisper 保持主力，SenseVoice 可做辅助 AED 分类
 
 **S4.2 验收**：
-- [ ] Qwen3 vs Anime Whisper 在专有名词上的准确率差异
-- [ ] 是否值得作为复核模型的结论
+- [x] Qwen3 vs Anime Whisper 在专有名词上的准确率差异：Qwen3 CER=0.2176 不如 AW CER=0.1299
+- [x] 不推荐作为复核模型：精度不如 AW，额外资源消耗不划算
 
 **S4.3 验收**：
 - [ ] 决策：WhisperX / stable-ts / 不启用
