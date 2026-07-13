@@ -529,8 +529,9 @@
 - [x] 评估报告：`docs/evaluation/S11.2_Multi_Agent_Review.md`
 
 **S11.3 验收**：
-- [ ] 翻译质量评分输出
-- [ ] 低分段落可重新翻译
+- [x] 翻译质量评分输出（四维 MQM 评分 + 总分）
+- [x] 低分段落可重新翻译（阈值可配置，自动重译+重评）
+- [x] 评估报告：`docs/evaluation/S11.3_GEMBA_MQM.md`
 
 ---
 
