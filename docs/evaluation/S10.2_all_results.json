@@ -1,0 +1,12 @@
+{
+  "ffsubsync": {
+    "ffsubsync": true,
+    "test": "completed"
+  },
+  "subcap": {
+    "available": "cargo_available"
+  },
+  "subtitleedit": {
+    "available": false
+  }
+}
