@@ -604,6 +604,12 @@
 - [x] Sakura-14B 和 GalTransl-7B 翻译测试通过
 - [x] 评估报告：`docs/evaluation/S14.1_Translator_Adapter.md`
 
+**S14.2 验收**：
+- [x] series_memory.json 格式定义 + 角色名/关系/口癖/称呼方式
+- [x] 跨集复用（保存/加载/注入到翻译 prompt）
+- [x] K-On! 示例记忆（6 角色 + 10 术语）
+- [x] 评估报告：`docs/evaluation/S14.2_Series_Memory.md`
+
 **过渡到 Sprint 15**：所有模块完备 → 全流程 CLI 集成。
 
 ---
