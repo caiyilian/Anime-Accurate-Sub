@@ -496,8 +496,10 @@
 - [x] 评估报告：`docs/evaluation/S10.2_Alignment_Tools.md`
 
 **S10.3 验收**：
-- [ ] 双语字幕可正常渲染，两种布局可切换
-- [ ] 至少 3 套样式模板
+- [x] 双语字幕可正常渲染（JA+ZH 同屏，top_ja/top_zh 布局切换）
+- [x] 4 套样式模板（anime / anime_bilingual / classic / karaoke）
+- [x] Aegisub 兼容导出（ASS v4.00+）
+- [x] 评估报告：`docs/evaluation/S10.3_Bilingual_Styles.md`
 
 ---
 
