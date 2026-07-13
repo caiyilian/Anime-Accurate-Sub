@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-07-13T21:36:11.008371",
+  "stats": {
+    "total_segments": 11,
+    "total_issues": 7,
+    "errors": 2,
+    "warnings": 1,
+    "info": 4
+  },
+  "issues": [
+    {
+      "rule": "empty_translation",
+      "severity": "error",
+      "segment_index": 1,
+      "message": "Empty translation text",
+      "value": null,
+      "expected": null
+    },
+    {
+      "rule": "empty_translation",
+      "severity": "error",
+      "segment_index": 7,
+      "message": "Empty translation text",
+      "value": null,
+      "expected": null
+    },
+    {
+      "rule": "duration_too_short",
+      "severity": "warning",
+      "segment_index": 10,
+      "message": "Duration 0.5s < min 1.0s",
+      "value": 0.5,
+      "expected": ">=1.0s"
+    },
+    {
+      "rule": "cps_too_low",
+      "severity": "info",
+      "segment_index": 1,
+      "message": "CPS 0.0 < min 1.5 (possible BGM)",
+      "value": 0.0,
+      "expected": ">=1.5"
+    },
+    {
+      "rule": "bgm_interference",
+      "severity": "info",
+      "segment_index": 1,
+      "message": "Japanese text present but empty translation",
+      "value": null,
+      "expected": null
+    },
+    {
+      "rule": "cps_too_low",
+      "severity": "info",
+      "segment_index": 7,
+      "message": "CPS 0.0 < min 1.5 (possible BGM)",
+      "value": 0.0,
+      "expected": ">=1.5"
+    },
+    {
+      "rule": "bgm_interference",
+      "severity": "info",
+      "segment_index": 7,
+      "message": "Japanese text present but empty translation",
+      "value": null,
+      "expected": null
+    }
+  ]
+}

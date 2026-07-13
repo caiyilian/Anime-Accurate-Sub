@@ -518,8 +518,9 @@
 **过渡到 Sprint 12**：质量体系搭好 → 开始做工程效率优化。
 
 **S11.1 验收**：
-- [ ] 规则检查器输出 JSON 问题列表
-- [ ] 可疑行检测输出 `suspicious.json` + `review.html`
+- [x] 规则检查器输出 JSON 问题列表（时长/CPS/空翻译/行数/术语/可疑模式）
+- [x] 可疑行检测输出 suspicious.json + review.html
+- [x] 评估报告：`docs/evaluation/S11.1_Quality_Check.md`
 
 **S11.2 验收**：
 - [ ] 5 个 Agent 并行调用成功
