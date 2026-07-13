@@ -453,8 +453,12 @@
 - [x] 评估报告：`docs/evaluation/S9.1_Context_Window.md`
 
 **S9.2 验收**：
-- [ ] 术语表让角色名保持一致
-- [ ] 空术语表不影响翻译
+- [x] 术语表 JSON 格式 + JAVTrans 文本格式双支持
+- [x] 术语表通过 prompt 注入角色名和专有名词
+- [x] 空术语表不影响翻译
+- [x] CLI 参数（--glossary）和环境变量（GLOSSARY_FILE）加载
+- [x] K-On! 术语表示例（28 个术语）
+- [x] 评估报告：`docs/evaluation/S9.2_Glossary.md`
 
 **S9.3 验收**：
 - [ ] 相同句子第二次翻译直接返回缓存
