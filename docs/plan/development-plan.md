@@ -554,7 +554,8 @@
 - [x] 评估报告：`docs/evaluation/S12.1_Checkpoint.md`
 
 **S12.2 验收**：
-- [ ] 处理 12 集不需要手动干预
+- [x] 处理 12 集不需要手动干预（4 视频批量测试通过 + 断点续传 + 模型复用）
+- [x] 评估报告：`docs/evaluation/S12.2_Batch_Process.md`
 
 ---
 
