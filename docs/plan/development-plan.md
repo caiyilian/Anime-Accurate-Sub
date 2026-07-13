@@ -421,7 +421,11 @@
 - [x] 评估报告：`docs/evaluation/S8.1_Sakura_Evaluation.md`
 
 **S8.2 验收**：
-- [ ] GalTransl vs Sakura 风格差异
+- [x] GalTransl-7B vs Qwen2.5:7b/14b 风格差异对比
+- [x] GalTransl-7B 风格偏萌系（"呼喵呼喵"），适合作为风格备选
+- [x] Qwen2.5:7b/14b 均不适合 ACGN 翻译（解释性输出、误译）
+- [x] 最终备用通道方案：GalTransl-7B 可选切换
+- [x] 评估报告：`docs/evaluation/S8.2_Style_Comparison.md`
 - [ ] Qwen2.5 vs Sakura 质量差距数据
 - [ ] 是否保留为备用通道的结论
 
