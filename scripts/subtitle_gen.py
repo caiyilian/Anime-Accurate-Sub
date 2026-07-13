@@ -1,21 +1,16 @@
-"""S10.1: Subtitle generation module - SRT/ASS with timeline optimization.
-
-Generates subtitle files from translation segments with timeline rules:
-- Overlap fix (gap-based, no overlapping subs)
-- Min/max duration (1s/7s)
-- CPS (characters per second) check
-- Line wrapping (max 30 chars per line)
-
-Usage:
-  python scripts/subtitle_gen.py --input segments.json --output output.srt
-  python scripts/subtitle_gen.py --input segments.json --output output.ass --style anime
-"""
+# S10.1/10.3: Subtitle generation module
+# SRT/ASS with timeline optimization, bilingual mode, Aegisub-compatible export
+#
+# Usage:
+#   python scripts/subtitle_gen.py --input segments.json --output output.srt
+#   python scripts/subtitle_gen.py --input segments.json --output output.ass --style anime
+#   python scripts/subtitle_gen.py --input segments.json --output output.ass --bilingual
+#   python scripts/subtitle_gen.py --input bilingual.json --output output.ass --style anime_bilingual
 
 import json, os, sys, argparse
 from pathlib import Path
 from typing import List, Optional
-from dataclasses import dataclass, field
-
+from dataclasses import dataclass
 import pysubs2
 
 project_root = Path(__file__).resolve().parent.parent
@@ -24,44 +19,37 @@ sys.path.insert(0, str(project_root))
 
 @dataclass
 class SubSegment:
-    """A single subtitle segment."""
     start: float      # seconds
     end: float        # seconds
     text: str         # translated text
-    speaker: Optional[str] = None  # optional speaker label
-    index: int = 0    # original index
+    speaker: Optional[str] = None
+    index: int = 0
 
 
-# ======== Timeline Optimization Rules ========
-
-MIN_DURATION = 1.0      # Minimum subtitle duration (seconds)
-MAX_DURATION = 7.0      # Maximum subtitle duration (seconds)
-MAX_CPS = 15            # Max characters per second (reading speed)
-MAX_LINE_LENGTH = 30    # Max chars per line before wrapping
-MIN_GAP = 0.05          # Minimum gap between subs (seconds)
+MIN_DURATION = 1.0
+MAX_DURATION = 7.0
+MAX_CPS = 15
+MAX_LINE_LENGTH = 30
+MIN_GAP = 0.05
 
 
-def fix_overlap(segments: List[SubSegment]) -> List[SubSegment]:
-    """Fix overlapping segments by adjusting end times."""
+# ========== Timeline Optimization ==========
+
+def fix_overlap(segments):
     fixed = []
     for i, seg in enumerate(segments):
         s = SubSegment(**{**seg.__dict__})
         if i > 0:
             prev = fixed[-1]
             if s.start < prev.end + MIN_GAP:
-                # Adjust current start or previous end
-                overlap = prev.end - s.start + MIN_GAP
-                if overlap > 0:
-                    # Shorten previous
-                    prev.end = max(prev.start + MIN_DURATION, s.start - MIN_GAP)
+                prev.end = max(prev.start + MIN_DURATION, s.start - MIN_GAP)
         if s.end <= s.start:
             s.end = s.start + MIN_DURATION
         fixed.append(s)
     return fixed
 
 
-def enforce_min_duration(segments: List[SubSegment]) -> List[SubSegment]:
-    """Enforce minimum subtitle display duration."""
+def enforce_min_duration(segments):
     for seg in segments:
         dur = seg.end - seg.start
         if dur < MIN_DURATION:
@@ -69,57 +57,45 @@ def enforce_min_duration(segments: List[SubSegment]) -> List[SubSegment]:
     return segments
 
 
-def enforce_max_duration(segments: List[SubSegment]) -> List[SubSegment]:
-    """Enforce maximum subtitle display duration with CPS check."""
+def enforce_max_duration(segments):
     for seg in segments:
         dur = seg.end - seg.start
         text_len = len(seg.text)
-        cps = text_len / dur if dur > 0 else 0
-
         if dur > MAX_DURATION:
-            # Check if text is long enough to justify long duration
             needed_dur = max(text_len / MAX_CPS, MIN_DURATION)
             seg.end = min(seg.end, seg.start + max(MAX_DURATION, needed_dur))
-
-        # Reduce duration if CPS is too low (fast readers)
+        cps = text_len / dur if dur > 0 else 0
         if cps < 3 and dur > 3:
             seg.end = seg.start + max(MIN_DURATION, text_len / 5)
     return segments
 
 
-def check_cps(segments: List[SubSegment]) -> List[dict]:
-    """Check characters per second, return warnings."""
+def check_cps(segments):
     warnings = []
     for seg in segments:
         dur = seg.end - seg.start
         text_len = len(seg.text)
         cps = text_len / dur if dur > 0 else 0
         if cps > MAX_CPS:
-            warnings.append({
-                "index": seg.index,
-                "cps": round(cps, 1),
-                "text": seg.text,
-                "suggestion": "Consider shortening text or extending duration"
-            })
+            warnings.append({"index": seg.index, "cps": round(cps, 1), "text": seg.text})
     return warnings
 
 
-def wrap_lines(segments: List[SubSegment]) -> List[SubSegment]:
-    """Wrap long lines at word boundaries or max length."""
+def wrap_lines(segments):
     for seg in segments:
         if len(seg.text) <= MAX_LINE_LENGTH:
             continue
-        # Try to wrap at punctuation first
         text = seg.text
         lines = []
         while len(text) > MAX_LINE_LENGTH:
-            # Find best break point
             break_pos = MAX_LINE_LENGTH
-            for punct in ["。", "！", "？", "、", "，", ". ", "! ", "? ", " "]:
+            for punct in [". ", "! ", "? ", " "]:
                 pos = text.rfind(punct, 0, MAX_LINE_LENGTH)
                 if pos > break_pos // 2:
                     break_pos = pos + 1
                     break
+            if break_pos <= 0:
+                break_pos = MAX_LINE_LENGTH
             lines.append(text[:break_pos].strip())
             text = text[break_pos:].strip()
         if text:
@@ -128,8 +104,7 @@ def wrap_lines(segments: List[SubSegment]) -> List[SubSegment]:
     return segments
 
 
-def optimize_timeline(segments: List[SubSegment]) -> List[SubSegment]:
-    """Apply all timeline optimization rules."""
+def optimize_timeline(segments):
     segments = fix_overlap(segments)
     segments = enforce_min_duration(segments)
     segments = enforce_max_duration(segments)
@@ -137,249 +112,251 @@ def optimize_timeline(segments: List[SubSegment]) -> List[SubSegment]:
     return segments
 
 
-# ======== Subtitle Generation ========
+# ========== Bilingual ==========
 
-# ASS Style templates
+def make_bilingual(ja_text, zh_text, layout="top_ja"):
+    if layout == "top_ja":
+        return f"{ja_text}\\N{zh_text}"
+    else:
+        return f"{zh_text}\\N{ja_text}"
+
+
+def segments_to_bilingual(segments, ja_map, layout="top_ja"):
+    result = []
+    for seg in segments:
+        ja_text = ja_map.get(seg.start, "")
+        if ja_text:
+            seg.text = make_bilingual(ja_text, seg.text, layout)
+        result.append(seg)
+    return result
+
+
+# ========== ASS Styles ==========
+
 STYLES = {
     "anime": {
-        "fontname": "Microsoft YaHei",
-        "fontsize": 28,
+        "fontname": "Microsoft YaHei", "fontsize": 28,
         "primarycolor": pysubs2.Color(255, 255, 255),
         "secondarycolor": pysubs2.Color(0, 0, 0),
         "outlinecolor": pysubs2.Color(0, 0, 0),
         "backcolor": pysubs2.Color(0, 0, 0),
-        "bold": False,
-        "italic": False,
-        "underline": False,
-        "strikeout": False,
-        "scalex": 100,
-        "scaley": 100,
-        "spacing": 0,
-        "angle": 0,
-        "borderstyle": 1,
-        "outline": 2,
-        "shadow": 1,
-        "alignment": 2,
-        "marginl": 20,
-        "marginr": 20,
-        "marginv": 10,
-        "encoding": 1,
+        "bold": False, "italic": False, "underline": False, "strikeout": False,
+        "scalex": 100, "scaley": 100, "spacing": 0, "angle": 0,
+        "borderstyle": 1, "outline": 2, "shadow": 1, "alignment": 2,
+        "marginl": 20, "marginr": 20, "marginv": 10, "encoding": 1,
     },
     "anime_bilingual": {
-        "fontname": "Microsoft YaHei",
-        "fontsize": 24,
+        "fontname": "Microsoft YaHei", "fontsize": 24,
+        "primarycolor": pysubs2.Color(255, 255, 255),
+        "secondarycolor": pysubs2.Color(180, 180, 180),
+        "outlinecolor": pysubs2.Color(0, 0, 0),
+        "backcolor": pysubs2.Color(0, 0, 0),
+        "bold": False, "italic": False, "underline": False, "strikeout": False,
+        "scalex": 100, "scaley": 100, "spacing": 0, "angle": 0,
+        "borderstyle": 1, "outline": 2, "shadow": 1, "alignment": 2,
+        "marginl": 20, "marginr": 20, "marginv": 30, "encoding": 1,
+    },
+    "classic": {
+        "fontname": "Arial", "fontsize": 26,
         "primarycolor": pysubs2.Color(255, 255, 255),
         "secondarycolor": pysubs2.Color(0, 0, 0),
         "outlinecolor": pysubs2.Color(0, 0, 0),
         "backcolor": pysubs2.Color(0, 0, 0),
-        "bold": False,
-        "italic": False,
-        "underline": False,
-        "strikeout": False,
-        "scalex": 100,
-        "scaley": 100,
-        "spacing": 0,
-        "angle": 0,
-        "borderstyle": 1,
-        "outline": 2,
-        "shadow": 1,
-        "alignment": 2,
-        "marginl": 20,
-        "marginr": 20,
-        "marginv": 30,
-        "encoding": 1,
+        "bold": False, "italic": False, "underline": False, "strikeout": False,
+        "scalex": 100, "scaley": 100, "spacing": 0, "angle": 0,
+        "borderstyle": 1, "outline": 1, "shadow": 0, "alignment": 2,
+        "marginl": 20, "marginr": 20, "marginv": 15, "encoding": 1,
+    },
+    "karaoke": {
+        "fontname": "Microsoft YaHei", "fontsize": 32,
+        "primarycolor": pysubs2.Color(255, 255, 255),
+        "secondarycolor": pysubs2.Color(255, 200, 0),
+        "outlinecolor": pysubs2.Color(0, 0, 0),
+        "backcolor": pysubs2.Color(0, 0, 0),
+        "bold": True, "italic": False, "underline": False, "strikeout": False,
+        "scalex": 100, "scaley": 100, "spacing": 0, "angle": 0,
+        "borderstyle": 1, "outline": 3, "shadow": 1, "alignment": 2,
+        "marginl": 20, "marginr": 20, "marginv": 10, "encoding": 1,
     },
 }
 
 
-def segments_to_subs(segments: List[SubSegment]) -> pysubs2.SSAFile:
-    """Convert segments to pysubs2 subtitle file."""
-    subs = pysubs2.SSAFile()
-    subs.info["Title"] = "Anime Accurate Sub"
-    subs.info["Original Script"] = "Anime Accurate Sub"
-    subs.info["Script Type"] = "v4.00+"
-    subs.info["Wrap Style"] = "0"
-    subs.info["Scaled Border And Shadow"] = "yes"
+# ========== Generate ==========
 
-    for seg in segments:
-        start_ms = int(seg.start * 1000)
-        end_ms = int(seg.end * 1000)
-        text = seg.text
-        subs.append(pysubs2.SSAEvent(start=start_ms, end=end_ms, text=text))
-
-    return subs
-
-
-def apply_ass_style(subs: pysubs2.SSAFile, style_name: str = "anime"):
-    """Apply ASS style template to subtitle file."""
-    style_config = STYLES.get(style_name, STYLES["anime"])
-    style = pysubs2.SSAStyle(**style_config)
-
-    # Clear default styles and add ours
-    subs.styles.clear()
-    subs.styles[style_name] = style
-
-    # Set all events to use this style
-    for event in subs.events:
-        if not event.style:
-            event.style = style_name
-
-    return subs
-
-
-def generate(input_path: str, output_path: str, style: Optional[str] = None):
-    """Generate subtitle file from segments JSON.
-
-    Input JSON format:
-    [
-        {"start": 1.0, "end": 4.0, "text": "早上好"},
-        {"start": 4.5, "end": 8.0, "text": "你好", "speaker": "SPEAKER_00"}
-    ]
-    """
+def generate(input_path, output_path, style=None, bilingual=False, bilingual_layout="top_ja"):
     with open(input_path, encoding="utf-8") as f:
         data = json.load(f)
 
     segments = []
+    ja_map = {}
     for i, item in enumerate(data):
         segments.append(SubSegment(
-            start=item["start"],
-            end=item["end"],
-            text=item["text"],
-            speaker=item.get("speaker"),
-            index=i,
+            start=item["start"], end=item["end"],
+            text=item["text"], speaker=item.get("speaker"), index=i,
         ))
+        if "ja" in item:
+            ja_map[item["start"]] = item["ja"]
 
     print(f"Loaded {len(segments)} segments")
-
-    # Optimize timeline
     segments = optimize_timeline(segments)
-    print(f"After optimization: {len(segments)} segments")
 
-    # Check CPS
+    if bilingual and ja_map:
+        segments = segments_to_bilingual(segments, ja_map, bilingual_layout)
+        print(f"Bilingual mode: {bilingual_layout}")
+
     warnings = check_cps(segments)
     if warnings:
         print(f"CPS warnings: {len(warnings)}")
-        for w in warnings[:3]:
-            print(f"  #{w['index']}: CPS={w['cps']}, text={w['text'][:30]}")
 
-    # Generate subtitles
-    subs = segments_to_subs(segments)
+    subs = pysubs2.SSAFile()
+    subs.info["Title"] = "Anime Accurate Sub"
+    subs.info["Original Script"] = "Anime Accurate Sub"
+    subs.info["Script Type"] = "v4.00+"
+    subs.info["Collisions"] = "Normal"
+    subs.info["PlayResX"] = "1920"
+    subs.info["PlayResY"] = "1080"
+    subs.info["Wrap Style"] = "0"
+    subs.info["Scaled Border And Shadow"] = "yes"
 
-    # Apply ASS style if output is ASS
+    for seg in segments:
+        subs.append(pysubs2.SSAEvent(
+            start=int(seg.start * 1000),
+            end=int(seg.end * 1000),
+            text=seg.text,
+        ))
+
     ext = Path(output_path).suffix.lower()
     if ext == ".ass" and style:
-        apply_ass_style(subs, style)
+        sc = STYLES.get(style, STYLES["anime"])
+        s = pysubs2.SSAStyle(**sc)
+        subs.styles.clear()
+        subs.styles[style] = s
+        for ev in subs.events:
+            if not ev.style:
+                ev.style = style
 
-    # Sort by start time
     subs.events.sort(key=lambda e: e.start)
-
-    # Save
     subs.save(output_path)
-    print(f"Saved: {output_path} ({len(subs.events)} events)")
+    print(f"Saved: {output_path} ({len(subs.events)} events, style={style})")
     return subs
 
 
-def create_test_segments() -> List[SubSegment]:
-    """Create test segments for evaluation."""
+# ========== Test data ==========
+
+def create_test_segments():
     return [
-        SubSegment(start=0.0, end=3.5, text="早安啊，唯"),
-        SubSegment(start=3.2, end=6.0, text="啊，早安！"),
-        SubSegment(start=6.5, end=10.0, text="今天也很有精神呢。"),
-        SubSegment(start=10.5, end=15.0, text="是的！昨天练习了新的吉他。"),
-        SubSegment(start=14.8, end=19.0, text="是这样啊。进步很大吧？"),
-        SubSegment(start=19.5, end=25.0, text="虽然还差得远，但是很开心！"),
-        SubSegment(start=25.5, end=29.0, text="小澪，要不要一起练习？"),
-        SubSegment(start=28.5, end=33.0, text="好啊。不过我还在练习中。"),
-        SubSegment(start=33.5, end=38.0, text="没那回事！小澪弹得很好哦。"),
-        SubSegment(start=38.5, end=43.0, text="谢谢你，唯。那放学后见。这是一个很长的句子用来测试换行功能，看看是不是能正确断开。"),
+        SubSegment(start=0.0, end=3.5, text="Good morning, Yui."),
+        SubSegment(start=3.2, end=6.0, text="Oh, good morning!"),
+        SubSegment(start=6.5, end=10.0, text="You are energetic today."),
+        SubSegment(start=10.5, end=15.0, text="Yes! I practiced the new guitar yesterday."),
+        SubSegment(start=14.8, end=19.0, text="Is that so? Did you improve?"),
+        SubSegment(start=19.5, end=25.0, text="Not yet, but it is fun!"),
+        SubSegment(start=25.5, end=29.0, text="Mio, want to practice together?"),
+        SubSegment(start=28.5, end=33.0, text="Sure. But I am still learning."),
+        SubSegment(start=33.5, end=38.0, text="That is not true! You play well, Mio."),
+        SubSegment(start=38.5, end=43.0, text="Thank you, Yui. See you after school."),
     ]
 
 
+def create_bilingual_test():
+    ja_texts = [
+        "Good morning, Yui.", "Oh, good morning!",
+        "You are energetic today.", "Yes! I practiced guitar.",
+        "Is that so?", "Not yet, but it is fun!",
+        "Mio, practice together?", "Sure. Still learning.",
+        "Not true! You play well.", "Thanks. See you after school.",
+    ]
+    segments = create_test_segments()
+    for i, seg in enumerate(segments):
+        seg.text = f"ZH_{i}: {seg.text}"
+    ja_map = {s.start: ja_texts[i] for i, s in enumerate(segments)}
+    return segments, ja_map
+
+
+# ========== Evaluate ==========
+
 def evaluate():
-    """Run evaluation: generate SRT and ASS, print stats."""
     import tempfile
     tmp = Path(tempfile.gettempdir())
 
-    segments = create_test_segments()
-    for s in segments:
-        # Check for overlap before optimization
-        pass
+    print("\n============================================================")
+    print("S10.3 SUBTITLE GENERATION EVALUATION")
+    print("============================================================")
 
-    print(f"\n{'='*60}")
-    print("S10.1 SUBTITLE GENERATION EVALUATION")
-    print(f"{'='*60}")
+    # 1. Test single language SRT
+    print("\n--- SRT Output ---")
+    segs = create_test_segments()
+    path = tmp / "test_mono.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump([{"start": s.start, "end": s.end, "text": s.text} for s in segs], f, ensure_ascii=False)
+    out = tmp / "test_mono.srt"
+    generate(str(path), str(out))
 
-    print(f"\nInput segments: {len(segments)}")
-    print(f"Overlaps before: {sum(1 for i in range(1,len(segments)) if segments[i].start < segments[i-1].end)}")
+    # 2. Test bilingual ASS
+    print("\n--- Bilingual ASS (anime_bilingual style) ---")
+    segs, ja_map = create_bilingual_test()
+    path2 = tmp / "test_bilingual.json"
+    with open(path2, "w", encoding="utf-8") as f:
+        json.dump([{"start": s.start, "end": s.end, "text": s.text, "ja": ja_map[s.start]}
+                    for s in segs], f, ensure_ascii=False)
+    out2 = tmp / "test_bilingual.ass"
+    generate(str(path2), str(out2), style="anime_bilingual", bilingual=True)
 
-    # Optimize
-    optimized = optimize_timeline(segments)
+    # 3. Test all styles
+    print("\n--- All Styles ---")
+    for style_name in STYLES:
+        style_out = tmp / f"test_{style_name}.ass"
+        generate(str(path2), str(style_out), style=style_name, bilingual=True)
+        print(f"  {style_name}: {style_out} ({os.path.getsize(style_out)} bytes)")
 
-    print(f"Overlaps after: {sum(1 for i in range(1,len(optimized)) if optimized[i].start < optimized[i-1].end)}")
-
-    # Stats
-    durations = [s.end - s.start for s in optimized]
-    print(f"Duration range: {min(durations):.1f}s - {max(durations):.1f}s")
-    print(f"Average duration: {sum(durations)/len(durations):.1f}s")
-
-    cps_list = [len(s.text) / (s.end - s.start) for s in optimized]
-    print(f"CPS range: {min(cps_list):.1f} - {max(cps_list):.1f}")
-    print(f"Average CPS: {sum(cps_list)/len(cps_list):.1f}")
-
-    # Generate files
-    json_path = tmp / "test_segments.json"
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump([{"start": s.start, "end": s.end, "text": s.text} for s in optimized], f, ensure_ascii=False, indent=2)
-
-    srt_path = tmp / "test_output.srt"
-    generate(str(json_path), str(srt_path))
-
-    ass_path = tmp / "test_output.ass"
-    generate(str(json_path), str(ass_path), style="anime")
-
-    # Verify files
-    srt_size = os.path.getsize(srt_path)
-    ass_size = os.path.getsize(ass_path)
-    print(f"\nSRT size: {srt_size} bytes")
-    print(f"ASS size: {ass_size} bytes")
-
-    # Print sample output
-    print(f"\nSample SRT:")
-    with open(srt_path, encoding="utf-8") as f:
-        lines = f.readlines()
-        for line in lines[:15]:
-            print(f"  {line.rstrip()}")
-
-    print(f"\nSample ASS (first 15 lines):")
-    with open(ass_path, encoding="utf-8") as f:
-        lines = f.readlines()
-        for line in lines[:15]:
-            print(f"  {line.rstrip()}")
+    # 4. Timeline stats
+    print("\n--- Timeline Stats ---")
+    segs = create_test_segments()
+    before_overlaps = sum(1 for i in range(1, len(segs)) if segs[i].start < segs[i-1].end)
+    opt = optimize_timeline(segs)
+    after_overlaps = sum(1 for i in range(1, len(opt)) if opt[i].start < opt[i-1].end)
+    durs = [s.end - s.start for s in opt]
+    cps = [len(s.text) / max(d, 0.1) for s, d in zip(opt, durs)]
+    print(f"  Overlaps: {before_overlaps} -> {after_overlaps}")
+    print(f"  Duration: {min(durs):.1f}s - {max(durs):.1f}s (avg {sum(durs)/len(durs):.1f}s)")
+    print(f"  CPS: {min(cps):.1f} - {max(cps):.1f} (avg {sum(cps)/len(cps):.1f})")
 
     # Cleanup
-    json_path.unlink()
-    srt_path.unlink()
-    ass_path.unlink()
+    for f in [path, path2, out, out2]:
+        try: f.unlink()
+        except: pass
 
-    print(f"\n{'='*60}")
+    print("\n============================================================")
     print("EVALUATION COMPLETE")
-    print(f"{'='*60}")
+    print("============================================================")
 
+
+# ========== CLI ==========
 
 def main():
-    parser = argparse.ArgumentParser(description="S10.1 Subtitle Generation")
-    parser.add_argument("--input", type=str, help="Input JSON segments file")
-    parser.add_argument("--output", type=str, default="", help="Output subtitle file (.srt or .ass)")
-    parser.add_argument("--style", type=str, choices=list(STYLES.keys()), help="ASS style template")
-    parser.add_argument("--evaluate", action="store_true", help="Run evaluation with test data")
+    parser = argparse.ArgumentParser(description="S10.3 Subtitle Generation")
+    parser.add_argument("--input", type=str)
+    parser.add_argument("--output", type=str, default="")
+    parser.add_argument("--style", type=str, choices=list(STYLES.keys()), default="anime")
+    parser.add_argument("--bilingual", action="store_true")
+    parser.add_argument("--bilingual-layout", type=str, choices=["top_ja", "top_zh"], default="top_ja")
+    parser.add_argument("--list-styles", action="store_true")
+    parser.add_argument("--evaluate", action="store_true")
     args = parser.parse_args()
+
+    if args.list_styles:
+        print("Available ASS styles:")
+        for name, info in STYLES.items():
+            print(f"  {name}: font={info['fontname']} {info['fontsize']}px, "
+                  f"outline={info['outline']}, shadow={info['shadow']}")
+        return
 
     if args.evaluate:
         evaluate()
         return
 
     if args.input and args.output:
-        generate(args.input, args.output, args.style)
+        generate(args.input, args.output, args.style, args.bilingual, args.bilingual_layout)
         return
 
     parser.print_help()
