@@ -579,6 +579,10 @@
 - [x] A/B 模型评测工具可用（CER + 术语命中率对比）
 - [x] 评估报告：`docs/evaluation/S13.2_AB_Eval.md`
 
+**S13.3 验收**：
+- [x] 外挂字幕优先模式可用（检测内嵌字幕轨道 + 决策逻辑）
+- [x] 评估报告：`docs/evaluation/S13.3_External_Subs.md`
+
 **过渡到 Sprint 14**：工具链完善 → 增加更高级的功能。
 
 ---
