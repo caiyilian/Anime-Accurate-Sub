@@ -1,0 +1,184 @@
+{
+  "model": "translategemma:4b",
+  "samples": [
+    {
+      "index": 0,
+      "ja": "おはよう、唯",
+      "zh": "早上好，唯",
+      "zh_no_context": "早上好，唯。",
+      "zh_ref": "早安，唯",
+      "context_before": null,
+      "context_after": [
+        "あ、おはようございます！",
+        "今日も元気だね",
+        "はい！昨日新しいギターの練習したんです"
+      ],
+      "time_with_context_s": 0.52,
+      "time_without_context_s": 0.48
+    },
+    {
+      "index": 1,
+      "ja": "あ、おはようございます！",
+      "zh": "啊，早上好！",
+      "zh_no_context": null,
+      "zh_ref": "啊，早上好！",
+      "context_before": [
+        "おはよう、唯"
+      ],
+      "context_after": [
+        "今日も元気だね",
+        "はい！昨日新しいギターの練習したんです",
+        "そうなんだ。上手くなった？"
+      ],
+      "time_with_context_s": 0.53,
+      "time_without_context_s": null
+    },
+    {
+      "index": 2,
+      "ja": "今日も元気だね",
+      "zh": "今天你也很精神啊",
+      "zh_no_context": null,
+      "zh_ref": "今天也很有精神呢",
+      "context_before": [
+        "おはよう、唯",
+        "あ、おはようございます！"
+      ],
+      "context_after": [
+        "はい！昨日新しいギターの練習したんです",
+        "そうなんだ。上手くなった？",
+        "まだまだですけど、楽しいです！"
+      ],
+      "time_with_context_s": 0.49,
+      "time_without_context_s": null
+    },
+    {
+      "index": 3,
+      "ja": "はい！昨日新しいギターの練習したんです",
+      "zh": "是的！昨天练习了新的吉他。",
+      "zh_no_context": "是的！昨天我练习了新的吉他。",
+      "zh_ref": "是的！昨天练习了新吉他",
+      "context_before": [
+        "おはよう、唯",
+        "あ、おはようございます！",
+        "今日も元気だね"
+      ],
+      "context_after": [
+        "そうなんだ。上手くなった？",
+        "まだまだですけど、楽しいです！",
+        "澪ちゃん、一緒に練習しない？"
+      ],
+      "time_with_context_s": 0.55,
+      "time_without_context_s": 0.56
+    },
+    {
+      "index": 4,
+      "ja": "そうなんだ。上手くなった？",
+      "zh": "是吗。进步很大吧？",
+      "zh_no_context": null,
+      "zh_ref": "这样啊。有进步吗？",
+      "context_before": [
+        "あ、おはようございます！",
+        "今日も元気だね",
+        "はい！昨日新しいギターの練習したんです"
+      ],
+      "context_after": [
+        "まだまだですけど、楽しいです！",
+        "澪ちゃん、一緒に練習しない？",
+        "いいよ。でも私、まだベース下手だから"
+      ],
+      "time_with_context_s": 0.51,
+      "time_without_context_s": null
+    },
+    {
+      "index": 5,
+      "ja": "まだまだですけど、楽しいです！",
+      "zh": "虽然还有进步的空间，但我很开心！",
+      "zh_no_context": null,
+      "zh_ref": "还差得远，但是很开心！",
+      "context_before": [
+        "今日も元気だね",
+        "はい！昨日新しいギターの練習したんです",
+        "そうなんだ。上手くなった？"
+      ],
+      "context_after": [
+        "澪ちゃん、一緒に練習しない？",
+        "いいよ。でも私、まだベース下手だから",
+        "そんなことないよ！澪ちゃんは上手だよ"
+      ],
+      "time_with_context_s": 0.57,
+      "time_without_context_s": null
+    },
+    {
+      "index": 6,
+      "ja": "澪ちゃん、一緒に練習しない？",
+      "zh": "“澪，一起练习吗？”",
+      "zh_no_context": "“澪酱，要不要一起练习？”",
+      "zh_ref": "小澪，要不要一起练习？",
+      "context_before": [
+        "はい！昨日新しいギターの練習したんです",
+        "そうなんだ。上手くなった？",
+        "まだまだですけど、楽しいです！"
+      ],
+      "context_after": [
+        "いいよ。でも私、まだベース下手だから",
+        "そんなことないよ！澪ちゃんは上手だよ",
+        "ありがとう、唯。じゃあ放課後ね"
+      ],
+      "time_with_context_s": 0.55,
+      "time_without_context_s": 0.54
+    },
+    {
+      "index": 7,
+      "ja": "いいよ。でも私、まだベース下手だから",
+      "zh": "好啊。不过我还在练习，所以...",
+      "zh_no_context": null,
+      "zh_ref": "好啊。不过我的贝斯还弹得很差",
+      "context_before": [
+        "そうなんだ。上手くなった？",
+        "まだまだですけど、楽しいです！",
+        "澪ちゃん、一緒に練習しない？"
+      ],
+      "context_after": [
+        "そんなことないよ！澪ちゃんは上手だよ",
+        "ありがとう、唯。じゃあ放課後ね"
+      ],
+      "time_with_context_s": 0.61,
+      "time_without_context_s": null
+    },
+    {
+      "index": 8,
+      "ja": "そんなことないよ！澪ちゃんは上手だよ",
+      "zh": "没关系，澪也很棒呢！",
+      "zh_no_context": null,
+      "zh_ref": "没那回事！小澪弹得很好",
+      "context_before": [
+        "まだまだですけど、楽しいです！",
+        "澪ちゃん、一緒に練習しない？",
+        "いいよ。でも私、まだベース下手だから"
+      ],
+      "context_after": [
+        "ありがとう、唯。じゃあ放課後ね"
+      ],
+      "time_with_context_s": 0.55,
+      "time_without_context_s": null
+    },
+    {
+      "index": 9,
+      "ja": "ありがとう、唯。じゃあ放課後ね",
+      "zh": "谢谢你，唯。那我们下午见吧。",
+      "zh_no_context": "好的，没问题。\n\n“谢谢你，唯。那么，我们下次见。”",
+      "zh_ref": "谢谢，唯。那放学后见",
+      "context_before": [
+        "澪ちゃん、一緒に練習しない？",
+        "いいよ。でも私、まだベース下手だから",
+        "そんなことないよ！澪ちゃんは上手だよ"
+      ],
+      "context_after": null,
+      "time_with_context_s": 0.59,
+      "time_without_context_s": 1.33
+    }
+  ],
+  "config": {
+    "context_window": 3
+  }
+}
