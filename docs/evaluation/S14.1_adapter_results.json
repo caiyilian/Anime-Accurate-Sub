@@ -1,0 +1,79 @@
+{
+  "config": {
+    "backend": "sakura",
+    "sakura": {
+      "model": "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest",
+      "host": "172.31.102.189"
+    },
+    "qwen": {
+      "model": "qwen2.5:7b",
+      "host": "localhost"
+    },
+    "galtransl": {
+      "model": "crosery/GalTransl-7B-v2.6:Q6_k",
+      "host": "172.31.102.189"
+    }
+  },
+  "results": {
+    "sakura": {
+      "name": "Sakura (crosery/sakura-14b-qwen2.5-v1.0-q6k:latest)",
+      "samples": [
+        {
+          "ja": "おはよう、唯",
+          "zh": "早上好，唯",
+          "time_s": 5.62
+        },
+        {
+          "ja": "今日も元気だね",
+          "zh": "今天也很有精神呢",
+          "time_s": 0.52
+        },
+        {
+          "ja": "澪ちゃん、一緒に練習しない？",
+          "zh": "小澪，要不要一起练习？",
+          "time_s": 0.66
+        }
+      ]
+    },
+    "qwen": {
+      "name": "Qwen (qwen2.5:7b)",
+      "samples": [
+        {
+          "ja": "おはよう、唯",
+          "zh": "[ERROR: HTTP Error 404: Not Found]",
+          "time_s": 0.05
+        },
+        {
+          "ja": "今日も元気だね",
+          "zh": "[ERROR: HTTP Error 404: Not Found]",
+          "time_s": 0.06
+        },
+        {
+          "ja": "澪ちゃん、一緒に練習しない？",
+          "zh": "[ERROR: HTTP Error 404: Not Found]",
+          "time_s": 0.1
+        }
+      ]
+    },
+    "galtransl": {
+      "name": "GalTransl (crosery/GalTransl-7B-v2.6:Q6_k)",
+      "samples": [
+        {
+          "ja": "おはよう、唯",
+          "zh": "“早上好，唯”",
+          "time_s": 8.25
+        },
+        {
+          "ja": "今日も元気だね",
+          "zh": "“今天也很精神呢”",
+          "time_s": 0.23
+        },
+        {
+          "ja": "澪ちゃん、一緒に練習しない？",
+          "zh": "—小澪，要不要一起练习呢？",
+          "time_s": 0.27
+        }
+      ]
+    }
+  }
+}

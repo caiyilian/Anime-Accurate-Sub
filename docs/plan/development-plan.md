@@ -598,6 +598,12 @@
 | S14.1 | **翻译 Adapter 架构** — TranslatorAdapter 抽象基类 + Sakura/Qwen/GalTransl/ExternalAPI 实现 + 配置文件切换 |
 | S14.2 | **整季级一致性记忆** — `series_memory.json`（角色名/关系/口癖/称呼方式）+ 跨集复用 |
 
+**S14.1 验收**：
+- [x] TranslatorAdapter 抽象基类 + 4 后端实现（Sakura/Qwen/GalTransl/External）
+- [x] 配置文件切换后端
+- [x] Sakura-14B 和 GalTransl-7B 翻译测试通过
+- [x] 评估报告：`docs/evaluation/S14.1_Translator_Adapter.md`
+
 **过渡到 Sprint 15**：所有模块完备 → 全流程 CLI 集成。
 
 ---
