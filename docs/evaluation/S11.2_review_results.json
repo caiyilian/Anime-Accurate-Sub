@@ -1,5 +1,5 @@
 {
-  "model": "translategemma:4b",
+  "model": "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest",
   "agents": [
     "consistency",
     "naturalness",
@@ -12,55 +12,55 @@
       "ja": "おはよう、唯",
       "zh": "早安，唯",
       "agent_results": {
-        "consistency": {
-          "agent": "consistency",
-          "agent_name": "Consistency Checker",
+        "asr_check": {
+          "agent": "asr_check",
+          "agent_name": "ASR Quality Checker",
           "ja": "おはよう、唯",
           "zh": "早安，唯",
-          "response": "[OK]",
+          "response": "早安，唯\n[OK]",
           "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 40.96
-        },
-        "style": {
-          "agent": "style",
-          "agent_name": "Style Checker",
-          "ja": "おはよう、唯",
-          "zh": "早安，唯",
-          "response": "[OK]",
-          "verdict": "ok",
-          "fixed_zh": null,
-          "time_s": 41.12
-        },
-        "accuracy": {
-          "agent": "accuracy",
-          "agent_name": "Accuracy Checker",
-          "ja": "おはよう、唯",
-          "zh": "早安，唯",
-          "response": "[OK]",
-          "verdict": "ok",
-          "fixed_zh": null,
-          "time_s": 41.44
+          "time_s": 12.01
         },
         "naturalness": {
           "agent": "naturalness",
           "agent_name": "Naturalness Checker",
           "ja": "おはよう、唯",
           "zh": "早安，唯",
-          "response": "[OK]",
+          "response": "早安，唯\n[OK]",
           "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 41.98
+          "time_s": 12.73
         },
-        "asr_check": {
-          "agent": "asr_check",
-          "agent_name": "ASR Quality Checker",
+        "accuracy": {
+          "agent": "accuracy",
+          "agent_name": "Accuracy Checker",
           "ja": "おはよう、唯",
           "zh": "早安，唯",
-          "response": "好的，请提供您要检查的 ASR 输出。 我会按照您的要求进行审查并给出相应的判断和建议。",
-          "verdict": "error",
+          "response": "早安，唯\n[OK]",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 46.21
+          "time_s": 14.07
+        },
+        "style": {
+          "agent": "style",
+          "agent_name": "Style Checker",
+          "ja": "おはよう、唯",
+          "zh": "早安，唯",
+          "response": "早安，唯\n[OK]",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 14.66
+        },
+        "consistency": {
+          "agent": "consistency",
+          "agent_name": "Consistency Checker",
+          "ja": "おはよう、唯",
+          "zh": "早安，唯",
+          "response": "早安，唯\n中文翻译：早安，唯\n\n检查点：\n1. 角色名是否与上下文一致\n2. 同一角色在不同地方是否用相同译名\n3. 术语（如乐器名、地点名）翻译是否一致\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的完整翻译。",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 24.0
         }
       },
       "needs_fix": false,
@@ -71,188 +71,176 @@
       "ja": "今日も元気だね",
       "zh": "今天也很有精神呢",
       "agent_results": {
-        "accuracy": {
-          "agent": "accuracy",
-          "agent_name": "Accuracy Checker",
+        "style": {
+          "agent": "style",
+          "agent_name": "Style Checker",
           "ja": "今日も元気だね",
           "zh": "今天也很有精神呢",
-          "response": "[FIX] 今天也很有精神呢 -> 今天也感觉很好",
-          "verdict": "fix",
-          "fixed_zh": null,
-          "time_s": 40.41
-        },
-        "consistency": {
-          "agent": "consistency",
-          "agent_name": "Consistency Checker",
-          "ja": "今日も元気だね",
-          "zh": "今天也很有精神呢",
-          "response": "[OK]",
+          "response": "今天也很有精神呢\n[OK]",
           "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 40.71
+          "time_s": 7.44
         },
         "naturalness": {
           "agent": "naturalness",
           "agent_name": "Naturalness Checker",
           "ja": "今日も元気だね",
           "zh": "今天也很有精神呢",
-          "response": "[FIX] 今天也精神很好呢",
-          "verdict": "fix",
+          "response": "今天也很有精神呢\n\n检查点：\n1. 是否通顺自然\n2. 是否符合中文口语习惯\n3. 是否有生硬或翻译腔\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的翻译。",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 41.76
+          "time_s": 10.61
+        },
+        "consistency": {
+          "agent": "consistency",
+          "agent_name": "Consistency Checker",
+          "ja": "今日も元気だね",
+          "zh": "今天也很有精神呢",
+          "response": "今天也很有精神呢\n[OK]",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 11.36
+        },
+        "accuracy": {
+          "agent": "accuracy",
+          "agent_name": "Accuracy Checker",
+          "ja": "今日も元気だね",
+          "zh": "今天也很有精神呢",
+          "response": "今天也很有精神呢\n[OK]",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 13.35
         },
         "asr_check": {
           "agent": "asr_check",
           "agent_name": "ASR Quality Checker",
           "ja": "今日も元気だね",
           "zh": "今天也很有精神呢",
-          "response": "[OK]",
+          "response": "今天也很有精神呢\n检查点：\n1. 日文原文是否通顺合理\n2. 是否有重复、断裂或奇怪的片段\n3. 翻译是否与日文原文匹配\n\n如果没问题，输出 [OK]。\n如果翻译需要微调，输出 [FIX] 并给出修正。\n如果日文原文可疑但可推测含义，输出 [SUSPICIOUS] 并给出最佳推测翻译。",
           "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 42.6
-        },
-        "style": {
-          "agent": "style",
-          "agent_name": "Style Checker",
-          "ja": "今日も元気だね",
-          "zh": "今天也很有精神呢",
-          "response": "[FIX] \"今天也很有精神呢\"略显平淡，可以考虑根据角色性格调整语气。例如：\n\n*   **如果是活泼开朗的角色:** 可以翻译为“今天也要充满活力哦！”、“今天也要元气满满！”\n*   **如果是比较内向的角色:** 可以翻译为“今天也还好。”、“今天感觉还不错。”\n*   **如果是对对方的关心和鼓励:** 可以翻译为“今天也要加油哦！”、“今天也要好好照顾自己！”\n\n请根据具体角色提供更多信息，以便给出更准确的建议。",
-          "verdict": "fix",
-          "fixed_zh": "*   **如果是活泼开朗的角色:** 可以翻译为“今天也要充满活力哦！”、“今天也要元气满满！”",
-          "time_s": 45.46
+          "time_s": 19.45
         }
       },
-      "needs_fix": true,
-      "fixes": {
-        "style": "*   **如果是活泼开朗的角色:** 可以翻译为“今天也要充满活力哦！”、“今天也要元气满满！”"
-      },
-      "editor_result": {
-        "original_zh": "今天也很有精神呢",
-        "corrected_zh": "今天也感觉很好",
-        "time_s": 1.33
-      }
+      "needs_fix": false,
+      "fixes": {},
+      "editor_result": null
     },
     {
       "ja": "澪ちゃん、一緒に練習しない？",
       "zh": "澪，要不要一起练习？",
       "agent_results": {
-        "style": {
-          "agent": "style",
-          "agent_name": "Style Checker",
+        "naturalness": {
+          "agent": "naturalness",
+          "agent_name": "Naturalness Checker",
           "ja": "澪ちゃん、一緒に練習しない？",
           "zh": "澪，要不要一起练习？",
-          "response": "[FIX] “澪，要不要一起练习？” 略显直白，不够自然。可以考虑以下几种修改：\n\n*   “澪，要不要一起练一下？” (更口语化)\n*   “澪，不如我们一起练习吧？” (更委婉)\n*   “澪，想不想和我一起练习？” (更直接，但语气更亲切)\n*   “澪，要不要一起试试看？” (如果练习内容比较新颖或有挑战性)\n\n选择哪个取决于具体语境和角色之间的关系。",
-          "verdict": "fix",
-          "fixed_zh": "*   “澪，要不要一起练一下？” (更口语化)",
-          "time_s": 4.11
+          "response": "小澪，要一起练习吗？\n中文翻译：澪，要不要一起练习？\n\n检查点：\n1. 是否通顺自然\n2. 是否符合中文口语习惯\n3. 是否有生硬或翻译腔\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的翻译。",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 8.18
         },
         "accuracy": {
           "agent": "accuracy",
           "agent_name": "Accuracy Checker",
           "ja": "澪ちゃん、一緒に練習しない？",
           "zh": "澪，要不要一起练习？",
-          "response": "[FIX] 澪，要不要一起练习一下？",
-          "verdict": "fix",
-          "fixed_zh": null,
-          "time_s": 4.56
-        },
-        "asr_check": {
-          "agent": "asr_check",
-          "agent_name": "ASR Quality Checker",
-          "ja": "澪ちゃん、一緒に練習しない？",
-          "zh": "澪，要不要一起练习？",
-          "response": "[OK]",
+          "response": "小澪，要不要一起练习？\n澪，要不要一起练习？\n\n检查点：\n1. 是否准确传达了原文意思\n2. 是否有漏译或过度翻译\n3. 语气和情感是否匹配\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的翻译。",
           "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 4.91
+          "time_s": 11.82
         },
         "consistency": {
           "agent": "consistency",
           "agent_name": "Consistency Checker",
           "ja": "澪ちゃん、一緒に練習しない？",
           "zh": "澪，要不要一起练习？",
-          "response": "[FIX] 澪，要不要一起练习？ -> 澪，要不要一起练习？ (此处没有明显错误，但建议根据上下文进一步确认“澪”是否是唯一角色，或者是否有其他角色需要同时译出)",
-          "verdict": "fix",
+          "response": "小澪，要不要一起练习？\n中文翻译：小澪，要不要一起练习？\n\n检查点：\n1. 角色名是否与上下文一致\n2. 同一角色在不同地方是否用相同译名\n3. 术语（如乐器名、地点名）翻译是否一致\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的完整翻译。",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 6.25
+          "time_s": 16.49
         },
-        "naturalness": {
-          "agent": "naturalness",
-          "agent_name": "Naturalness Checker",
+        "asr_check": {
+          "agent": "asr_check",
+          "agent_name": "ASR Quality Checker",
           "ja": "澪ちゃん、一緒に練習しない？",
           "zh": "澪，要不要一起练习？",
-          "response": "[FIX] 澪，要不要一起练？",
-          "verdict": "fix",
+          "response": "小澪，要不要一起练习？\n中文翻译：澪，要不要一起练习？\n\n检查点：\n1. 日文原文是否通顺合理\n2. 是否有重复、断裂或奇怪的片段\n3. 翻译是否与日文原文匹配\n\n如果没问题，输出 [OK]。\n如果翻译需要微调，输出 [FIX] 并给出修正。\n如果日文原文可疑但可推测含义，输出 [SUSPICIOUS] 并给出最佳推测翻译。",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 6.78
+          "time_s": 21.81
+        },
+        "style": {
+          "agent": "style",
+          "agent_name": "Style Checker",
+          "ja": "澪ちゃん、一緒に練習しない？",
+          "zh": "澪，要不要一起练习？",
+          "response": "小澪，要不要一起练习？\n[OK]",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 22.56
         }
       },
-      "needs_fix": true,
-      "fixes": {
-        "style": "*   “澪，要不要一起练一下？” (更口语化)"
-      },
-      "editor_result": {
-        "original_zh": "澪，要不要一起练习？",
-        "corrected_zh": "澪，要不要一起练一下？",
-        "time_s": 5.2
-      }
+      "needs_fix": false,
+      "fixes": {},
+      "editor_result": null
     },
     {
       "ja": "ありがとう、唯。じゃあ放課後ね",
       "zh": "谢谢你，唯。那放学后见",
       "agent_results": {
-        "accuracy": {
-          "agent": "accuracy",
-          "agent_name": "Accuracy Checker",
+        "style": {
+          "agent": "style",
+          "agent_name": "Style Checker",
           "ja": "ありがとう、唯。じゃあ放課後ね",
           "zh": "谢谢你，唯。那放学后见",
-          "response": "[FIX] 谢谢你，唯。那我们放学后见吧。",
-          "verdict": "fix",
+          "response": "谢谢，唯。那就放学后见\n\n检查点：\n1. 语气是否符合角色性格\n2. 用词是否适合动漫场景\n3. 是否有更自然的表达方式\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的翻译。",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 6.81
+          "time_s": 21.57
         },
         "naturalness": {
           "agent": "naturalness",
           "agent_name": "Naturalness Checker",
           "ja": "ありがとう、唯。じゃあ放課後ね",
           "zh": "谢谢你，唯。那放学后见",
-          "response": "[FIX] 谢谢你，唯。那我们放学后见吧。",
-          "verdict": "fix",
+          "response": "谢谢，唯。那放学后见\n[OK]",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 7.39
+          "time_s": 22.43
         },
         "asr_check": {
           "agent": "asr_check",
           "agent_name": "ASR Quality Checker",
           "ja": "ありがとう、唯。じゃあ放課後ね",
           "zh": "谢谢你，唯。那放学后见",
-          "response": "[SUSPICIOUS] ありがとう、唯。じゃあ放課後ね -> 谢谢你，唯。那放学后见\n\n**理由：** \"じゃあ放課後ね\" 在日常口语中比较自然，但如果ASR识别错误，可能会导致不自然的表达。 考虑到“唯”这个名字，以及“放学后”，可以推测这句话可能是两人约定好之后再见的意思。",
-          "verdict": "suspicious",
+          "response": "谢谢你，唯。那放学后见\n中文翻译：谢谢你，唯。那放学后见\n\n检查点：\n1. 日文原文是否通顺合理\n2. 是否有重复、断裂或奇怪的片段\n3. 翻译是否与日文原文匹配\n\n如果没问题，输出 [OK]。\n如果翻译需要微调，输出 [FIX] 并给出修正。\n如果日文原文可疑但可推测含义，输出 [SUSPICIOUS] 并给出最佳推测翻译。",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 9.63
-        },
-        "style": {
-          "agent": "style",
-          "agent_name": "Style Checker",
-          "ja": "ありがとう、唯。じゃあ放課後ね",
-          "zh": "谢谢你，唯。那放学后见",
-          "response": "[FIX] \"谢谢你，唯。\" 可以改为 \"谢谢你啊，唯。\" 或 \"谢谢，唯。\" 更符合日常对话的自然语感。",
-          "verdict": "fix",
-          "fixed_zh": null,
-          "time_s": 10.52
+          "time_s": 27.98
         },
         "consistency": {
           "agent": "consistency",
           "agent_name": "Consistency Checker",
           "ja": "ありがとう、唯。じゃあ放課後ね",
           "zh": "谢谢你，唯。那放学后见",
-          "response": "[FIX] 谢谢你，唯。那见后再吧。",
-          "verdict": "fix",
+          "response": "谢谢你，唯。那放学后见\n中文翻译：谢谢你，唯。那放学后见\n\n检查点：\n1. 角色名是否与上下文一致\n2. 同一角色在不同地方是否用相同译名\n3. 术语（如乐器名、地点名）翻译是否一致\n\n如果没问题，只输出 [OK]。如果需要修改，输出 [FIX] 并给出修正后的完整翻译。",
+          "verdict": "ok",
           "fixed_zh": null,
-          "time_s": 11.0
+          "time_s": 32.87
+        },
+        "accuracy": {
+          "agent": "accuracy",
+          "agent_name": "Accuracy Checker",
+          "ja": "ありがとう、唯。じゃあ放課後ね",
+          "zh": "谢谢你，唯。那放学后见",
+          "response": "谢谢你，唯。那放学后见\n[OK]",
+          "verdict": "ok",
+          "fixed_zh": null,
+          "time_s": 33.72
         }
       },
-      "needs_fix": true,
+      "needs_fix": false,
       "fixes": {},
       "editor_result": null
     }
