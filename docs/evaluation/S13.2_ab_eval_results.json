@@ -1,0 +1,26 @@
+{
+  "models": {
+    "A": "Anime Whisper",
+    "B": "large-v3"
+  },
+  "common_segments": 6,
+  "cer": {
+    "a_avg": 0.0476,
+    "b_avg": 0.2571,
+    "winner": "Anime Whisper",
+    "improvement_pct": 81.5
+  },
+  "term_hit_rate": {
+    "a": {
+      "rate": 0.07142857142857142,
+      "hit": 2,
+      "total": 28
+    },
+    "b": {
+      "rate": 0.07142857142857142,
+      "hit": 2,
+      "total": 28
+    },
+    "winner": "tie"
+  }
+}
