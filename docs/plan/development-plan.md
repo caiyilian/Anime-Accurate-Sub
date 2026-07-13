@@ -627,8 +627,9 @@
 | S15.3 | **端到端回归测试** — 全流程/断点续传/批量/各可选功能开关测试 |
 
 **S15.1 验收**：
-- [ ] `anime-sub video.mp4` 一条命令跑完全流程
-- [ ] 所有可选参数生效
+- [x] `anime-sub video.mp4` 一条命令跑完全流程（5 阶段串联）
+- [x] 所有可选参数生效（--backend/--memory/--quality-check/--batch）
+- [x] 评估报告：`docs/evaluation/S15.1_CLI_Integration.md`
 
 **S15.3 验收**：
 - [ ] 回归测试通过清单
