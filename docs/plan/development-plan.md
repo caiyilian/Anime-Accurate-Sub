@@ -490,8 +490,10 @@
 - [x] 评估报告：`docs/evaluation/S10.1_Subtitle_Generation.md`
 
 **S10.2 验收**：
-- [ ] ffsubsync 是否能解决时间轴偏移的结论
-- [ ] SubtitleEdit / subcap 是否值得集成
+- [x] ffsubsync 评估：无参考字幕时无法对齐（测试中偏移 5s 检测为 57s）
+- [x] subcap 评估：功能已被 pysubs2 覆盖，不采用
+- [x] SubtitleEdit 评估：适合人工校对但不集成到 pipeline
+- [x] 评估报告：`docs/evaluation/S10.2_Alignment_Tools.md`
 
 **S10.3 验收**：
 - [ ] 双语字幕可正常渲染，两种布局可切换
