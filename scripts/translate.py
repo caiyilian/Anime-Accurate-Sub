@@ -17,9 +17,12 @@ import urllib.request
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
+from scripts.glossary import Glossary
+
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "localhost")
 OLLAMA_URL = f"http://{OLLAMA_HOST}:11434/api"
 DEFAULT_MODEL = os.environ.get("TRANSLATION_MODEL", "EasonONLINE/Sakura-qwen2.5-v1.0:7b")
+DEFAULT_GLOSSARY = os.environ.get("GLOSSARY_FILE", "")
 
 
 def ollama_chat(model, messages, temperature=0.1):
@@ -40,18 +43,27 @@ def ollama_chat(model, messages, temperature=0.1):
     return result.get("message", {}).get("content", "").strip()
 
 
-def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL):
-    """Translate Japanese text to Chinese with optional context.
+def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL, glossary=None):
+    """Translate Japanese text to Chinese with optional context and glossary.
 
     Args:
         text: Japanese text to translate
         context_before: Previous sentences (string or list of strings)
         context_after: Next sentences (string or list of strings)
         model: Ollama model name
+        glossary: Glossary object or path to glossary file
 
     Returns:
         Translated Chinese text
     """
+    # Load glossary if path provided
+    if isinstance(glossary, (str, Path)):
+        g = Glossary(str(glossary))
+    elif isinstance(glossary, Glossary):
+        g = glossary
+    else:
+        g = None
+
     context_parts = []
 
     if context_before:
@@ -84,12 +96,20 @@ def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL
                 ctx_lines.append(f"- {line}")
         
         full_input = "\n".join(ctx_lines)
+        
+        # Inject glossary
+        if g:
+            full_input = g.inject_into_prompt(full_input, position="before")
+        
         prompt = f"请翻译当前句子。只输出翻译结果，不要重复上下文。\n\n{full_input}"
         system_msg = "你是一个轻小说翻译模型，将日语翻译成中文。只输出翻译结果，不要输出其他内容。"
     else:
-        # Simple translation (same format that worked in S8.1)
+        # Simple translation
+        user_text = text
+        if g:
+            user_text = g.inject_into_prompt(text, position="before")
         system_msg = "你是一个轻小说翻译模型，可以将日语翻译成中文。"
-        prompt = f"将下面的日语文本翻译成中文：{text}"
+        prompt = f"将下面的日语文本翻译成中文：{user_text}"
 
     messages = []
     if system_msg:
@@ -176,7 +196,7 @@ SEQUENTIAL_TEST_DATA = [
 
 # ======== Evaluation ========
 
-def evaluate_context():
+def evaluate_context(glossary=None):
     """Compare translations with vs without context."""
     print(f"{'='*70}")
     print("CONTEXT WINDOW EVALUATION")
@@ -184,6 +204,8 @@ def evaluate_context():
     print(f"\nModel: {DEFAULT_MODEL}")
     print(f"Samples: {len(SEQUENTIAL_TEST_DATA)}")
     print(f"Context window: 3 before + 3 after")
+    if glossary:
+        print(f"Glossary: {glossary}")
 
     results = translate_batch(
         SEQUENTIAL_TEST_DATA,
@@ -225,19 +247,27 @@ def main():
     parser.add_argument("--context-before", type=str, help="Previous sentence(s)")
     parser.add_argument("--context-after", type=str, help="Next sentence(s)")
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
+    parser.add_argument("--glossary", type=str, default=DEFAULT_GLOSSARY,
+                        help="Glossary file path (JSON or text)")
     parser.add_argument("--evaluate", action="store_true", help="Run context comparison")
     parser.add_argument("--batch", type=str, help="JSON file with batch sentences")
     parser.add_argument("--context-window", type=int, default=3)
     args = parser.parse_args()
 
+    # Load glossary if specified
+    glossary = None
+    if args.glossary:
+        glossary = Glossary(args.glossary)
+        print(f"Loaded glossary: {glossary}")
+
     if args.evaluate:
-        evaluate_context()
+        evaluate_context(glossary=glossary)
         return
 
     if args.text:
         cb = args.context_before.split("||") if args.context_before else None
         ca = args.context_after.split("||") if args.context_after else None
-        result = translate(args.text, cb, ca, args.model)
+        result = translate(args.text, cb, ca, args.model, glossary)
         print(result)
         return
 
