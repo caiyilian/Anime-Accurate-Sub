@@ -18,11 +18,13 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 from scripts.glossary import Glossary
+from scripts.translation_memory import TranslationMemory
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "localhost")
 OLLAMA_URL = f"http://{OLLAMA_HOST}:11434/api"
 DEFAULT_MODEL = os.environ.get("TRANSLATION_MODEL", "EasonONLINE/Sakura-qwen2.5-v1.0:7b")
 DEFAULT_GLOSSARY = os.environ.get("GLOSSARY_FILE", "")
+DEFAULT_TM = os.environ.get("TM_FILE", "")
 
 
 def ollama_chat(model, messages, temperature=0.1):
@@ -43,15 +45,17 @@ def ollama_chat(model, messages, temperature=0.1):
     return result.get("message", {}).get("content", "").strip()
 
 
-def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL, glossary=None):
-    """Translate Japanese text to Chinese with optional context and glossary.
+def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL,
+              glossary=None, tm=None):
+    """Translate Japanese text to Chinese with optional context, glossary, and TM.
 
     Args:
         text: Japanese text to translate
-        context_before: Previous sentences (string or list of strings)
-        context_after: Next sentences (string or list of strings)
+        context_before: Previous sentences
+        context_after: Next sentences
         model: Ollama model name
-        glossary: Glossary object or path to glossary file
+        glossary: Glossary object or path
+        tm: TranslationMemory object or path
 
     Returns:
         Translated Chinese text
@@ -64,6 +68,21 @@ def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL
     else:
         g = None
 
+    # Load TM if path provided
+    if isinstance(tm, (str, Path)):
+        tm_obj = TranslationMemory(str(tm))
+    elif isinstance(tm, TranslationMemory):
+        tm_obj = tm
+    else:
+        tm_obj = None
+
+    # Check TM first
+    if tm_obj:
+        cached = tm_obj.lookup(text)
+        if cached:
+            return cached
+
+    # Build prompt
     context_parts = []
 
     if context_before:
@@ -116,7 +135,13 @@ def translate(text, context_before=None, context_after=None, model=DEFAULT_MODEL
         messages.append({"role": "system", "content": system_msg})
     messages.append({"role": "user", "content": prompt})
 
-    return ollama_chat(model, messages)
+    result = ollama_chat(model, messages)
+
+    # Store in TM
+    if tm_obj and result:
+        tm_obj.store(text, result, model=model)
+
+    return result
 
 
 def translate_batch(sentences, context_window=3, model=DEFAULT_MODEL):

@@ -461,8 +461,11 @@
 - [x] 评估报告：`docs/evaluation/S9.2_Glossary.md`
 
 **S9.3 验收**：
-- [ ] 相同句子第二次翻译直接返回缓存
-- [ ] 翻译记忆跨会话可用
+- [x] 翻译记忆库 JSONL 格式 + 精确匹配缓存
+- [x] 相同句子第二次翻译直接返回缓存
+- [x] 翻译记忆跨会话可用（JSONL 文件持久化）
+- [x] 集成到 translate.py（先查 TM 再调用模型）
+- [x] 评估报告：`docs/evaluation/S9.3_Translation_Memory.md`
 
 ---
 
