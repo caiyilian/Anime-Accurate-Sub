@@ -484,8 +484,10 @@
 **过渡到 Sprint 11**：字幕生成可用 → 进入质量审查。
 
 **S10.1 验收**：
-- [ ] SRT/ASS 文件播放器可正常加载
-- [ ] 时间轴优化后的字幕无重叠、无闪烁、CPS 合理
+- [x] SRT/ASS 文件播放器可正常加载
+- [x] 时间轴优化后的字幕无重叠（重叠 3→0）、CPS 合理（平均 4.8）
+- [x] 2 套 ASS 样式模板（anime / anime_bilingual）
+- [x] 评估报告：`docs/evaluation/S10.1_Subtitle_Generation.md`
 
 **S10.2 验收**：
 - [ ] ffsubsync 是否能解决时间轴偏移的结论
