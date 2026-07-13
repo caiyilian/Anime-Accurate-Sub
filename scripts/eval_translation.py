@@ -71,7 +71,8 @@ def load_test_data():
 
 # ======== Ollama API ========
 
-OLLAMA_URL = "http://localhost:11434/api"
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "localhost")
+OLLAMA_URL = f"http://{OLLAMA_HOST}:11434/api"
 
 
 def ollama_chat(model, messages):
