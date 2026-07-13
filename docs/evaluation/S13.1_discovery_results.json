@@ -1,0 +1,167 @@
+{
+  "test": "S13.1 Term Discovery",
+  "candidates": [
+    {
+      "ja": "です",
+      "freq": 8
+    },
+    {
+      "ja": "軽音部",
+      "freq": 4
+    },
+    {
+      "ja": "担当",
+      "freq": 4
+    },
+    {
+      "ja": "武道館",
+      "freq": 3
+    },
+    {
+      "ja": "文化祭",
+      "freq": 3
+    },
+    {
+      "ja": "おはよう",
+      "freq": 2
+    },
+    {
+      "ja": "ちゃん",
+      "freq": 2
+    }
+  ],
+  "annotated": [
+    {
+      "ja": "词",
+      "zh": "中文翻译",
+      "category": "分类",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "です",
+      "zh": "是",
+      "category": "other",
+      "freq": 8,
+      "source": "llm"
+    },
+    {
+      "ja": "轻音部",
+      "zh": "轻音部",
+      "category": "term",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "担当",
+      "zh": "负责人",
+      "category": "term",
+      "freq": 4,
+      "source": "llm"
+    },
+    {
+      "ja": "武道馆",
+      "zh": "武道馆",
+      "category": "term",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "文化祭",
+      "zh": "文化祭",
+      "category": "term",
+      "freq": 3,
+      "source": "llm"
+    },
+    {
+      "ja": "早上好",
+      "zh": "早上好",
+      "category": "other",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "小樱",
+      "zh": "小樱",
+      "category": "character",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "小樱酱",
+      "zh": "小樱酱",
+      "category": "character",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "小樱学姐",
+      "zh": "小樱学姐",
+      "category": "character",
+      "freq": 0,
+      "source": "llm"
+    },
+    {
+      "ja": "小樱学姐的妹妹",
+      "zh": "小樱学姐的妹妹",
+      "category": "character",
+      "freq": 0,
+      "source": "llm"
+    }
+  ],
+  "glossary": {
+    "generated_by": "discover_terms.py",
+    "model": "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest",
+    "total_candidates": 11,
+    "terms": [
+      {
+        "ja": "轻音部",
+        "zh": "轻音部",
+        "category": "term",
+        "freq": 0
+      },
+      {
+        "ja": "担当",
+        "zh": "负责人",
+        "category": "term",
+        "freq": 4
+      },
+      {
+        "ja": "武道馆",
+        "zh": "武道馆",
+        "category": "term",
+        "freq": 0
+      },
+      {
+        "ja": "文化祭",
+        "zh": "文化祭",
+        "category": "term",
+        "freq": 3
+      },
+      {
+        "ja": "小樱",
+        "zh": "小樱",
+        "category": "character",
+        "freq": 0
+      },
+      {
+        "ja": "小樱酱",
+        "zh": "小樱酱",
+        "category": "character",
+        "freq": 0
+      },
+      {
+        "ja": "小樱学姐",
+        "zh": "小樱学姐",
+        "category": "character",
+        "freq": 0
+      },
+      {
+        "ja": "小樱学姐的妹妹",
+        "zh": "小樱学姐的妹妹",
+        "category": "character",
+        "freq": 0
+      }
+    ]
+  }
+}
