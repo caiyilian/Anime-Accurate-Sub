@@ -575,6 +575,10 @@
 - [x] 专有名词自动发现工具可用（高频词提取 + LLM 标注 + 术语表生成）
 - [x] 评估报告：`docs/evaluation/S13.1_Term_Discovery.md`
 
+**S13.2 验收**：
+- [x] A/B 模型评测工具可用（CER + 术语命中率对比）
+- [x] 评估报告：`docs/evaluation/S13.2_AB_Eval.md`
+
 **过渡到 Sprint 14**：工具链完善 → 增加更高级的功能。
 
 ---
