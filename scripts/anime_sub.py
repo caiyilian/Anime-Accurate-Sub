@@ -39,7 +39,7 @@ def extract_audio(video_path: str, output_dir: str) -> str:
         print(f"  Audio already extracted: {audio_path}")
         return str(audio_path)
 
-print(f"  Extracting audio...")
+    print(f"  Extracting audio...")
     cmd = [
         FFMPEG_PATH, "-y", "-i", video_path,
         "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
@@ -328,10 +328,18 @@ Examples:
         return
 
     if args.batch:
-        import glob as glob_mod
         video_files = []
         for pattern in args.batch:
-            video_files.extend(glob_mod.glob(pattern))
+            # Check if pattern is a batch.txt file with paths
+            if pattern.endswith(".txt") and Path(pattern).exists():
+                with open(pattern, encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and Path(line).exists():
+                            video_files.append(line)
+            else:
+                import glob as glob_mod
+                video_files.extend(glob_mod.glob(pattern))
         if not video_files:
             print(f"No video files matched the patterns")
             return
