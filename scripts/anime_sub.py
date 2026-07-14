@@ -62,9 +62,13 @@ def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str
     sub_name = Path(subtitle_path).name
     vid_name = Path(video_path).name
 
-    # Copy files to output dir for relative path access
-    shutil.copy2(video_path, out_dir / vid_name)
-    shutil.copy2(subtitle_path, out_dir / sub_name)
+    # Copy files to output dir (skip if already there)
+    for src, dst in [(video_path, out_dir / vid_name), (subtitle_path, out_dir / sub_name)]:
+        if not dst.exists():
+            try:
+                shutil.copy2(src, dst)
+            except PermissionError:
+                print(f"  Warning: couldn't copy {Path(src).name}, file may be in use")
 
     print(f"  Burning subtitles into video (libass)...")
     cmd = [FFMPEG_PATH, "-y", "-i", vid_name, "-vf", f"ass={sub_name}", "-c:a", "copy", "-preset", "fast", "-crf", "22", out.name]
