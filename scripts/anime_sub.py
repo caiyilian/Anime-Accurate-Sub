@@ -45,15 +45,26 @@ def extract_audio(video_path: str, output_dir: str) -> str:
 
 
 def run_asr(audio_path: str, output_dir: str) -> list:
-    """Run ASR on audio file."""
+    """Run ASR on audio file using Anime Whisper (faster-whisper)."""
+    from faster_whisper import WhisperModel
+
+    model_path = project_root / ".omo" / "anime-whisper-ct2"
     print(f"  Running ASR on {Path(audio_path).name}...")
-    # In a full implementation, this would call faster-whisper
-    # For now, simulate with mock data
-    segments = [
-        {"start": 0.0, "end": 2.0, "text": "[ASR] simulated recognition result"},
-        {"start": 2.5, "end": 5.0, "text": "[ASR] second line of dialogue"},
-    ]
-    return segments
+    print(f"  Model: {model_path}")
+
+    model = WhisperModel(str(model_path), device="cuda", compute_type="int8_float16", num_workers=1)
+    segments, info = model.transcribe(audio_path, language="ja", beam_size=5, vad_filter=False)
+
+    result = []
+    for seg in segments:
+        result.append({
+            "start": round(seg.start, 2),
+            "end": round(seg.end, 2),
+            "text": seg.text.strip(),
+        })
+
+    print(f"  Recognized {len(result)} segments")
+    return result
 
 
 def translate_segments(segments: list, adapter: TranslatorAdapter,
@@ -61,11 +72,15 @@ def translate_segments(segments: list, adapter: TranslatorAdapter,
     """Translate ASR segments."""
     print(f"  Translating {len(segments)} segments...")
     translated = []
+    # Build series context once
+    series_context = ""
+    if series_memory:
+        series_context = series_memory.to_prompt_block() + "\n\n"
     for seg in segments:
         text = seg.get("text", "")
-        prompt = text
+        # Inject series memory into the adapter's system prompt
         if series_memory:
-            prompt = series_memory.inject_into_prompt(text)
+            adapter.series_info = series_context
         zh = adapter.translate(text)
         translated.append({
             "start": seg["start"],
