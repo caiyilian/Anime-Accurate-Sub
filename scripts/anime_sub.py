@@ -261,6 +261,8 @@ Examples:
         test_run()
         return
 
+    config = load_config(args.config)
+
     if args.auto:
         from scripts.hardware import HardwareDetector
         detector = HardwareDetector()
@@ -277,8 +279,6 @@ Examples:
             config[t["backend"]] = {"model": t["model"], "host": t["host"]}
         if not args.quality_check and rec["recommendations"]["quality_check"]["enabled"]:
             args.quality_check = True
-
-    config = load_config(args.config)
 
     if args.video:
         result = process_video(
