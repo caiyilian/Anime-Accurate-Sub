@@ -631,6 +631,12 @@
 - [x] 所有可选参数生效（--backend/--memory/--quality-check/--batch）
 - [x] 评估报告：`docs/evaluation/S15.1_CLI_Integration.md`
 
+**S15.2 验收**：
+- [x] 硬件自动检测（GPU/VRAM/CPU/RAM）
+- [x] 智能参数推荐（翻译模型/ASR batch/并行数/质量审查）
+- [x] 集成到 CLI（--auto 参数）
+- [x] 评估报告：`docs/evaluation/S15.2_Smart_Defaults.md`
+
 **S15.3 验收**：
 - [ ] 回归测试通过清单
 
