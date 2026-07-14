@@ -14,6 +14,13 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
+# ffmpeg path - prefer libass-enabled version
+FFMPEG_PATH = "ffmpeg"
+LIBAASS_FFMPEG = project_root / ".omo" / "ffmpeg-libass" / "ffmpeg-2026-05-28-git-7b46c6a2a3-full_build" / "bin" / "ffmpeg.exe"
+if LIBAASS_FFMPEG.exists():
+    FFMPEG_PATH = str(LIBAASS_FFMPEG)
+    print(f"Using libass ffmpeg: {FFMPEG_PATH}", file=sys.stderr)
+
 from scripts.checkpoint import Checkpoint
 from scripts.translator_adapter import TranslatorAdapter, load_config
 from scripts.series_memory import SeriesMemory
@@ -32,11 +39,10 @@ def extract_audio(video_path: str, output_dir: str) -> str:
         print(f"  Audio already extracted: {audio_path}")
         return str(audio_path)
 
-    print(f"  Extracting audio...")
+print(f"  Extracting audio...")
     cmd = [
-        "ffmpeg", "-y", "-i", video_path,
-        "-vn", "-acodec", "pcm_s16le",
-        "-ar", "16000", "-ac", "1",
+        FFMPEG_PATH, "-y", "-i", video_path,
+        "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
         str(audio_path),
     ]
     subprocess.run(cmd, capture_output=True, check=True)
@@ -45,20 +51,18 @@ def extract_audio(video_path: str, output_dir: str) -> str:
 
 
 def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str:
-    """Embed SRT subtitle as stream into MP4 (mov_text)."""
+    """Burn subtitles into video using libass (ASS subtitles)."""
     out = Path(output_path)
     if out.exists():
         print(f"  Video with subs already exists: {out.name}")
         return str(out)
 
-    print(f"  Embedding subtitles into video...")
+    print(f"  Burning subtitles into video (libass)...")
     cmd = [
-        "ffmpeg", "-y", "-i", video_path,
-        "-i", subtitle_path,
-        "-c:v", "copy", "-c:a", "copy",
-        "-c:s", "mov_text",
-        "-metadata:s:s:0", "language=jpn",
-        "-metadata:s:s:0", "title=Japanese",
+        FFMPEG_PATH, "-y", "-i", video_path,
+        "-vf", f"ass='{subtitle_path}'",
+        "-c:a", "copy",
+        "-preset", "fast", "-crf", "22",
         str(out),
     ]
     subprocess.run(cmd, capture_output=True, check=True)
@@ -180,9 +184,9 @@ def process_video(video_path: str, output_dir: str, config: dict,
         srt_path = work_dir / f"{video_name}.srt"
         ass_path = work_dir / f"{video_name}.ass"
         output_video = work_dir / f"{video_name}_subs.mp4"
-        srt_path = work_dir / f"{video_name}.srt"
-        if srt_path.exists():
-            embed_subtitle(video_path, str(srt_path), str(output_video))
+        ass_path = work_dir / f"{video_name}.ass"
+        if ass_path.exists():
+            embed_subtitle(video_path, str(ass_path), str(output_video))
             cp.mark_completed("embed_subtitle", input_file=video_path,
                               output_file=str(output_video), duration_s=time.time()-t0)
 
