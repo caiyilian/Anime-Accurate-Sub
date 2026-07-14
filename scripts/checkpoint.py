@@ -22,6 +22,7 @@ PIPELINE_STAGES = [
     "asr",
     "translate",
     "subtitle",
+    "embed_subtitle",
     "quality_check",
 ]
 
