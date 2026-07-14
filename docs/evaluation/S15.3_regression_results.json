@@ -1,0 +1,112 @@
+{
+  "timestamp": "2026-07-14T10:12:02",
+  "total": 17,
+  "pass": 17,
+  "fail": 0,
+  "skip": 0,
+  "elapsed_s": 0.3,
+  "results": [
+    {
+      "name": "S3.1  ASR evaluation module",
+      "status": "PASS",
+      "time_s": 0.09,
+      "error": ""
+    },
+    {
+      "name": "S9.1  Translate module",
+      "status": "PASS",
+      "time_s": 0.03,
+      "error": ""
+    },
+    {
+      "name": "S9.2  Glossary module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S9.3  Translation memory module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S10.1 Subtitle generation module",
+      "status": "PASS",
+      "time_s": 0.02,
+      "error": ""
+    },
+    {
+      "name": "S11.1 Quality check module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S11.2 Review agents module",
+      "status": "PASS",
+      "time_s": 0.01,
+      "error": ""
+    },
+    {
+      "name": "S11.3 GEMBA-MQM module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S12.1 Checkpoint module",
+      "status": "PASS",
+      "time_s": 0.01,
+      "error": ""
+    },
+    {
+      "name": "S12.2 Batch process module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S13.1 Term discovery module",
+      "status": "PASS",
+      "time_s": 0.01,
+      "error": ""
+    },
+    {
+      "name": "S13.2 AB evaluation module",
+      "status": "PASS",
+      "time_s": 0.02,
+      "error": ""
+    },
+    {
+      "name": "S13.3 Extract subs module",
+      "status": "PASS",
+      "time_s": 0.03,
+      "error": ""
+    },
+    {
+      "name": "S14.1 Translator adapter module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S14.2 Series memory module",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S15.1 Pipeline CLI module",
+      "status": "PASS",
+      "time_s": 0.01,
+      "error": ""
+    },
+    {
+      "name": "S15.2 Hardware detection module",
+      "status": "PASS",
+      "time_s": 0.1,
+      "error": ""
+    }
+  ]
+}
