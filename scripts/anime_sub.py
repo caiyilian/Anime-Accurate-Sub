@@ -53,25 +53,24 @@ def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str
 
     print(f"  Embedding subtitles into video...")
 
+    # Use out_dir as cwd so ffmpeg can use relative paths (avoid colon escaping issues)
+    out_dir = out.parent
+    sub_rel = Path(subtitle_path).name
+    video_rel = Path(video_path).name
+
+    # Copy subtitle and video to output dir for relative path access
+    import shutil
+    shutil.copy2(subtitle_path, out_dir / sub_rel)
+    if Path(video_path).parent != out_dir:
+        shutil.copy2(video_path, out_dir / video_rel)
+
     ext = Path(subtitle_path).suffix.lower()
     if ext == ".ass":
-        # ASS: direct embedding
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path,
-            "-vf", f"ass={subtitle_path}",
-            "-c:a", "copy",
-            str(out),
-        ]
+        cmd = ["ffmpeg", "-y", "-i", video_rel, "-vf", f"ass={sub_rel}", "-c:a", "copy", out.name]
     else:
-        # SRT: burn as subtitles
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path,
-            "-vf", f"subtitles={subtitle_path}",
-            "-c:a", "copy",
-            str(out),
-        ]
+        cmd = ["ffmpeg", "-y", "-i", video_rel, "-vf", f"subtitles={sub_rel}", "-c:a", "copy", out.name]
 
-    subprocess.run(cmd, capture_output=True, check=True)
+    subprocess.run(cmd, capture_output=True, check=True, cwd=str(out_dir))
     print(f"  Video saved: {out.name}")
     return str(out)
 
