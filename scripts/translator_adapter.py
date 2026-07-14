@@ -58,6 +58,7 @@ class TranslatorAdapter(abc.ABC):
 
     def __init__(self, config: dict):
         self.config = config
+        self.series_info = ""
 
     @abc.abstractmethod
     def translate(self, text: str, context_before=None, context_after=None) -> str:
@@ -114,8 +115,11 @@ class OllamaAdapter(TranslatorAdapter):
         return result.get("message", {}).get("content", "").strip()
 
     def translate(self, text, context_before=None, context_after=None):
+        system_content = "你是一个轻小说翻译模型，可以将日语翻译成中文。"
+        if self.series_info:
+            system_content += f"\n\n{self.series_info}"
         messages = [
-            {"role": "system", "content": "你是一个轻小说翻译模型，可以将日语翻译成中文。"},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": f"将下面的日语文本翻译成中文：{text}"},
         ]
         return self._call(messages)
