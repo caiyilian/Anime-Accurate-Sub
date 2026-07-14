@@ -20,7 +20,7 @@ from scripts.series_memory import SeriesMemory
 from scripts.subtitle_gen import generate as generate_subtitles, STYLES
 from scripts.quality_check import generate_report as run_quality_check
 
-PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "quality_check"]
+PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
 
 
 def extract_audio(video_path: str, output_dir: str) -> str:
@@ -42,6 +42,38 @@ def extract_audio(video_path: str, output_dir: str) -> str:
     subprocess.run(cmd, capture_output=True, check=True)
     print(f"  Audio saved: {audio_path.name}")
     return str(audio_path)
+
+
+def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str:
+    """Embed subtitle into video using ffmpeg."""
+    out = Path(output_path)
+    if out.exists():
+        print(f"  Video with subs already exists: {out.name}")
+        return str(out)
+
+    print(f"  Embedding subtitles into video...")
+
+    ext = Path(subtitle_path).suffix.lower()
+    if ext == ".ass":
+        # ASS: direct embedding
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-vf", f"ass={subtitle_path}",
+            "-c:a", "copy",
+            str(out),
+        ]
+    else:
+        # SRT: burn as subtitles
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-vf", f"subtitles={subtitle_path}",
+            "-c:a", "copy",
+            str(out),
+        ]
+
+    subprocess.run(cmd, capture_output=True, check=True)
+    print(f"  Video saved: {out.name}")
+    return str(out)
 
 
 def run_asr(audio_path: str, output_dir: str) -> list:
@@ -151,7 +183,20 @@ def process_video(video_path: str, output_dir: str, config: dict,
             cp.mark_completed("subtitle", output_file=str(srt_path),
                               duration_s=time.time()-t0)
 
-    # Stage 5: Quality check
+    # Stage 5: Embed subtitles into video
+    if "embed_subtitle" in cp.get_pending_stages():
+        print("[embed_subtitle]")
+        t0 = time.time()
+        srt_path = work_dir / f"{video_name}.srt"
+        ass_path = work_dir / f"{video_name}.ass"
+        output_video = work_dir / f"{video_name}_subs.mp4"
+        sub_path = ass_path if ass_path.exists() else srt_path
+        if sub_path.exists():
+            embed_subtitle(video_path, str(sub_path), str(output_video))
+            cp.mark_completed("embed_subtitle", input_file=video_path,
+                              output_file=str(output_video), duration_s=time.time()-t0)
+
+    # Stage 6: Quality check
     if quality_check and "quality_check" in cp.get_pending_stages():
         print("[quality_check]")
         t0 = time.time()
