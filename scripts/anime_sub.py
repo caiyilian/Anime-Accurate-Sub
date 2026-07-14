@@ -58,11 +58,16 @@ def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str
     sub_rel = Path(subtitle_path).name
     video_rel = Path(video_path).name
 
-    # Copy subtitle and video to output dir for relative path access
+    # Copy files to output dir if not already there
     import shutil
-    shutil.copy2(subtitle_path, out_dir / sub_rel)
-    if Path(video_path).parent != out_dir:
-        shutil.copy2(video_path, out_dir / video_rel)
+    src_sub = Path(subtitle_path)
+    dst_sub = out_dir / sub_rel
+    if src_sub.resolve() != dst_sub.resolve():
+        shutil.copy2(str(src_sub), str(dst_sub))
+    src_vid = Path(video_path)
+    dst_vid = out_dir / video_rel
+    if src_vid.resolve() != dst_vid.resolve():
+        shutil.copy2(str(src_vid), str(dst_vid))
 
     ext = Path(subtitle_path).suffix.lower()
     if ext == ".ass":
