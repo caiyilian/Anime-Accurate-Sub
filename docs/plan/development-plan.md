@@ -638,7 +638,8 @@
 - [x] 评估报告：`docs/evaluation/S15.2_Smart_Defaults.md`
 
 **S15.3 验收**：
-- [ ] 回归测试通过清单
+- [x] 回归测试通过清单（17/17 模块全部通过）
+- [x] 评估报告：`docs/evaluation/S15.3_Regression_Test.md`
 
 ---
 
