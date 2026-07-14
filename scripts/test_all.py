@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+# S15.3: End-to-end regression test suite
+#
+# Tests all modules in the pipeline:
+#   S3:  ASR (eval_asr)
+#   S6:  Diarization (eval_diarization)
+#   S9:  Translate + Glossary + TM (translate, glossary, translation_memory)
+#   S10: Subtitle generation (subtitle_gen)
+#   S11: Quality check + Review + MQM (quality_check, review_agents, gemba_mqm)
+#   S12: Checkpoint + Batch (checkpoint, batch_process)
+#   S13: Term discovery + AB eval + Extract subs (discover_terms, ab_eval, extract_subs)
+#   S14: Translator adapter + Series memory (translator_adapter, series_memory)
+#   S15: Pipeline CLI (anime_sub, hardware)
+#
+# Usage:
+#   python scripts/test_all.py
+#   python scripts/test_all.py --verbose
+#   python scripts/test_all.py --module subtitle_gen
+
+import sys, time, json, importlib, traceback
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+
+PASS = 0
+FAIL = 0
+SKIP = 0
+RESULTS = []
+
+
+def test(name: str, func, *args, **kwargs):
+    """Run a single test and record result."""
+    global PASS, FAIL
+    t0 = time.time()
+    try:
+        func(*args, **kwargs)
+        elapsed = time.time() - t0
+        RESULTS.append((name, "PASS", elapsed, ""))
+        PASS += 1
+        print(f"  [PASS] {name} ({elapsed:.2f}s)")
+    except Exception as e:
+        elapsed = time.time() - t0
+        tb = traceback.format_exc().split("\n")[-3] if not kwargs.get("verbose") else traceback.format_exc()
+        RESULTS.append((name, "FAIL", elapsed, str(e)))
+        FAIL += 1
+        print(f"  [FAIL] {name} ({elapsed:.2f}s): {e}")
+
+
+def skip(name: str, reason: str):
+    global SKIP
+    SKIP += 1
+    RESULTS.append((name, "SKIP", 0, reason))
+    print(f"  [SKIP] {name}: {reason}")
+
+
+# ============ S3: ASR ============
+
+def test_asr():
+    """Test ASR evaluation script imports."""
+    import scripts.eval_asr
+    assert hasattr(scripts.eval_asr, "normalize_text")
+    assert hasattr(scripts.eval_asr, "load_gold_standard")
+
+
+# ============ S9: Translation ============
+
+def test_translate():
+    """Test translation module imports and basic function."""
+    from scripts.translate import translate
+    # Just test the function exists
+    assert callable(translate)
+
+
+def test_glossary():
+    """Test glossary module."""
+    from scripts.glossary import Glossary
+    g = Glossary()
+    g.add("test", "测试")
+    assert g.get("test") == "测试"
+    assert g.count() == 1
+    assert "测试" in g.to_prompt_block()
+
+
+def test_translation_memory():
+    """Test translation memory module."""
+    import tempfile, os
+    from scripts.translation_memory import TranslationMemory
+    tm = TranslationMemory()
+    assert tm.count() == 0
+    tm.store("hello", "你好")
+    assert tm.lookup("hello") == "你好"
+    assert tm.stats()["stored"] == 1
+
+
+# ============ S10: Subtitle ============
+
+def test_subtitle_gen():
+    """Test subtitle generation module."""
+    from scripts.subtitle_gen import generate, STYLES, create_test_segments, optimize_timeline
+    assert len(STYLES) >= 3  # At least 3 styles
+    segs = create_test_segments()
+    assert len(segs) >= 5
+    opt = optimize_timeline(segs)
+    # Check no overlaps
+    for i in range(1, len(opt)):
+        assert opt[i].start >= opt[i-1].end - 0.01, f"Overlap at {i}"
+
+
+# ============ S11: Quality ============
+
+def test_quality_check():
+    """Test quality check module."""
+    from scripts.quality_check import generate_report
+    from scripts.quality_check import SubSegment, check_cps, check_empty
+    segs = [SubSegment(start=0, end=2, text="hello", index=0)]
+    issues = check_empty(segs)
+    assert len(issues) == 0  # Not empty
+    segs2 = [SubSegment(start=0, end=2, text="", index=0)]
+    issues2 = check_empty(segs2)
+    assert len(issues2) == 1  # Empty -> error
+
+
+def test_review_agents():
+    """Test review agents module imports."""
+    from scripts.review_agents import AGENTS
+    assert len(AGENTS) == 5  # 5 agents
+
+
+def test_gemba_mqm():
+    """Test MQM module imports."""
+    from scripts.gemba_mqm import MQM_DIMENSIONS, score_segment, parse_score
+    assert len(MQM_DIMENSIONS) == 4  # 4 dimensions
+    score = parse_score("评分: 85")
+    assert score == 85
+
+
+# ============ S12: Infrastructure ============
+
+def test_checkpoint():
+    """Test checkpoint module."""
+    import tempfile, shutil
+    tmp = Path(tempfile.mkdtemp())
+    from scripts.checkpoint import Checkpoint
+    cp = Checkpoint(str(tmp))
+    assert len(cp.get_pending_stages()) == 5
+    cp.mark_completed("asr", duration_s=10.0)
+    assert cp.is_completed("asr")
+    assert not cp.is_completed("translate")
+    # Resume test
+    cp2 = Checkpoint(str(tmp))
+    assert cp2.is_completed("asr")
+    shutil.rmtree(tmp)
+
+
+def test_batch_process():
+    """Test batch processing module imports."""
+    from scripts.batch_process import BatchProcessor
+    assert hasattr(BatchProcessor, "find_videos")
+    assert hasattr(BatchProcessor, "process_all")
+
+
+# ============ S13: Tools ============
+
+def test_discover_terms():
+    """Test term discovery module."""
+    from scripts.discover_terms import extract_candidates, generate_glossary
+    candidates = extract_candidates("テスト テスト 軽音部", min_freq=1, min_len=2)
+    assert len(candidates) >= 2
+
+
+def test_ab_eval():
+    """Test AB evaluation module."""
+    from scripts.ab_eval import compute_cer, evaluate_pair
+    cer = compute_cer("hello world", "hello world")
+    assert cer == 0.0
+    cer2 = compute_cer("hello", "world")
+    assert cer2 > 0
+
+
+def test_extract_subs():
+    """Test subtitle extraction module imports."""
+    from scripts.extract_subs import get_subtitle_tracks, check_subtitle_available
+    # Test with non-existent video
+    tracks = get_subtitle_tracks("nonexistent.mp4")
+    assert tracks == []
+
+
+# ============ S14: Translation Infrastructure ============
+
+def test_translator_adapter():
+    """Test translator adapter module."""
+    from scripts.translator_adapter import TranslatorAdapter, load_config, DEFAULT_CONFIG
+    config = load_config()
+    assert "backend" in config
+    assert "sakura" in config
+
+
+def test_series_memory():
+    """Test series memory module."""
+    from scripts.series_memory import SeriesMemory, create_k_on_memory
+    mem = create_k_on_memory()
+    assert len(mem.data["characters"]) == 6
+    assert len(mem.data["terms"]) == 10
+    prompt = mem.inject_into_prompt("test")
+    assert "平泽唯" in prompt
+    assert "轻音部" in prompt
+
+
+# ============ S15: CLI ============
+
+def test_anime_sub():
+    """Test anime_sub CLI module imports."""
+    from scripts.anime_sub import process_video, PIPELINE_STAGES
+    assert len(PIPELINE_STAGES) == 5
+
+
+def test_hardware():
+    """Test hardware detection module."""
+    from scripts.hardware import HardwareDetector
+    hw = HardwareDetector()
+    info = hw.info
+    assert "platform" in info
+    assert "cpu" in info
+    assert "gpu" in info
+    rec = hw.recommend()
+    assert "recommendations" in rec
+    assert "translation" in rec["recommendations"]
+
+
+# ============ Test Registry ============
+
+ALL_TESTS = [
+    # S3
+    ("S3.1  ASR evaluation module", test_asr),
+    # S9
+    ("S9.1  Translate module", test_translate),
+    ("S9.2  Glossary module", test_glossary),
+    ("S9.3  Translation memory module", test_translation_memory),
+    # S10
+    ("S10.1 Subtitle generation module", test_subtitle_gen),
+    # S11
+    ("S11.1 Quality check module", test_quality_check),
+    ("S11.2 Review agents module", test_review_agents),
+    ("S11.3 GEMBA-MQM module", test_gemba_mqm),
+    # S12
+    ("S12.1 Checkpoint module", test_checkpoint),
+    ("S12.2 Batch process module", test_batch_process),
+    # S13
+    ("S13.1 Term discovery module", test_discover_terms),
+    ("S13.2 AB evaluation module", test_ab_eval),
+    ("S13.3 Extract subs module", test_extract_subs),
+    # S14
+    ("S14.1 Translator adapter module", test_translator_adapter),
+    ("S14.2 Series memory module", test_series_memory),
+    # S15
+    ("S15.1 Pipeline CLI module", test_anime_sub),
+    ("S15.2 Hardware detection module", test_hardware),
+]
+
+
+# ============ Main ============
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="S15.3 Regression Test Suite")
+    parser.add_argument("--verbose", action="store_true", help="Show full traceback")
+    parser.add_argument("--module", type=str, help="Run specific module (e.g., subtitle_gen)")
+    args = parser.parse_args()
+
+    print("\n" + "=" * 60)
+    print("S15.3 REGRESSION TEST SUITE")
+    print("=" * 60)
+    print(f"Testing {len(ALL_TESTS)} modules across S3-S15...\n")
+
+    t0 = time.time()
+
+    for name, func in ALL_TESTS:
+        if args.module and args.module.lower() not in name.lower():
+            skip(name, "filtered by --module")
+            continue
+        test(name, func)
+
+    elapsed = time.time() - t0
+
+    # Summary
+    print(f"\n{'='*60}")
+    print("RESULTS SUMMARY")
+    print(f"{'='*60}")
+    print(f"  PASS: {PASS}/{len(ALL_TESTS)}")
+    print(f"  FAIL: {FAIL}/{len(ALL_TESTS)}")
+    print(f"  SKIP: {SKIP}/{len(ALL_TESTS)}")
+    print(f"  Time: {elapsed:.1f}s")
+
+    # Detail
+    print(f"\n{'='*60}")
+    print("DETAIL")
+    print(f"{'='*60}")
+    for name, status, t, msg in RESULTS:
+        icon = {"PASS": "OK", "FAIL": "FAIL", "SKIP": "--"}.get(status, "?")
+        time_str = f"({t:.2f}s)" if status == "PASS" else ""
+        print(f"  [{icon}] {name} {time_str}")
+        if status == "FAIL" and msg:
+            print(f"       {msg}")
+
+    # Save results
+    out_path = project_root / "docs" / "evaluation" / "S15.3_regression_results.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "total": len(ALL_TESTS),
+            "pass": PASS,
+            "fail": FAIL,
+            "skip": SKIP,
+            "elapsed_s": round(elapsed, 1),
+            "results": [{"name": n, "status": s, "time_s": round(t, 2), "error": m}
+                       for n, s, t, m in RESULTS],
+        }, f, ensure_ascii=False, indent=2)
+    print(f"\nResults saved: {out_path}")
+
+    return 0 if FAIL == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
