@@ -103,6 +103,27 @@ class HardwareDetector:
             return int(text.replace("mib", "").strip())
         return 0
 
+    def _check_ollama_models(self) -> list:
+        """Check what models are available in local Ollama."""
+        try:
+            import urllib.request, json
+            req = urllib.request.Request("http://localhost:11434/api/tags")
+            resp = urllib.request.urlopen(req, timeout=5)
+            data = json.loads(resp.read().decode("utf-8"))
+            return [m["name"] for m in data.get("models", [])]
+        except Exception:
+            return []
+
+    def _check_server_reachable(self) -> bool:
+        """Check if server Ollama is reachable."""
+        try:
+            import urllib.request, json
+            req = urllib.request.Request("http://172.31.102.189:11434/api/tags")
+            resp = urllib.request.urlopen(req, timeout=3)
+            return True
+        except Exception:
+            return False
+
     def recommend(self) -> dict:
         """Recommend optimal pipeline parameters based on detected hardware."""
         gpu = self.info["gpu"]
@@ -110,27 +131,17 @@ class HardwareDetector:
         mem = self.info["memory"]
         vram = gpu.get("vram_total_mb", 0) if gpu.get("available") else 0
 
-        # Model recommendation
-        if vram >= 16000:
-            model = "sakura"
-            model_name = "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest"
-            host = "localhost"
-            reason = "VRAM >= 16GB, can run Sakura-14B"
-        elif vram >= 8000:
-            model = "sakura"
-            model_name = "EasonONLINE/Sakura-qwen2.5-v1.0:7b"
-            host = "localhost"
-            reason = "VRAM >= 8GB, can run Sakura-7B"
-        elif vram >= 4000:
-            model = "galtransl"
-            model_name = "crosery/GalTransl-7B-v2.6:IQ4_XS"
-            host = "localhost"
-            reason = "VRAM >= 4GB, use GalTransl-7B (smaller)"
-        else:
-            model = "sakura"
-            model_name = "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest"
-            host = "172.31.102.189"
-            reason = f"VRAM {vram}MB insufficient, use server"
+        # Check available models via Ollama
+        available_models = self._check_ollama_models()
+        has_local_sakura = any("Sakura" in m for m in available_models)
+        has_local_galtransl = any("GalTransl" in m for m in available_models)
+        server_available = self._check_server_reachable()
+
+        # Model recommendation - always use server
+        model = "sakura"
+        model_name = "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest"
+        host = "172.31.102.189"
+        reason = "Using server Sakura-14B (RTX 4090)"
 
         # ASR batch size based on VRAM
         if vram >= 12000:
