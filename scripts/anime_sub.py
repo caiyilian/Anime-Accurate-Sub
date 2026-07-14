@@ -51,21 +51,24 @@ def extract_audio(video_path: str, output_dir: str) -> str:
 
 
 def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str:
-    """Burn subtitles into video using libass (ASS subtitles)."""
+    """Burn subtitles into video using libass (relative path to avoid colon issue)."""
     out = Path(output_path)
     if out.exists():
         print(f"  Video with subs already exists: {out.name}")
         return str(out)
 
+    import shutil
+    out_dir = out.parent
+    sub_name = Path(subtitle_path).name
+    vid_name = Path(video_path).name
+
+    # Copy files to output dir for relative path access
+    shutil.copy2(video_path, out_dir / vid_name)
+    shutil.copy2(subtitle_path, out_dir / sub_name)
+
     print(f"  Burning subtitles into video (libass)...")
-    cmd = [
-        FFMPEG_PATH, "-y", "-i", video_path,
-        "-vf", f"ass='{subtitle_path}'",
-        "-c:a", "copy",
-        "-preset", "fast", "-crf", "22",
-        str(out),
-    ]
-    subprocess.run(cmd, capture_output=True, check=True)
+    cmd = [FFMPEG_PATH, "-y", "-i", vid_name, "-vf", f"ass={sub_name}", "-c:a", "copy", "-preset", "fast", "-crf", "22", out.name]
+    subprocess.run(cmd, capture_output=True, check=True, cwd=str(out_dir))
     print(f"  Video saved: {out.name}")
     return str(out)
 
