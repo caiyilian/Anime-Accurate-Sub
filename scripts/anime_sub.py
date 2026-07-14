@@ -289,9 +289,14 @@ Examples:
         return
 
     if args.batch:
-        from scripts.batch_process import BatchProcessor
-        bp = BatchProcessor("", args.output_dir)
-        for video in args.batch:
+        import glob as glob_mod
+        video_files = []
+        for pattern in args.batch:
+            video_files.extend(glob_mod.glob(pattern))
+        if not video_files:
+            print(f"No video files matched the patterns")
+            return
+        for video in video_files:
             process_video(video, args.output_dir, config,
                           backend=args.backend, memory_path=args.memory,
                           quality_check=args.quality_check)
