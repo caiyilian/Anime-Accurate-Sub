@@ -231,6 +231,7 @@ Examples:
     parser.add_argument("--config", type=str, default="", help="Translator config file")
     parser.add_argument("--memory", type=str, default="", help="Series memory JSON file")
     parser.add_argument("--quality-check", action="store_true", help="Enable quality checks")
+    parser.add_argument("--auto", action="store_true", help="Auto-detect hardware and set optimal params")
     parser.add_argument("--batch", type=str, nargs="+", help="Batch process multiple videos")
     parser.add_argument("--test", action="store_true", help="Run pipeline test")
     parser.add_argument("--version", action="store_true", help="Show version info")
@@ -244,6 +245,23 @@ Examples:
     if args.test:
         test_run()
         return
+
+    if args.auto:
+        from scripts.hardware import HardwareDetector
+        detector = HardwareDetector()
+        rec = detector.recommend()
+        t = rec["recommendations"]["translation"]
+        print(f"Auto-detected: {rec['hardware']['gpu']} ({rec['hardware']['vram_mb']}MB VRAM)")
+        print(f"Recommended: backend={t['backend']}, model={t['model']}")
+        # Apply recommendations
+        if not args.backend or args.backend == "sakura":
+            args.backend = t["backend"]
+        if not args.config:
+            # Create a temp config with recommended host
+            config["backend"] = t["backend"]
+            config[t["backend"]] = {"model": t["model"], "host": t["host"]}
+        if not args.quality_check and rec["recommendations"]["quality_check"]["enabled"]:
+            args.quality_check = True
 
     config = load_config(args.config)
 
