@@ -112,12 +112,12 @@ class HardwareDetector:
 
         # Model recommendation
         if vram >= 16000:
-            model = "sakura-14b"
+            model = "sakura"
             model_name = "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest"
             host = "localhost"
             reason = "VRAM >= 16GB, can run Sakura-14B"
         elif vram >= 8000:
-            model = "sakura-7b"
+            model = "sakura"
             model_name = "EasonONLINE/Sakura-qwen2.5-v1.0:7b"
             host = "localhost"
             reason = "VRAM >= 8GB, can run Sakura-7B"
@@ -127,7 +127,7 @@ class HardwareDetector:
             host = "localhost"
             reason = "VRAM >= 4GB, use GalTransl-7B (smaller)"
         else:
-            model = "sakura-14b"
+            model = "sakura"
             model_name = "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest"
             host = "172.31.102.189"
             reason = f"VRAM {vram}MB insufficient, use server"
