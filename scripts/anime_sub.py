@@ -45,37 +45,23 @@ def extract_audio(video_path: str, output_dir: str) -> str:
 
 
 def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str:
-    """Embed subtitle into video using ffmpeg."""
+    """Embed SRT subtitle as stream into MP4 (mov_text)."""
     out = Path(output_path)
     if out.exists():
         print(f"  Video with subs already exists: {out.name}")
         return str(out)
 
     print(f"  Embedding subtitles into video...")
-
-    # Use out_dir as cwd so ffmpeg can use relative paths (avoid colon escaping issues)
-    out_dir = out.parent
-    sub_rel = Path(subtitle_path).name
-    video_rel = Path(video_path).name
-
-    # Copy files to output dir if not already there
-    import shutil
-    src_sub = Path(subtitle_path)
-    dst_sub = out_dir / sub_rel
-    if src_sub.resolve() != dst_sub.resolve():
-        shutil.copy2(str(src_sub), str(dst_sub))
-    src_vid = Path(video_path)
-    dst_vid = out_dir / video_rel
-    if src_vid.resolve() != dst_vid.resolve():
-        shutil.copy2(str(src_vid), str(dst_vid))
-
-    ext = Path(subtitle_path).suffix.lower()
-    if ext == ".ass":
-        cmd = ["ffmpeg", "-y", "-i", video_rel, "-vf", f"ass={sub_rel}", "-c:a", "copy", out.name]
-    else:
-        cmd = ["ffmpeg", "-y", "-i", video_rel, "-vf", f"subtitles={sub_rel}", "-c:a", "copy", out.name]
-
-    subprocess.run(cmd, capture_output=True, check=True, cwd=str(out_dir))
+    cmd = [
+        "ffmpeg", "-y", "-i", video_path,
+        "-i", subtitle_path,
+        "-c:v", "copy", "-c:a", "copy",
+        "-c:s", "mov_text",
+        "-metadata:s:s:0", "language=jpn",
+        "-metadata:s:s:0", "title=Japanese",
+        str(out),
+    ]
+    subprocess.run(cmd, capture_output=True, check=True)
     print(f"  Video saved: {out.name}")
     return str(out)
 
@@ -194,9 +180,9 @@ def process_video(video_path: str, output_dir: str, config: dict,
         srt_path = work_dir / f"{video_name}.srt"
         ass_path = work_dir / f"{video_name}.ass"
         output_video = work_dir / f"{video_name}_subs.mp4"
-        sub_path = ass_path if ass_path.exists() else srt_path
-        if sub_path.exists():
-            embed_subtitle(video_path, str(sub_path), str(output_video))
+        srt_path = work_dir / f"{video_name}.srt"
+        if srt_path.exists():
+            embed_subtitle(video_path, str(srt_path), str(output_video))
             cp.mark_completed("embed_subtitle", input_file=video_path,
                               output_file=str(output_video), duration_s=time.time()-t0)
 
