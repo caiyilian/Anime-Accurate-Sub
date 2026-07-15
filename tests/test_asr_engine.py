@@ -1,6 +1,12 @@
 from pathlib import Path
 
-from scripts.asr_engine import ASRSettings, TimedWord, resolve_model_path, segment_timed_words
+from scripts.asr_engine import (
+    ASRSettings,
+    TimedWord,
+    collapse_phrase_repetitions,
+    resolve_model_path,
+    segment_timed_words,
+)
 
 
 def test_segment_timed_words_splits_on_sentence_end_and_pause():
@@ -42,6 +48,22 @@ def test_single_bad_word_timestamp_is_clamped():
     settings = ASRSettings(max_duration_s=6)
     segments = segment_timed_words([TimedWord(10.0, 40.0, "長い時間戳")], settings)
     assert segments == [{"start": 10.0, "end": 16.0, "text": "長い時間戳"}]
+
+
+def test_obvious_phrase_loop_is_capped_at_two_copies():
+    phrase = "聞こえない"
+    assert collapse_phrase_repetitions(phrase * 7) == phrase * 2
+
+
+def test_normal_emphasis_and_single_character_scream_are_preserved():
+    assert collapse_phrase_repetitions("でも" * 3) == "でも" * 3
+    assert collapse_phrase_repetitions("あ" * 12) == "あ" * 12
+
+
+def test_segmentation_applies_phrase_loop_cleanup():
+    phrase = "聞こえない"
+    segments = segment_timed_words([TimedWord(0.0, 3.0, phrase * 7)])
+    assert segments[0]["text"] == phrase * 2
 
 
 def test_resolve_model_path_accepts_explicit_ct2_directory(tmp_path: Path):
