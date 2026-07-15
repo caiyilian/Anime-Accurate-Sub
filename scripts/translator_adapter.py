@@ -235,7 +235,11 @@ class OllamaAdapter(TranslatorAdapter):
         if any(marker in target for marker in ("将下面", "术语表", "翻译结果如下")):
             return False
         nonverbal_source = bool(
-            re.fullmatch(r"[\s\u30c3\u3063\u30fc\u2010-\u2015\-\u2026!\uff01?\uff1f\u3001\u3002\u30fb]+", source)
+            re.fullmatch(
+                r"[\s\u30c3\u3063\u30fc\u301c\uff5e\u2010-\u2015\-"
+                r"\u2026!\uff01?\uff1f\u3001\u3002\u30fb]+",
+                source,
+            )
         )
         if (
             not re.search(r"[\u3400-\u9fffA-Za-z0-9]", target)
