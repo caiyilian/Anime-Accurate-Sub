@@ -65,6 +65,28 @@ def _join_words(words: Sequence[TimedWord]) -> str:
     return "".join(word.text for word in words).strip()
 
 
+def collapse_phrase_repetitions(text: str, max_keep: int = 2) -> str:
+    """Cap obvious ASR phrase loops while preserving normal emphatic repeats.
+
+    Four or more consecutive copies of a 2-12 character phrase are a common
+    Whisper hallucination. Three repetitions (for example ``でもでもでも``)
+    and single-character screams remain untouched.
+    """
+    pattern = re.compile(r"(.{2,12}?)\1{3,}")
+
+    def replace(match: re.Match) -> str:
+        phrase = match.group(1)
+        if len(set(phrase)) == 1:
+            return match.group(0)
+        return phrase * max_keep
+
+    previous = None
+    while text != previous:
+        previous = text
+        text = pattern.sub(replace, text)
+    return text
+
+
 def _make_segment(
     words: Sequence[TimedWord], min_duration_s: float, max_duration_s: float
 ) -> dict:
@@ -77,7 +99,7 @@ def _make_segment(
     result = {
         "start": round(start, 2),
         "end": round(end, 2),
-        "text": _join_words(words),
+        "text": collapse_phrase_repetitions(_join_words(words)),
     }
     if probabilities:
         result["confidence"] = round(sum(probabilities) / len(probabilities), 4)
