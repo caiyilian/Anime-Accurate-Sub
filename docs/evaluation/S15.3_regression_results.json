@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-07-14T10:12:02",
+  "timestamp": "2026-07-15T23:27:57",
   "total": 17,
   "pass": 17,
   "fail": 0,
   "skip": 0,
-  "elapsed_s": 0.3,
+  "elapsed_s": 1.0,
   "results": [
     {
       "name": "S3.1  ASR evaluation module",
@@ -39,7 +39,7 @@
     {
       "name": "S11.1 Quality check module",
       "status": "PASS",
-      "time_s": 0.0,
+      "time_s": 0.01,
       "error": ""
     },
     {
@@ -69,13 +69,13 @@
     {
       "name": "S13.1 Term discovery module",
       "status": "PASS",
-      "time_s": 0.01,
+      "time_s": 0.0,
       "error": ""
     },
     {
       "name": "S13.2 AB evaluation module",
       "status": "PASS",
-      "time_s": 0.02,
+      "time_s": 0.0,
       "error": ""
     },
     {
@@ -99,13 +99,13 @@
     {
       "name": "S15.1 Pipeline CLI module",
       "status": "PASS",
-      "time_s": 0.01,
+      "time_s": 0.02,
       "error": ""
     },
     {
       "name": "S15.2 Hardware detection module",
       "status": "PASS",
-      "time_s": 0.1,
+      "time_s": 0.73,
       "error": ""
     }
   ]
