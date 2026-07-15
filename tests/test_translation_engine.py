@@ -107,6 +107,11 @@ def test_nonverbal_punctuation_cue_is_allowed():
     assert SakuraAdapter._valid_translation(source, "\u2014\u2014\uff01\uff1f") is True
 
 
+def test_fullwidth_tilde_nonverbal_cue_is_allowed():
+    source = "\uff5e\uff5e\u3063\u2026\u2026"
+    assert SakuraAdapter._valid_translation(source, "\uff5e\uff5e\u2026\u2026") is True
+
+
 def test_recursive_batches_drop_unrelated_glossary_terms():
     texts = ["\u8efd\u97f3\u90e8", "\u79cb\u5c71\u6faa"]
     terms = [
