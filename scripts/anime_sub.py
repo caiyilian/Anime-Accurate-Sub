@@ -34,7 +34,10 @@ from scripts.oped_detector import (
 )
 from scripts.series_memory import SeriesMemory
 from scripts.subtitle_gen import generate as generate_subtitles, STYLES
-from scripts.quality_check import generate_report as run_quality_check
+from scripts.quality_check import (
+    generate_report as run_quality_check,
+    segments_from_dicts as quality_segments_from_dicts,
+)
 
 PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
 _ASR_ENGINE = None
@@ -131,7 +134,8 @@ def process_video(video_path: str, output_dir: str, config: dict,
     work_dir = Path(output_dir) / video_name
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    cp = Checkpoint(str(work_dir))
+    active_stages = PIPELINE_STAGES if quality_check else PIPELINE_STAGES[:-1]
+    cp = Checkpoint(str(work_dir), stages=active_stages)
     result = {"video": video_name, "path": video_path, "status": "ok"}
 
     # Stage 1: Extract audio
@@ -266,11 +270,22 @@ def process_video(video_path: str, output_dir: str, config: dict,
         print("[quality_check]")
         t0 = time.time()
         seg_path = work_dir / "translated.json"
-        if seg_path.exists():
-            report_path = work_dir / "quality_report.json"
-            run_quality_check([], [], str(report_path))
-            cp.mark_completed("quality_check", output_file=str(report_path),
-                              duration_s=time.time()-t0)
+        if not seg_path.exists():
+            raise FileNotFoundError(
+                f"Translated segments are missing for quality check: {seg_path}"
+            )
+        with open(seg_path, encoding="utf-8") as file:
+            translated_items = json.load(file)
+        report_path = work_dir / "quality_report.json"
+        report = run_quality_check(
+            quality_segments_from_dicts(translated_items),
+            [],
+            str(report_path),
+            glossary_path or None,
+        )
+        result["quality_stats"] = report["stats"]
+        cp.mark_completed("quality_check", output_file=str(report_path),
+                          duration_s=time.time()-t0)
 
     # Summary
     done = len(cp.get_completed_stages())

@@ -1,7 +1,7 @@
 # S12.1: Checkpoint resume module - JSONL atomic writes + stage tracking + restart recovery
 #
 # Pipeline stages:
-#   extract_audio -> asr -> translate -> subtitle -> quality_check
+#   extract_audio -> asr -> translate -> subtitle -> embed_subtitle -> quality_check
 #
 # Each stage writes its output to a JSONL checkpoint file.
 # On restart, completed stages are automatically skipped.
@@ -227,7 +227,7 @@ def evaluate():
     print("\n--- Test 1: Basic checkpoint flow ---")
     cp = Checkpoint(str(tmp_dir / "test1"))
     assert len(cp.get_completed_stages()) == 0
-    assert len(cp.get_pending_stages()) == 5
+    assert len(cp.get_pending_stages()) == 6
 
     # Simulate stage 1
     cp.mark_completed("extract_audio", duration_s=10.5)
