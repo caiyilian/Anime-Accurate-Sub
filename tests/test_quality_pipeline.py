@@ -48,6 +48,24 @@ def test_quality_report_contains_real_segments_and_review_queue(tmp_path):
     assert json.loads(output.read_text(encoding="utf-8"))["stats"] == report["stats"]
 
 
+def test_quality_report_flags_translation_fallback(tmp_path):
+    items = _translated_items()
+    items[0]["translation_model"] = "crosery/GalTransl-7B-v2.6:Q6_k"
+    items[0]["translation_fallback"] = True
+
+    report = generate_report(
+        segments_from_dicts(items), [], str(tmp_path / "fallback-quality.json")
+    )
+    fallback = [
+        item for item in report["review_queue"]
+        if item["rule"] == "translation_fallback"
+    ]
+
+    assert len(fallback) == 1
+    assert fallback[0]["translation_model"] == "crosery/GalTransl-7B-v2.6:Q6_k"
+    assert fallback[0]["translation_fallback"] is True
+
+
 def test_main_pipeline_quality_stage_reads_translated_json(tmp_path):
     video = tmp_path / "episode01.mp4"
     output_root = tmp_path / "output"
