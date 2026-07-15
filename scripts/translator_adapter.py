@@ -22,7 +22,7 @@
 #   python scripts/translator_adapter.py --list-backends
 #   python scripts/translator_adapter.py --evaluate
 
-import json, os, sys, time, argparse, urllib.request, urllib.error, abc, re, socket
+import json, os, sys, time, argparse, urllib.request, urllib.error, abc, re, socket, unicodedata
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -229,18 +229,22 @@ class OllamaAdapter(TranslatorAdapter):
         return lines
 
     @staticmethod
+    def _is_nonverbal_source(source: str) -> bool:
+        """Return whether a cue contains only vocal markers and punctuation."""
+        vocal_markers = {"っ", "ッ", "ー"}
+        return bool(source) and all(
+            character in vocal_markers
+            or unicodedata.category(character)[0] in {"P", "S", "Z"}
+            for character in source
+        )
+
+    @staticmethod
     def _valid_translation(source: str, target: str) -> bool:
         if not target or target.startswith("[API Error"):
             return False
         if any(marker in target for marker in ("将下面", "术语表", "翻译结果如下")):
             return False
-        nonverbal_source = bool(
-            re.fullmatch(
-                r"[\s\u30c3\u3063\u30fc\u301c\uff5e\u2010-\u2015\-"
-                r"\u2026!\uff01?\uff1f\u3001\u3002\u30fb]+",
-                source,
-            )
-        )
+        nonverbal_source = OllamaAdapter._is_nonverbal_source(source)
         if (
             not re.search(r"[\u3400-\u9fffA-Za-z0-9]", target)
             and not nonverbal_source
