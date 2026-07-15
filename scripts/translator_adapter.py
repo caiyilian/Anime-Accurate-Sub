@@ -244,6 +244,36 @@ class OllamaAdapter(TranslatorAdapter):
         return lines
 
     @staticmethod
+    def _tagged_texts(texts: Sequence[str]) -> list[str]:
+        """Attach stable IDs so a model cannot silently swap batch lines."""
+        return [f"[[L{index:03d}]] {text}" for index, text in enumerate(texts)]
+
+    @staticmethod
+    def _parse_tagged_lines(raw: str, expected: int) -> list[str] | None:
+        """Parse tagged translations, accepting brackets commonly normalized by LLMs."""
+        raw = raw.strip()
+        raw = re.sub(r"^```(?:text|json)?\s*", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"\s*```$", "", raw)
+        tagged = {}
+        pattern = re.compile(
+            r"^\s*(?:\[\[|\[|【)\s*L(\d{1,4})\s*(?:\]\]|\]|】)\s*(.*?)\s*$"
+        )
+        for line in raw.splitlines():
+            if not line.strip():
+                continue
+            match = pattern.match(line)
+            if not match:
+                return None
+            index = int(match.group(1))
+            target = match.group(2).strip()
+            if index >= expected or index in tagged or not target:
+                return None
+            tagged[index] = target
+        if set(tagged) != set(range(expected)):
+            return None
+        return [tagged[index] for index in range(expected)]
+
+    @staticmethod
     def _is_nonverbal_source(source: str) -> bool:
         """Return whether a cue contains only vocal markers and punctuation."""
         vocal_markers = {"っ", "ッ", "ー"}
@@ -279,12 +309,24 @@ class OllamaAdapter(TranslatorAdapter):
         if not texts:
             return []
         glossary_terms = self._matching_terms(texts, glossary_terms)
+        tagged_batch = len(texts) > 1
+        prompt_texts = self._tagged_texts(texts) if tagged_batch else texts
+        system_prompt = self._system_prompt(self.series_info)
+        if tagged_batch:
+            system_prompt += (
+                "\n逐行翻译。每行开头的 [[Lnnn]] 是不可翻译的行号；译文必须保留"
+                "相同行号，不得交换、合并或遗漏。"
+            )
         messages = [
-            {"role": "system", "content": self._system_prompt(self.series_info)},
-            {"role": "user", "content": self._user_prompt(texts, glossary_terms)},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": self._user_prompt(prompt_texts, glossary_terms)},
         ]
         raw = self._call(messages, num_predict=min(4096, max(512, len(texts) * 128)))
-        translated = self._parse_lines(raw, len(texts))
+        translated = (
+            self._parse_tagged_lines(raw, len(texts))
+            if tagged_batch
+            else self._parse_lines(raw, len(texts))
+        )
         if translated and all(
             self._valid_translation(source, target)
             for source, target in zip(texts, translated)
