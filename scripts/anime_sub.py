@@ -27,6 +27,11 @@ from scripts.translator_adapter import TranslatorAdapter, load_config
 from scripts.translation_engine import PipelineTranslator
 from scripts.translation_memory import TranslationMemory
 from scripts.glossary import Glossary
+from scripts.oped_detector import (
+    detect_oped,
+    filter_segments as filter_oped_segments,
+    parse_explicit_ranges,
+)
 from scripts.series_memory import SeriesMemory
 from scripts.subtitle_gen import generate as generate_subtitles, STYLES
 from scripts.quality_check import generate_report as run_quality_check
@@ -117,7 +122,10 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    backend: str = "sakura", memory_path: str = "",
                    quality_check: bool = False, glossary_path: str = "",
                    translation_memory_path: str = "",
-                   translation_batch_size: int = 0) -> dict:
+                   translation_batch_size: int = 0,
+                   oped_series: str = "", episode_number: int = 0,
+                   oped_ranges: list[str] = None,
+                   oped_strict: bool = True) -> dict:
     """Process a single video through the full pipeline."""
     video_name = Path(video_path).stem
     work_dir = Path(output_dir) / video_name
@@ -140,7 +148,51 @@ def process_video(video_path: str, output_dir: str, config: dict,
     if "asr" in cp.get_pending_stages():
         print("[asr]")
         t0 = time.time()
-        asr_segments = run_asr(audio_path or str(work_dir), str(work_dir))
+        if not audio_path:
+            existing_audio = work_dir / f"{video_name}.wav"
+            if not existing_audio.exists():
+                raise FileNotFoundError(
+                    f"ASR audio is missing after extract_audio checkpoint: {existing_audio}"
+                )
+            audio_path = str(existing_audio)
+
+        ranges = []
+        if oped_ranges:
+            ranges = parse_explicit_ranges(oped_ranges)
+        elif oped_series:
+            print(f"  Detecting OP/ED for series: {oped_series}")
+            try:
+                ranges = detect_oped(
+                    video_path,
+                    oped_series,
+                    episode=episode_number or None,
+                )
+            except Exception as error:
+                if oped_strict:
+                    raise
+                print(f"  Warning: OP/ED detection failed; continuing without filter: {error}")
+
+        if ranges:
+            range_path = work_dir / "oped_ranges.json"
+            with open(range_path, "w", encoding="utf-8") as file:
+                json.dump([item.to_dict() for item in ranges], file, ensure_ascii=False, indent=2)
+            for item in ranges:
+                print(
+                    f"  {item.kind}: {item.start:.3f}s -> {item.end:.3f}s "
+                    f"(score={item.score:.3f}, source={item.source})"
+                )
+
+        asr_segments = run_asr(audio_path, str(work_dir))
+        if ranges:
+            asr_segments, removed_segments = filter_oped_segments(asr_segments, ranges)
+            removed_path = work_dir / "oped_removed_segments.json"
+            with open(removed_path, "w", encoding="utf-8") as file:
+                json.dump(removed_segments, file, ensure_ascii=False, indent=2)
+            print(
+                f"  OP/ED filter removed {len(removed_segments)} segments; "
+                f"{len(asr_segments)} dialogue segments remain"
+            )
+            result["oped_removed_segments"] = len(removed_segments)
         cp.mark_completed("asr", duration_s=time.time()-t0)
         # Save ASR results for later stages
         asr_path = work_dir / "asr_results.json"
@@ -308,6 +360,14 @@ Examples:
                         help="Shared translation memory JSONL (defaults to the episode work directory)")
     parser.add_argument("--translation-batch-size", type=int, default=0,
                         help="Lines per translation request (default: backend configuration)")
+    parser.add_argument("--oped-series", type=str, default="",
+                        help="AnimeThemes series name used for automatic OP/ED detection")
+    parser.add_argument("--episode-number", type=int, default=0,
+                        help="Episode number for selecting the correct theme version")
+    parser.add_argument("--oped-range", action="append", default=[],
+                        help="Explicit offline range, e.g. op:115.1-204.9 (repeatable)")
+    parser.add_argument("--oped-best-effort", action="store_true",
+                        help="Continue without OP/ED filtering if automatic detection fails")
     parser.add_argument("--quality-check", action="store_true", help="Enable quality checks")
     parser.add_argument("--auto", action="store_true", help="Auto-detect hardware and set optimal params")
     parser.add_argument("--batch", type=str, nargs="+", help="Batch process multiple videos")
@@ -350,6 +410,9 @@ Examples:
             quality_check=args.quality_check, glossary_path=args.glossary,
             translation_memory_path=args.translation_memory,
             translation_batch_size=args.translation_batch_size,
+            oped_series=args.oped_series, episode_number=args.episode_number,
+            oped_ranges=args.oped_range,
+            oped_strict=not args.oped_best_effort,
         )
         return
 
@@ -374,7 +437,11 @@ Examples:
                           backend=args.backend, memory_path=args.memory,
                           quality_check=args.quality_check, glossary_path=args.glossary,
                           translation_memory_path=args.translation_memory,
-                          translation_batch_size=args.translation_batch_size)
+                          translation_batch_size=args.translation_batch_size,
+                          oped_series=args.oped_series,
+                          episode_number=args.episode_number,
+                          oped_ranges=args.oped_range,
+                          oped_strict=not args.oped_best_effort)
         return
 
     parser.print_help()
