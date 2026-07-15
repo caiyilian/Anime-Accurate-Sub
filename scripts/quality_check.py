@@ -34,6 +34,8 @@ class SubSegment:
     ja: Optional[str] = None
     speaker: Optional[str] = None
     confidence: Optional[float] = None
+    translation_model: Optional[str] = None
+    translation_fallback: bool = False
     index: int = 0
 
 
@@ -43,7 +45,7 @@ class QualityIssue:
     severity: str                # error / warning / info
     segment_index: int           # segment index
     message: str                 # description
-    value: Optional[float] = None
+    value: Optional[float | str] = None
     expected: Optional[str] = None
 
 
@@ -76,6 +78,8 @@ def segments_from_dicts(items: List[dict]) -> List[SubSegment]:
             ja=item.get("ja"),
             speaker=item.get("speaker"),
             confidence=item.get("asr_confidence", item.get("confidence")),
+            translation_model=item.get("translation_model"),
+            translation_fallback=bool(item.get("translation_fallback", False)),
             index=index,
         )
         for index, item in enumerate(items)
@@ -217,6 +221,18 @@ def detect_suspicious(segments: List[SubSegment]) -> List[QualityIssue]:
         text = seg.text.strip()
         ja = (seg.ja or "").strip()
 
+        if seg.translation_fallback:
+            issues.append(QualityIssue(
+                rule="translation_fallback", severity="warning",
+                segment_index=seg.index,
+                message=(
+                    "Primary translation failed validation; manual review recommended "
+                    f"for fallback model {seg.translation_model or 'unknown'}"
+                ),
+                value=seg.translation_model,
+                expected="primary translation model",
+            ))
+
         if seg.confidence is not None and float(seg.confidence) < MIN_ASR_CONFIDENCE:
             issues.append(QualityIssue(
                 rule="low_asr_confidence", severity="warning",
@@ -320,6 +336,8 @@ def generate_report(segments: List[SubSegment], issues: Optional[List[QualityIss
             "text": segment.text,
             "speaker": segment.speaker,
             "asr_confidence": segment.confidence,
+            "translation_model": segment.translation_model,
+            "translation_fallback": segment.translation_fallback,
         })
 
     with open(output_path, "w", encoding="utf-8") as f:

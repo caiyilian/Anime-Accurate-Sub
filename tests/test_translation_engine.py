@@ -21,6 +21,22 @@ class FakeAdapter:
         return [f"中:{text}" for text in texts]
 
 
+class FakeFallbackAdapter:
+    model = "fake-galtransl"
+
+    def __init__(self, target="啊！"):
+        self.target = target
+        self.calls = []
+        self.series_info = ""
+
+    def translate_batch(self, texts, glossary_terms=None):
+        self.calls.append((list(texts), list(glossary_terms or [])))
+        return [self.target for _ in texts]
+
+    def result_model(self, source):
+        return self.model
+
+
 def test_pipeline_translator_uses_memory_glossary_and_progress(tmp_path):
     memory_path = tmp_path / "tm.jsonl"
     memory = TranslationMemory(str(memory_path), auto_save=False)
@@ -42,6 +58,8 @@ def test_pipeline_translator_uses_memory_glossary_and_progress(tmp_path):
 
     assert [item["text"] for item in result] == ["早上好", "中:軽音部です", "中:よろしく"]
     assert result[0]["translation_cached"] is True
+    assert result[0]["translation_model"] == "previous"
+    assert result[0]["translation_fallback"] is False
     assert result[0]["asr_confidence"] == 0.9
     assert adapter.calls == [
         (["軽音部です", "よろしく"], [("軽音部", "轻音部")])
@@ -73,6 +91,68 @@ def test_sakura_batch_falls_back_to_smaller_requests():
     responses = iter(["只返回一行", "甲", "乙"])
     adapter._call = lambda *args, **kwargs: next(responses)
     assert adapter.translate_batch(["あ", "い"]) == ["甲", "乙"]
+
+
+def test_invalid_single_line_recovers_with_constrained_retry():
+    adapter = SakuraAdapter(
+        {
+            "sakura": {
+                "model": "fake-sakura",
+                "host": "localhost",
+                "validation_retries": 2,
+            }
+        }
+    )
+    responses = iter(["“", "啊！"])
+    adapter._call = lambda *args, **kwargs: next(responses)
+
+    assert adapter.translate_batch(["――あ!……"]) == ["啊！"]
+    assert adapter.result_model("――あ!……") == "fake-sakura"
+    assert adapter.result_is_fallback("――あ!……") is False
+
+
+def test_invalid_single_line_uses_configured_galtransl_fallback():
+    adapter = SakuraAdapter(DEFAULT_CONFIG)
+    fallback = FakeFallbackAdapter()
+    adapter.fallback_adapter = fallback
+    adapter.validation_retries = 2
+    adapter._call = lambda *args, **kwargs: "“"
+
+    assert adapter.translate_batch(["――あ!……"]) == ["啊！"]
+    assert fallback.calls == [(["――あ!……"], [])]
+    assert adapter.result_model("――あ!……") == "fake-galtransl"
+    assert adapter.result_is_fallback("――あ!……") is True
+
+
+def test_pipeline_persists_fallback_model_provenance(tmp_path):
+    adapter = SakuraAdapter(DEFAULT_CONFIG)
+    adapter.fallback_adapter = FakeFallbackAdapter(target="啊！")
+    adapter.validation_retries = 0
+    adapter._call = lambda *args, **kwargs: "“"
+    memory_path = tmp_path / "fallback.jsonl"
+    memory = TranslationMemory(str(memory_path), auto_save=False)
+    segments = [{"start": 0, "end": 1, "text": "――あ!……"}]
+
+    first = PipelineTranslator(adapter, memory=memory).translate(segments)
+    second = PipelineTranslator(FakeAdapter(), memory=TranslationMemory(str(memory_path))).translate(
+        segments
+    )
+
+    assert first[0]["translation_model"] == "fake-galtransl"
+    assert first[0]["translation_fallback"] is True
+    assert second[0]["translation_cached"] is True
+    assert second[0]["translation_model"] == "fake-galtransl"
+    assert second[0]["translation_fallback"] is True
+
+
+def test_translation_memory_updates_provenance_for_unchanged_text(tmp_path):
+    memory = TranslationMemory(str(tmp_path / "provenance.jsonl"), auto_save=False)
+    memory.store("――あ!……", "——啊！……", model="fake-sakura", fallback=False)
+    memory.store("――あ!……", "——啊！……", model="fake-galtransl", fallback=True)
+
+    entry = memory.lookup_entry("――あ!……")
+    assert entry["model"] == "fake-galtransl"
+    assert entry["translation_fallback"] is True
 
 
 def test_ollama_adapter_accepts_custom_port_and_context_size():

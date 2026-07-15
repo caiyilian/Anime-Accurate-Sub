@@ -36,6 +36,8 @@ DEFAULT_CONFIG = {
         "host": "172.31.102.189",
         "timeout_s": 300,
         "max_retries": 4,
+        "validation_retries": 2,
+        "validation_fallback_backend": "galtransl",
         "batch_size": 16,
         "num_ctx": 4096,
         "temperature": 0.1,
@@ -75,6 +77,8 @@ class TranslatorAdapter(abc.ABC):
     def __init__(self, config: dict):
         self.config = config
         self.series_info = ""
+        self._translation_models: dict[str, str] = {}
+        self._translation_fallbacks: dict[str, bool] = {}
 
     @abc.abstractmethod
     def translate(self, text: str, context_before=None, context_after=None) -> str:
@@ -84,6 +88,16 @@ class TranslatorAdapter(abc.ABC):
     def translate_batch(self, texts: Sequence[str], glossary_terms=None) -> list[str]:
         """Translate ordered lines, falling back to the single-line interface."""
         return [self.translate(text) for text in texts]
+
+    def result_model(self, source: str) -> str:
+        """Return the model that produced a source line's latest translation."""
+        return self._translation_models.get(
+            source,
+            getattr(self, "model", self.name()),
+        )
+
+    def result_is_fallback(self, source: str) -> bool:
+        return self._translation_fallbacks.get(source, False)
 
     @abc.abstractmethod
     def name(self) -> str:
@@ -132,6 +146,7 @@ class OllamaAdapter(TranslatorAdapter):
         self.top_p = float(backend_cfg.get("top_p", 0.3))
         self.repeat_penalty = float(backend_cfg.get("repeat_penalty", 1.0))
         self.frequency_penalty = float(backend_cfg.get("frequency_penalty", 0.1))
+        self.validation_retries = int(backend_cfg.get("validation_retries", 2))
 
     def _call(self, messages, num_predict=1024):
         payload = {
@@ -274,17 +289,56 @@ class OllamaAdapter(TranslatorAdapter):
             self._valid_translation(source, target)
             for source, target in zip(texts, translated)
         ):
+            for source in texts:
+                self._translation_models[source] = self.model
+                self._translation_fallbacks[source] = False
             return translated
 
         if len(texts) == 1:
-            raise RuntimeError(
-                f"Sakura returned an invalid single-line translation: {raw[:200]}"
-            )
+            return [self._recover_invalid_single(texts[0], glossary_terms, raw)]
         # A model may occasionally merge or drop a line. Recursively reduce the
         # batch instead of guessing which result belongs to which timestamp.
         middle = len(texts) // 2
         return self.translate_batch(texts[:middle], glossary_terms) + self.translate_batch(
             texts[middle:], glossary_terms
+        )
+
+    def _recover_invalid_single(self, source: str, glossary_terms, raw: str) -> str:
+        """Retry a rejected line with a constrained prompt before using a fallback."""
+        last_raw = raw
+        for attempt in range(1, self.validation_retries + 1):
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        self._system_prompt(self.series_info)
+                        + "\n只输出一行简洁的简体中文译文；禁止解释、重复、引号包裹和遗漏。"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        "上一次译文未通过字幕校验。请重新翻译且只输出一行：\n"
+                        + self._user_prompt([source], glossary_terms)
+                    ),
+                },
+            ]
+            last_raw = self._call(messages, num_predict=256)
+            parsed = self._parse_lines(last_raw, 1)
+            if parsed and self._valid_translation(source, parsed[0]):
+                self._translation_models[source] = self.model
+                self._translation_fallbacks[source] = False
+                print(
+                    f"  Translation validation recovered on retry "
+                    f"{attempt}/{self.validation_retries}"
+                )
+                return parsed[0]
+        return self._fallback_invalid_single(source, glossary_terms, last_raw)
+
+    def _fallback_invalid_single(self, source: str, glossary_terms, raw: str) -> str:
+        raise RuntimeError(
+            f"{self.name()} returned an invalid single-line translation after "
+            f"{self.validation_retries} validation retries: {raw[:200]}"
         )
 
     @staticmethod
@@ -305,6 +359,32 @@ class OllamaAdapter(TranslatorAdapter):
 class SakuraAdapter(OllamaAdapter):
     def __init__(self, config: dict):
         super().__init__(config, "sakura")
+        fallback_name = config.get("sakura", {}).get(
+            "validation_fallback_backend", "galtransl"
+        )
+        fallback_config = config.get(fallback_name, {})
+        self.fallback_adapter = None
+        if fallback_name == "galtransl" and fallback_config.get("model"):
+            self.fallback_adapter = GalTranslAdapter(config)
+
+    def _fallback_invalid_single(self, source: str, glossary_terms, raw: str) -> str:
+        if self.fallback_adapter is None:
+            return super()._fallback_invalid_single(source, glossary_terms, raw)
+        self.fallback_adapter.series_info = self.series_info
+        try:
+            target = self.fallback_adapter.translate_batch([source], glossary_terms)[0]
+        except Exception as error:
+            raise RuntimeError(
+                "Sakura validation retries and configured GalTransl fallback both failed: "
+                f"{error}"
+            ) from error
+        self._translation_models[source] = self.fallback_adapter.result_model(source)
+        self._translation_fallbacks[source] = True
+        print(
+            f"  Translation validation fallback: {self.model} -> "
+            f"{self._translation_models[source]}"
+        )
+        return target
 
     def name(self):
         return f"Sakura ({self.model})"
