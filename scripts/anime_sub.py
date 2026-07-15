@@ -22,12 +22,14 @@ if LIBAASS_FFMPEG.exists():
     print(f"Using libass ffmpeg: {FFMPEG_PATH}", file=sys.stderr)
 
 from scripts.checkpoint import Checkpoint
+from scripts.asr_engine import AnimeWhisperASR
 from scripts.translator_adapter import TranslatorAdapter, load_config
 from scripts.series_memory import SeriesMemory
 from scripts.subtitle_gen import generate as generate_subtitles, STYLES
 from scripts.quality_check import generate_report as run_quality_check
 
 PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
+_ASR_ENGINE = None
 
 
 def extract_audio(video_path: str, output_dir: str) -> str:
@@ -78,24 +80,13 @@ def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str
 
 
 def run_asr(audio_path: str, output_dir: str) -> list:
-    """Run ASR on audio file using Anime Whisper (faster-whisper)."""
-    from faster_whisper import WhisperModel
-
-    model_path = project_root / ".omo" / "anime-whisper-ct2"
+    """Run reliable long-form ASR with a model reused across batch items."""
+    global _ASR_ENGINE
+    if _ASR_ENGINE is None:
+        _ASR_ENGINE = AnimeWhisperASR()
     print(f"  Running ASR on {Path(audio_path).name}...")
-    print(f"  Model: {model_path}")
-
-    model = WhisperModel(str(model_path), device="cuda", compute_type="int8_float16", num_workers=1)
-    segments, info = model.transcribe(audio_path, language="ja", beam_size=5, vad_filter=False)
-
-    result = []
-    for seg in segments:
-        result.append({
-            "start": round(seg.start, 2),
-            "end": round(seg.end, 2),
-            "text": seg.text.strip(),
-        })
-
+    print(f"  Model: {_ASR_ENGINE.model_path}")
+    result = _ASR_ENGINE.transcribe(audio_path)
     print(f"  Recognized {len(result)} segments")
     return result
 
