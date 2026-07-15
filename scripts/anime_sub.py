@@ -24,6 +24,9 @@ if LIBAASS_FFMPEG.exists():
 from scripts.checkpoint import Checkpoint
 from scripts.asr_engine import AnimeWhisperASR
 from scripts.translator_adapter import TranslatorAdapter, load_config
+from scripts.translation_engine import PipelineTranslator
+from scripts.translation_memory import TranslationMemory
+from scripts.glossary import Glossary
 from scripts.series_memory import SeriesMemory
 from scripts.subtitle_gen import generate as generate_subtitles, STYLES
 from scripts.quality_check import generate_report as run_quality_check
@@ -92,32 +95,29 @@ def run_asr(audio_path: str, output_dir: str) -> list:
 
 
 def translate_segments(segments: list, adapter: TranslatorAdapter,
-                        series_memory: SeriesMemory = None) -> list:
-    """Translate ASR segments."""
+                        series_memory: SeriesMemory = None,
+                        glossary: Glossary = None,
+                        translation_memory: TranslationMemory = None,
+                        batch_size: int = None,
+                        progress_path: str = "") -> list:
+    """Translate ASR segments in validated, resumable batches."""
     print(f"  Translating {len(segments)} segments...")
-    translated = []
-    # Build series context once
-    series_context = ""
     if series_memory:
-        series_context = series_memory.to_prompt_block() + "\n\n"
-    for seg in segments:
-        text = seg.get("text", "")
-        # Inject series memory into the adapter's system prompt
-        if series_memory:
-            adapter.series_info = series_context
-        zh = adapter.translate(text)
-        translated.append({
-            "start": seg["start"],
-            "end": seg["end"],
-            "ja": text,
-            "text": zh,
-        })
-    return translated
+        adapter.series_info = series_memory.to_prompt_block()
+    engine = PipelineTranslator(
+        adapter,
+        glossary=glossary,
+        memory=translation_memory,
+        batch_size=batch_size,
+    )
+    return engine.translate(segments, progress_path=progress_path or None)
 
 
 def process_video(video_path: str, output_dir: str, config: dict,
                    backend: str = "sakura", memory_path: str = "",
-                   quality_check: bool = False) -> dict:
+                   quality_check: bool = False, glossary_path: str = "",
+                   translation_memory_path: str = "",
+                   translation_batch_size: int = 0) -> dict:
     """Process a single video through the full pipeline."""
     video_name = Path(video_path).stem
     work_dir = Path(output_dir) / video_name
@@ -161,14 +161,25 @@ def process_video(video_path: str, output_dir: str, config: dict,
         cfg["backend"] = backend
         adapter = TranslatorAdapter.from_config(cfg)
         series_mem = SeriesMemory(memory_path) if memory_path and Path(memory_path).exists() else None
+        glossary = Glossary(glossary_path) if glossary_path and Path(glossary_path).exists() else None
+        tm_path = Path(translation_memory_path) if translation_memory_path else work_dir / "translation_memory.jsonl"
+        translation_memory = TranslationMemory(str(tm_path), auto_save=False)
         if series_mem:
             print(f"  Using series memory: {memory_path}")
+        if glossary:
+            print(f"  Using glossary: {glossary_path} ({glossary.count()} terms)")
         if asr_segments:
-            translated = translate_segments(asr_segments, adapter, series_mem)
             # Save translated segments
             seg_path = work_dir / "translated.json"
-            with open(seg_path, "w", encoding="utf-8") as f:
-                json.dump(translated, f, ensure_ascii=False, indent=2)
+            translate_segments(
+                asr_segments,
+                adapter,
+                series_mem,
+                glossary=glossary,
+                translation_memory=translation_memory,
+                batch_size=translation_batch_size or None,
+                progress_path=str(seg_path),
+            )
             cp.mark_completed("translate", output_file=str(seg_path),
                               duration_s=time.time()-t0)
 
@@ -292,6 +303,11 @@ Examples:
                         help="Translation backend")
     parser.add_argument("--config", type=str, default="", help="Translator config file")
     parser.add_argument("--memory", type=str, default="", help="Series memory JSON file")
+    parser.add_argument("--glossary", type=str, default="", help="Japanese-Chinese glossary JSON")
+    parser.add_argument("--translation-memory", type=str, default="",
+                        help="Shared translation memory JSONL (defaults to the episode work directory)")
+    parser.add_argument("--translation-batch-size", type=int, default=0,
+                        help="Lines per translation request (default: backend configuration)")
     parser.add_argument("--quality-check", action="store_true", help="Enable quality checks")
     parser.add_argument("--auto", action="store_true", help="Auto-detect hardware and set optimal params")
     parser.add_argument("--batch", type=str, nargs="+", help="Batch process multiple videos")
@@ -331,7 +347,9 @@ Examples:
         result = process_video(
             args.video, args.output_dir, config,
             backend=args.backend, memory_path=args.memory,
-            quality_check=args.quality_check,
+            quality_check=args.quality_check, glossary_path=args.glossary,
+            translation_memory_path=args.translation_memory,
+            translation_batch_size=args.translation_batch_size,
         )
         return
 
@@ -354,7 +372,9 @@ Examples:
         for video in video_files:
             process_video(video, args.output_dir, config,
                           backend=args.backend, memory_path=args.memory,
-                          quality_check=args.quality_check)
+                          quality_check=args.quality_check, glossary_path=args.glossary,
+                          translation_memory_path=args.translation_memory,
+                          translation_batch_size=args.translation_batch_size)
         return
 
     parser.print_help()
