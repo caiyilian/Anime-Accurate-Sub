@@ -112,6 +112,15 @@ def test_fullwidth_tilde_nonverbal_cue_is_allowed():
     assert SakuraAdapter._valid_translation(source, "\uff5e\uff5e\u2026\u2026") is True
 
 
+def test_unicode_quotes_and_math_symbols_are_nonverbal():
+    source = "\u226a\u2026\u2026"
+    assert SakuraAdapter._valid_translation(source, "\u300c\u2026\u2026") is True
+
+
+def test_spoken_kana_with_punctuation_is_not_nonverbal():
+    assert SakuraAdapter._valid_translation("\u306f?\u2026\u2026", "\u300c\u2026\u2026") is False
+
+
 def test_recursive_batches_drop_unrelated_glossary_terms():
     texts = ["\u8efd\u97f3\u90e8", "\u79cb\u5c71\u6faa"]
     terms = [
