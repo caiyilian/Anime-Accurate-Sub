@@ -33,6 +33,7 @@ class SubSegment:
     text: str
     ja: Optional[str] = None
     speaker: Optional[str] = None
+    confidence: Optional[float] = None
     index: int = 0
 
 
@@ -62,6 +63,23 @@ MAX_DURATION = 7.0
 MAX_CPS = 15
 MIN_CPS = 1.5
 MAX_LINES = 2
+MIN_ASR_CONFIDENCE = 0.45
+
+
+def segments_from_dicts(items: List[dict]) -> List[SubSegment]:
+    """Convert pipeline JSON dictionaries into typed quality-check segments."""
+    return [
+        SubSegment(
+            start=float(item["start"]),
+            end=float(item["end"]),
+            text=str(item.get("text", item.get("zh", ""))),
+            ja=item.get("ja"),
+            speaker=item.get("speaker"),
+            confidence=item.get("asr_confidence", item.get("confidence")),
+            index=index,
+        )
+        for index, item in enumerate(items)
+    ]
 
 
 def check_duration(segments: List[SubSegment]) -> List[QualityIssue]:
@@ -199,6 +217,18 @@ def detect_suspicious(segments: List[SubSegment]) -> List[QualityIssue]:
         text = seg.text.strip()
         ja = (seg.ja or "").strip()
 
+        if seg.confidence is not None and float(seg.confidence) < MIN_ASR_CONFIDENCE:
+            issues.append(QualityIssue(
+                rule="low_asr_confidence", severity="warning",
+                segment_index=seg.index,
+                message=(
+                    f"ASR confidence {float(seg.confidence):.3f} < "
+                    f"{MIN_ASR_CONFIDENCE:.2f}; manual review recommended"
+                ),
+                value=float(seg.confidence),
+                expected=f">={MIN_ASR_CONFIDENCE}",
+            ))
+
         # Check for very short duration with long text (probably error)
         dur = seg.end - seg.start
         if dur > 0 and len(text) > 20 and dur < 1.5:
@@ -233,7 +263,7 @@ def detect_suspicious(segments: List[SubSegment]) -> List[QualityIssue]:
 
 # ============ Report Generation ============
 
-def generate_report(segments: List[SubSegment], issues: List[QualityIssue],
+def generate_report(segments: List[SubSegment], issues: Optional[List[QualityIssue]],
                      output_path: str, glossary_path: Optional[str] = None) -> dict:
     """Run all checks and generate report."""
     all_rules = [
@@ -249,7 +279,7 @@ def generate_report(segments: List[SubSegment], issues: List[QualityIssue],
         all_rules.append(("term_consistency",
                          lambda s: check_term_consistency(s, glossary_path)))
 
-    all_issues = []
+    all_issues = list(issues or [])
     for rule_name, check_fn in all_rules:
         try:
             rule_issues = check_fn(segments)
@@ -274,7 +304,23 @@ def generate_report(segments: List[SubSegment], issues: List[QualityIssue],
         "generated_at": datetime.now().isoformat(),
         "stats": stats,
         "issues": [asdict(i) for i in all_issues],
+        "review_queue": [],
     }
+
+    segment_map = {segment.index: segment for segment in segments}
+    for issue in all_issues:
+        segment = segment_map.get(issue.segment_index)
+        if segment is None:
+            continue
+        report["review_queue"].append({
+            **asdict(issue),
+            "start": segment.start,
+            "end": segment.end,
+            "ja": segment.ja,
+            "text": segment.text,
+            "speaker": segment.speaker,
+            "asr_confidence": segment.confidence,
+        })
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
@@ -365,18 +411,12 @@ def main():
         with open(args.input, encoding="utf-8") as f:
             data = json.load(f)
 
-        segments = []
-        for i, item in enumerate(data):
-            segments.append(SubSegment(
-                start=item["start"], end=item["end"],
-                text=item.get("text", item.get("zh", "")),
-                ja=item.get("ja"), speaker=item.get("speaker"),
-                index=i,
-            ))
+        segments = segments_from_dicts(data)
 
-        report = generate_report(segments, [], args.output, args.glossary)
+        output_path = args.output or str(Path(args.input).with_suffix(".quality.json"))
+        report = generate_report(segments, [], output_path, args.glossary)
         if args.html:
-            html_path = Path(args.output).with_suffix(".html")
+            html_path = Path(output_path).with_suffix(".html")
             generate_html(report, str(html_path))
         return
 
