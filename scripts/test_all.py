@@ -143,7 +143,7 @@ def test_checkpoint():
     tmp = Path(tempfile.mkdtemp())
     from scripts.checkpoint import Checkpoint
     cp = Checkpoint(str(tmp))
-    assert len(cp.get_pending_stages()) == 5
+    assert len(cp.get_pending_stages()) == 6
     cp.mark_completed("asr", duration_s=10.0)
     assert cp.is_completed("asr")
     assert not cp.is_completed("translate")
@@ -212,7 +212,7 @@ def test_series_memory():
 def test_anime_sub():
     """Test anime_sub CLI module imports."""
     from scripts.anime_sub import process_video, PIPELINE_STAGES
-    assert len(PIPELINE_STAGES) == 5
+    assert len(PIPELINE_STAGES) == 6
 
 
 def test_hardware():
