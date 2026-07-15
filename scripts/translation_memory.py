@@ -3,7 +3,8 @@
 JSONL-based bilingual cache with exact-match lookup.
 
 Format (JSONL):
-  {"ja": "...", "zh": "...", "model": "...", "timestamp": "..."}
+  {"ja": "...", "zh": "...", "model": "...", "translation_fallback": false,
+   "timestamp": "..."}
 
 Usage:
   tm = TranslationMemory("data/translation_memory.jsonl")
@@ -62,25 +63,36 @@ class TranslationMemory:
 
     def lookup(self, ja: str) -> Optional[str]:
         """Look up translation. Returns zh or None."""
+        entry = self.lookup_entry(ja)
+        return entry.get("zh") if entry else None
+
+    def lookup_entry(self, ja: str) -> Optional[dict]:
+        """Look up a translation and retain model provenance."""
         entry = self._cache.get(ja)
         if entry:
             self._stats["hits"] += 1
-            return entry.get("zh")
+            return dict(entry)
         self._stats["misses"] += 1
         return None
 
-    def store(self, ja: str, zh: str, model: str = ""):
+    def store(self, ja: str, zh: str, model: str = "", fallback: bool = False):
         """Store a translation pair."""
         if not ja or not zh:
             return
-        # Only store if different from existing
+        # Preserve model provenance even when two models produce the same text.
         existing = self._cache.get(ja)
-        if existing and existing.get("zh") == zh:
+        if (
+            existing
+            and existing.get("zh") == zh
+            and existing.get("model", "") == model
+            and bool(existing.get("translation_fallback", False)) == fallback
+        ):
             return
         self._cache[ja] = {
             "ja": ja,
             "zh": zh,
             "model": model,
+            "translation_fallback": fallback,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
         self._dirty = True
