@@ -51,9 +51,16 @@ class PipelineTranslator:
 
             for offset, segment in enumerate(batch):
                 source = str(segment.get("text", "")).strip()
-                cached = self.memory.lookup(source) if self.memory else None
-                if cached:
-                    output[start + offset] = self._result(segment, source, cached, cached=True)
+                cached = self.memory.lookup_entry(source) if self.memory else None
+                if cached and cached.get("zh"):
+                    output[start + offset] = self._result(
+                        segment,
+                        source,
+                        cached["zh"],
+                        cached=True,
+                        model=cached.get("model"),
+                        fallback=bool(cached.get("translation_fallback", False)),
+                    )
                 else:
                     missing_indices.append(start + offset)
                     missing_sources.append(source)
@@ -70,12 +77,22 @@ class PipelineTranslator:
                     missing_indices, missing_sources, translated
                 ):
                     segment = segments[index]
-                    output[index] = self._result(segment, source, target, cached=False)
+                    model = self._result_model(source)
+                    fallback = self._result_is_fallback(source)
+                    output[index] = self._result(
+                        segment,
+                        source,
+                        target,
+                        cached=False,
+                        model=model,
+                        fallback=fallback,
+                    )
                     if self.memory:
                         self.memory.store(
                             source,
                             target,
-                            model=getattr(self.adapter, "model", self.adapter.name()),
+                            model=model,
+                            fallback=fallback,
                         )
 
             if self.memory:
@@ -101,16 +118,34 @@ class PipelineTranslator:
             if source in joined
         ]
 
-    def _result(self, segment: dict, source: str, target: str, cached: bool) -> dict:
+    def _result_model(self, source: str) -> str:
+        if hasattr(self.adapter, "result_model"):
+            return self.adapter.result_model(source)
+        return getattr(self.adapter, "model", self.adapter.name())
+
+    def _result_is_fallback(self, source: str) -> bool:
+        if hasattr(self.adapter, "result_is_fallback"):
+            return bool(self.adapter.result_is_fallback(source))
+        return False
+
+    def _result(
+        self,
+        segment: dict,
+        source: str,
+        target: str,
+        cached: bool,
+        model: str | None = None,
+        fallback: bool = False,
+    ) -> dict:
+        model = model or self._result_model(source)
         result = {
             "start": segment["start"],
             "end": segment["end"],
             "ja": source,
             "text": target.strip(),
-            "translation_model": getattr(
-                self.adapter, "model", self.adapter.name()
-            ),
+            "translation_model": model,
             "translation_cached": cached,
+            "translation_fallback": fallback,
         }
         if "confidence" in segment:
             result["asr_confidence"] = segment["confidence"]
