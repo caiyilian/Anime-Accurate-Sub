@@ -151,6 +151,16 @@ def process_video(video_path: str, output_dir: str, config: dict,
         t0 = time.time()
         asr_segments = run_asr(audio_path or str(work_dir), str(work_dir))
         cp.mark_completed("asr", duration_s=time.time()-t0)
+        # Save ASR results for later stages
+        asr_path = work_dir / "asr_results.json"
+        with open(asr_path, "w", encoding="utf-8") as f:
+            json.dump(asr_segments, f, ensure_ascii=False, indent=2)
+    else:
+        # Load ASR results from file if ASR was already completed
+        asr_path = work_dir / "asr_results.json"
+        if asr_path.exists():
+            with open(asr_path, encoding="utf-8") as f:
+                asr_segments = json.load(f)
 
     # Stage 3: Translate
     if "translate" in cp.get_pending_stages():
