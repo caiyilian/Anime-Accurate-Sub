@@ -73,6 +73,40 @@ def test_sakura_batch_parser_preserves_order_and_removes_numbering():
     assert SakuraAdapter._parse_lines(raw, 2) == ["早上好", "今天也请多关照"]
 
 
+def test_sakura_tagged_parser_restores_id_order_and_accepts_fullwidth_brackets():
+    raw = "【L001】请不要在意。\n【L000】请陪我练习。"
+    assert SakuraAdapter._parse_tagged_lines(raw, 2) == [
+        "请陪我练习。",
+        "请不要在意。",
+    ]
+
+
+def test_sakura_batch_uses_stable_ids_to_prevent_silent_line_swaps():
+    adapter = SakuraAdapter(
+        {"sakura": {"model": "fake", "host": "localhost", "max_retries": 1}}
+    )
+    calls = []
+
+    def fake_call(messages, **kwargs):
+        calls.append(messages)
+        return "【L001】请不要在意。\n【L000】请陪我练习。"
+
+    adapter._call = fake_call
+
+    assert adapter.translate_batch(
+        ["私の練習に付き合わせて", "全然気にしないでください。"]
+    ) == [
+        "请陪我练习。",
+        "请不要在意。",
+    ]
+    assert "[[L000]] 私の練習に付き合わせて" in calls[0][1]["content"]
+
+
+def test_sakura_tagged_parser_rejects_missing_or_duplicate_ids():
+    assert SakuraAdapter._parse_tagged_lines("【L000】甲\n【L000】乙", 2) is None
+    assert SakuraAdapter._parse_tagged_lines("【L000】甲", 2) is None
+
+
 def test_pipeline_translator_only_sends_matching_glossary_terms():
     glossary = Glossary()
     glossary.add("軽音部", "轻音部")
