@@ -22,8 +22,13 @@ if LIBAASS_FFMPEG.exists():
     print(f"Using libass ffmpeg: {FFMPEG_PATH}", file=sys.stderr)
 
 from scripts.checkpoint import Checkpoint
-from scripts.asr_engine import AnimeWhisperASR
-from scripts.translator_adapter import TranslatorAdapter, load_config
+from scripts.asr_engine import ASRSettings, AnimeWhisperASR
+from scripts.translator_adapter import (
+    TranslatorAdapter,
+    _ensure_builtin_translator_plugins,
+    load_config,
+)
+from scripts.plugin_system import load_plugins, plugin_registry
 from scripts.translation_engine import PipelineTranslator
 from scripts.translation_memory import TranslationMemory
 from scripts.glossary import Glossary
@@ -33,14 +38,39 @@ from scripts.oped_detector import (
     parse_explicit_ranges,
 )
 from scripts.series_memory import SeriesMemory
-from scripts.subtitle_gen import generate as generate_subtitles, STYLES
+from scripts.subtitle_gen import (
+    STYLES,
+    _ensure_builtin_style_plugins,
+    generate as generate_subtitles,
+)
 from scripts.quality_check import (
     generate_report as run_quality_check,
     segments_from_dicts as quality_segments_from_dicts,
 )
 
 PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
-_ASR_ENGINE = None
+_ASR_ENGINES = {}
+
+
+def _create_anime_whisper(config: dict):
+    asr_config = dict(config.get("asr", {}))
+    settings_config = asr_config.pop("settings", {})
+    settings = ASRSettings(**settings_config) if settings_config else None
+    allowed = {"model_path", "device", "compute_type"}
+    options = {key: value for key, value in asr_config.items() if key in allowed}
+    return AnimeWhisperASR(settings=settings, **options)
+
+
+def _ensure_builtin_pipeline_plugins() -> None:
+    _ensure_builtin_translator_plugins()
+    _ensure_builtin_style_plugins()
+    plugin_registry.register_if_missing(
+        "asr",
+        "anime_whisper",
+        _create_anime_whisper,
+        source="builtin:anime_sub",
+        description="Anime Whisper CT2 long-form ASR",
+    )
 
 
 def extract_audio(video_path: str, output_dir: str) -> str:
@@ -90,14 +120,23 @@ def embed_subtitle(video_path: str, subtitle_path: str, output_path: str) -> str
     return str(out)
 
 
-def run_asr(audio_path: str, output_dir: str) -> list:
+def run_asr(
+    audio_path: str,
+    output_dir: str,
+    backend: str = "anime_whisper",
+    config: dict | None = None,
+) -> list:
     """Run reliable long-form ASR with a model reused across batch items."""
-    global _ASR_ENGINE
-    if _ASR_ENGINE is None:
-        _ASR_ENGINE = AnimeWhisperASR()
+    _ensure_builtin_pipeline_plugins()
+    config = config or {}
+    cache_key = (backend, json.dumps(config, sort_keys=True, default=str))
+    if cache_key not in _ASR_ENGINES:
+        _ASR_ENGINES[cache_key] = plugin_registry.create("asr", backend, config)
+    engine = _ASR_ENGINES[cache_key]
     print(f"  Running ASR on {Path(audio_path).name}...")
-    print(f"  Model: {_ASR_ENGINE.model_path}")
-    result = _ASR_ENGINE.transcribe(audio_path)
+    if getattr(engine, "model_path", None):
+        print(f"  Model: {engine.model_path}")
+    result = engine.transcribe(audio_path)
     print(f"  Recognized {len(result)} segments")
     return result
 
@@ -129,7 +168,9 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    oped_series: str = "", episode_number: int = 0,
                    oped_ranges: list[str] = None,
                    oped_strict: bool = True,
-                   speaker_map_path: str = "") -> dict:
+                   speaker_map_path: str = "",
+                   asr_backend: str = "anime_whisper",
+                   subtitle_style: str = "anime") -> dict:
     """Process a single video through the full pipeline."""
     video_name = Path(video_path).stem
     work_dir = Path(output_dir) / video_name
@@ -187,7 +228,9 @@ def process_video(video_path: str, output_dir: str, config: dict,
                     f"(score={item.score:.3f}, source={item.source})"
                 )
 
-        asr_segments = run_asr(audio_path, str(work_dir))
+        asr_segments = run_asr(
+            audio_path, str(work_dir), backend=asr_backend, config=config
+        )
         if ranges:
             asr_segments, removed_segments = filter_oped_segments(asr_segments, ranges)
             removed_path = work_dir / "oped_removed_segments.json"
@@ -254,7 +297,7 @@ def process_video(video_path: str, output_dir: str, config: dict,
             generate_subtitles(
                 str(seg_path),
                 str(ass_path),
-                style="anime",
+                style=subtitle_style,
                 speaker_map=speaker_map_path or None,
             )
             cp.mark_completed("subtitle", output_file=str(srt_path),
@@ -374,8 +417,15 @@ Examples:
     parser.add_argument("video", nargs="?", type=str, help="Video file to process")
     parser.add_argument("--output-dir", type=str, default="output", help="Output directory")
     parser.add_argument("--backend", type=str, default="sakura",
-                        choices=["sakura", "qwen", "galtransl", "external"],
-                        help="Translation backend")
+                        help="Translation backend or translator plugin name")
+    parser.add_argument("--asr-backend", type=str, default="anime_whisper",
+                        help="ASR backend or asr plugin name")
+    parser.add_argument("--subtitle-style", type=str, default="anime",
+                        help="ASS style or subtitle_style plugin name")
+    parser.add_argument("--plugin", action="append", default=[],
+                        help="Trusted local plugin .py file (repeatable)")
+    parser.add_argument("--list-plugins", action="store_true",
+                        help="List built-in, local and installed plugins")
     parser.add_argument("--config", type=str, default="", help="Translator config file")
     parser.add_argument("--memory", type=str, default="", help="Series memory JSON file")
     parser.add_argument("--glossary", type=str, default="", help="Japanese-Chinese glossary JSON")
@@ -399,6 +449,17 @@ Examples:
     parser.add_argument("--test", action="store_true", help="Run pipeline test")
     parser.add_argument("--version", action="store_true", help="Show version info")
     args = parser.parse_args()
+
+    load_plugins(args.plugin)
+    _ensure_builtin_pipeline_plugins()
+
+    if args.list_plugins:
+        for spec in plugin_registry.specs():
+            print(
+                f"{spec['kind']:<15} {spec['name']:<20} "
+                f"{spec['description']} [{spec['source']}]"
+            )
+        return
 
     if args.version:
         print("Anime Accurate Sub v1.0.0")
@@ -439,6 +500,8 @@ Examples:
             oped_ranges=args.oped_range,
             oped_strict=not args.oped_best_effort,
             speaker_map_path=args.speaker_map,
+            asr_backend=args.asr_backend,
+            subtitle_style=args.subtitle_style,
         )
         return
 
@@ -468,7 +531,10 @@ Examples:
                           episode_number=args.episode_number,
                           oped_ranges=args.oped_range,
                           oped_strict=not args.oped_best_effort,
-                          speaker_map_path=args.speaker_map)
+                          speaker_map_path=args.speaker_map,
+                          asr_backend=args.asr_backend,
+                          subtitle_style=args.subtitle_style)
+
         return
 
     parser.print_help()

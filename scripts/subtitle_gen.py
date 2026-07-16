@@ -16,6 +16,8 @@ import pysubs2
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
+from scripts.plugin_system import load_plugins, plugin_registry
+
 
 @dataclass
 class SubSegment:
@@ -187,6 +189,22 @@ STYLES = {
 }
 
 
+def _ensure_builtin_style_plugins() -> None:
+    for name, style_config in STYLES.items():
+        plugin_registry.register_if_missing(
+            "subtitle_style",
+            name,
+            lambda overrides, base=style_config: {**copy.deepcopy(base), **overrides},
+            source="builtin:subtitle_gen",
+            description=f"Built-in ASS style ({style_config['fontname']})",
+        )
+
+
+def resolve_subtitle_style(name: str, config: dict | None = None) -> dict:
+    _ensure_builtin_style_plugins()
+    return plugin_registry.create("subtitle_style", name, config)
+
+
 DEFAULT_SPEAKER_COLORS = [
     "#FFB3D9",
     "#9ED7FF",
@@ -284,7 +302,7 @@ def generate(
     ext = Path(output_path).suffix.lower()
     role_styles = {}
     if ext == ".ass" and style:
-        sc = STYLES.get(style, STYLES["anime"])
+        sc = resolve_subtitle_style(style)
         s = pysubs2.SSAStyle(**sc)
         subs.styles.clear()
         subs.styles[style] = s
@@ -411,7 +429,8 @@ def main():
     parser = argparse.ArgumentParser(description="S10.3 Subtitle Generation")
     parser.add_argument("--input", type=str)
     parser.add_argument("--output", type=str, default="")
-    parser.add_argument("--style", type=str, choices=list(STYLES.keys()), default="anime")
+    parser.add_argument("--style", type=str, default="anime",
+                        help="Built-in style or subtitle_style plugin name")
     parser.add_argument("--bilingual", action="store_true")
     parser.add_argument("--bilingual-layout", type=str, choices=["top_ja", "top_zh"], default="top_ja")
     parser.add_argument("--speaker-map", type=str, default="",
@@ -419,14 +438,20 @@ def main():
     parser.add_argument("--no-speaker-prefix", action="store_true",
                         help="Use role colors without adding a visible character-name prefix")
     parser.add_argument("--list-styles", action="store_true")
+    parser.add_argument("--plugin", action="append", default=[],
+                        help="Trusted local plugin .py file (repeatable)")
     parser.add_argument("--evaluate", action="store_true")
     args = parser.parse_args()
 
+    load_plugins(args.plugin)
+    _ensure_builtin_style_plugins()
+
     if args.list_styles:
         print("Available ASS styles:")
-        for name, info in STYLES.items():
-            print(f"  {name}: font={info['fontname']} {info['fontsize']}px, "
-                  f"outline={info['outline']}, shadow={info['shadow']}")
+        for spec in plugin_registry.specs("subtitle_style"):
+            info = resolve_subtitle_style(spec["name"])
+            print(f"  {spec['name']}: font={info.get('fontname')} "
+                  f"{info.get('fontsize')}px [{spec['source']}]")
         return
 
     if args.evaluate:
