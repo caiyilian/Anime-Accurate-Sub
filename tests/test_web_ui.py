@@ -115,3 +115,51 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
     assert body["options"]["quality_check"] is True
     record = manager._load(body["id"])
     assert Path(record["input_path"]).read_bytes() == b"fake-video"
+
+
+def test_fastapi_proofreading_updates_json_and_regenerates_subtitles(tmp_path):
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    app = create_app(tmp_path / "jobs")
+    manager = app.state.job_manager
+    record, input_path = manager.create_job("episode.mp4", {"backend": "sakura"})
+    manager.save_upload(input_path, io.BytesIO(b"video"))
+    episode_dir = Path(record["output_dir"]) / "episode"
+    episode_dir.mkdir()
+    translated = episode_dir / "translated.json"
+    translated.write_text(
+        json.dumps(
+            [{"start": 0, "end": 2, "ja": "おはよう", "text": "早上好"}],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    client = TestClient(app)
+
+    sheet_response = client.get(f"/api/jobs/{record['id']}/proofread")
+    assert sheet_response.status_code == 200
+    sheet = sheet_response.json()
+    correction = {
+        **sheet["items"][0],
+        "corrected_text": "早安",
+        "note": "Web test",
+    }
+    save_response = client.put(
+        f"/api/jobs/{record['id']}/proofread",
+        json={
+            "schema": sheet["schema"],
+            "source_sha256": sheet["source_sha256"],
+            "items": [correction],
+        },
+    )
+
+    assert save_response.status_code == 200
+    assert save_response.json()["applied"] == 1
+    assert json.loads(translated.read_text(encoding="utf-8"))[0]["text"] == "早安"
+    assert (episode_dir / "episode.srt").exists()
+    assert (episode_dir / "episode.ass").exists()
+    assert "人工校对" in client.get(f"/api/jobs/{record['id']}").text
+    page = client.get(f"/proofread/{record['id']}")
+    assert page.status_code == 200
+    assert "保存修正并重建字幕" in page.text
