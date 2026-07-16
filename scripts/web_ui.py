@@ -17,6 +17,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.checkpoint import PIPELINE_STAGES
+from scripts.proofread import (
+    SHEET_SCHEMA,
+    apply_corrections,
+    build_proofread_sheet,
+    regenerate_subtitles,
+)
 
 
 DEFAULT_JOB_ROOT = PROJECT_ROOT / ".omo" / "web_jobs"
@@ -295,6 +301,16 @@ class JobManager:
                     "download_url": f"/api/jobs/{record['id']}/files/{quote(relative)}",
                 }
             )
+        if any(item["name"] == "translated.json" for item in results):
+            results.append(
+                {
+                    "name": "人工校对",
+                    "path": "",
+                    "size": 0,
+                    "download_url": f"/proofread/{record['id']}",
+                    "kind": "action",
+                }
+            )
         return results
 
     def _log_tail(self, job_id: str, max_bytes: int = 16_384) -> str:
@@ -341,6 +357,20 @@ class JobManager:
             raise FileNotFoundError(relative_path)
         return candidate
 
+    def proofread_paths(self, job_id: str) -> tuple[dict[str, Any], Path, Path | None]:
+        record = self._load(job_id)
+        output_dir = Path(record["output_dir"]).resolve()
+        candidates = sorted(
+            output_dir.rglob("translated.json"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        if not candidates:
+            raise FileNotFoundError("translated.json")
+        translated = candidates[0]
+        quality = translated.parent / "quality_report.json"
+        return record, translated, quality if quality.exists() else None
+
 
 INDEX_HTML = """<!doctype html>
 <html lang="zh-CN">
@@ -386,6 +416,22 @@ refresh(); setInterval(refresh,3000);
 </script></body></html>"""
 
 
+PROOFREAD_HTML = """<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人工校对 · Anime Accurate Sub</title><style>
+:root{color-scheme:dark;--bg:#0c111b;--card:#151d2b;--line:#2b3850;--accent:#ff78b5;--text:#e8edf6;--muted:#9ba9bd}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif}main{width:min(1200px,94vw);margin:28px auto 70px}a{color:#9ed7ff}header{display:flex;justify-content:space-between;align-items:center;gap:16px;position:sticky;top:0;background:#0c111bee;padding:12px 0;backdrop-filter:blur(8px);z-index:2}.toolbar{display:flex;gap:12px;align-items:center}.toolbar input{width:auto}button{border:0;border-radius:8px;padding:10px 18px;background:linear-gradient(120deg,var(--accent),#9c7cff);font-weight:750;cursor:pointer}.row{display:grid;grid-template-columns:72px 1fr 1.25fr;gap:12px;margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}.row.review{border-color:#8a6741}.index,.reason{color:var(--muted);font-size:12px}.ja{white-space:pre-wrap}.translation textarea{width:100%;min-height:76px;resize:vertical;background:#0b111b;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px}.changed textarea{border-color:var(--accent)}#message{color:#ffd09e;min-height:24px}@media(max-width:760px){.row{grid-template-columns:1fr}.row .index{display:flex;gap:12px}}
+</style></head><body><main>
+<header><div><a href="/">← 返回任务</a><h1>人工校对</h1><div id="summary" class="index"></div></div><div class="toolbar"><label><input id="review-only" type="checkbox" checked> 只看可疑行</label><button id="save">保存修正并重建字幕</button></div></header>
+<div id="message"></div><section id="rows"></section>
+</main><script>
+const jobId='__JOB_ID__', rows=document.querySelector('#rows'), message=document.querySelector('#message'), reviewOnly=document.querySelector('#review-only');let sheet=null;
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+function render(){const items=sheet.items.filter(item=>!reviewOnly.checked||item.reasons.length);rows.innerHTML=items.map(item=>`<article class="row ${item.reasons.length?'review':''}" data-index="${item.index}"><div class="index"><b>#${item.index}</b><br>${item.start}–${item.end}</div><div><div class="ja">${esc(item.ja)}</div><div class="reason">${item.reasons.map(r=>esc(r.rule+': '+r.message)).join('<br>')||'普通片段'}</div></div><div class="translation"><textarea data-original="${esc(item.translated_text)}">${esc(item.corrected_text)}</textarea></div></article>`).join('');document.querySelector('#summary').textContent=`共 ${sheet.items.length} 行，当前显示 ${items.length} 行`;for(const area of rows.querySelectorAll('textarea'))area.addEventListener('input',()=>area.closest('.row').classList.toggle('changed',area.value!==area.dataset.original));}
+async function load(){const response=await fetch(`/api/jobs/${jobId}/proofread?only_review=false`);if(!response.ok){message.textContent='读取失败：'+(await response.text());return}sheet=await response.json();render()}
+reviewOnly.addEventListener('change',render);document.querySelector('#save').addEventListener('click',async()=>{const changed=[];for(const row of rows.querySelectorAll('.row')){const area=row.querySelector('textarea');if(area.value!==area.dataset.original){const item=sheet.items.find(x=>x.index===Number(row.dataset.index));changed.push({index:item.index,start:item.start,translated_text:area.dataset.original,corrected_text:area.value,note:'Web UI proofreading'})}}if(!changed.length){message.textContent='没有需要保存的修改。';return}message.textContent='正在保存…';const response=await fetch(`/api/jobs/${jobId}/proofread`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({schema:sheet.schema,source_sha256:sheet.source_sha256,items:changed})});const result=await response.json();if(!response.ok){message.textContent='保存失败：'+(result.detail||response.statusText);return}message.textContent=`已修正 ${result.applied} 行，SRT/ASS 已重建；压制视频需要重新生成。`;await load()});load();
+</script></body></html>"""
+
+
 def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
     """Create the FastAPI application; Web dependencies remain optional."""
     try:
@@ -418,6 +464,45 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
             return manager.get_job(job_id)
         except KeyError as error:
             raise HTTPException(status_code=404, detail="任务不存在") from error
+
+    @app.get("/proofread/{job_id}", response_class=HTMLResponse)
+    def proofread_page(job_id: str):
+        try:
+            manager.proofread_paths(job_id)
+        except (KeyError, FileNotFoundError) as error:
+            raise HTTPException(status_code=404, detail="任务译文不存在") from error
+        return PROOFREAD_HTML.replace("__JOB_ID__", job_id)
+
+    @app.get("/api/jobs/{job_id}/proofread")
+    def get_proofread_sheet(job_id: str, only_review: bool = False):
+        try:
+            _, translated, quality = manager.proofread_paths(job_id)
+            return build_proofread_sheet(translated, quality, only_review)
+        except (KeyError, FileNotFoundError) as error:
+            raise HTTPException(status_code=404, detail="任务译文不存在") from error
+
+    @app.put("/api/jobs/{job_id}/proofread")
+    def save_proofread_sheet(job_id: str, payload: dict):
+        try:
+            record, translated, _ = manager.proofread_paths(job_id)
+            sheet = {
+                "schema": payload.get("schema", SHEET_SCHEMA),
+                "source_sha256": payload.get("source_sha256"),
+                "items": payload.get("items", []),
+            }
+            result = apply_corrections(
+                translated,
+                sheet,
+                operator="web-ui",
+            )
+            subtitle_base = translated.parent / Path(record["filename"]).stem
+            result["subtitles"] = regenerate_subtitles(translated, subtitle_base)
+            result["embedded_video_stale"] = True
+            return result
+        except (KeyError, FileNotFoundError) as error:
+            raise HTTPException(status_code=404, detail="任务译文不存在") from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
 
     @app.post("/api/jobs", status_code=202)
     def create_job(

@@ -36,6 +36,7 @@ class SubSegment:
     confidence: Optional[float] = None
     translation_model: Optional[str] = None
     translation_fallback: bool = False
+    proofread_status: Optional[str] = None
     index: int = 0
 
 
@@ -80,6 +81,7 @@ def segments_from_dicts(items: List[dict]) -> List[SubSegment]:
             confidence=item.get("asr_confidence", item.get("confidence")),
             translation_model=item.get("translation_model"),
             translation_fallback=bool(item.get("translation_fallback", False)),
+            proofread_status=item.get("proofread_status"),
             index=index,
         )
         for index, item in enumerate(items)
@@ -221,7 +223,7 @@ def detect_suspicious(segments: List[SubSegment]) -> List[QualityIssue]:
         text = seg.text.strip()
         ja = (seg.ja or "").strip()
 
-        if seg.translation_fallback:
+        if seg.translation_fallback and seg.proofread_status != "corrected":
             issues.append(QualityIssue(
                 rule="translation_fallback", severity="warning",
                 segment_index=seg.index,
@@ -338,6 +340,7 @@ def generate_report(segments: List[SubSegment], issues: Optional[List[QualityIss
             "asr_confidence": segment.confidence,
             "translation_model": segment.translation_model,
             "translation_fallback": segment.translation_fallback,
+            "proofread_status": segment.proofread_status,
         })
 
     with open(output_path, "w", encoding="utf-8") as f:
