@@ -7,7 +7,7 @@
 #   python scripts/subtitle_gen.py --input segments.json --output output.ass --bilingual
 #   python scripts/subtitle_gen.py --input bilingual.json --output output.ass --style anime_bilingual
 
-import json, os, sys, argparse
+import argparse, copy, json, os, re, sys
 from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
@@ -24,6 +24,12 @@ class SubSegment:
     text: str         # translated text
     speaker: Optional[str] = None
     index: int = 0
+
+
+@dataclass(frozen=True)
+class SpeakerRole:
+    name: str
+    color: str
 
 
 MIN_DURATION = 1.0
@@ -181,9 +187,65 @@ STYLES = {
 }
 
 
+DEFAULT_SPEAKER_COLORS = [
+    "#FFB3D9",
+    "#9ED7FF",
+    "#FFE09E",
+    "#B8F0C8",
+    "#D7B8FF",
+    "#FFB8A8",
+]
+
+
+def _normalize_hex_color(value: str, fallback: str) -> str:
+    value = str(value or "").strip().upper()
+    if re.fullmatch(r"#[0-9A-F]{6}", value):
+        return value
+    return fallback
+
+
+def _pysubs_color(value: str) -> pysubs2.Color:
+    value = value.lstrip("#")
+    return pysubs2.Color(int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16))
+
+
+def load_speaker_map(path_or_mapping=None) -> dict[str, SpeakerRole]:
+    """Load speaker IDs to display names and CSS-style RGB colors."""
+    if not path_or_mapping:
+        return {}
+    if isinstance(path_or_mapping, (str, Path)):
+        path = Path(path_or_mapping)
+        if not path.exists():
+            raise FileNotFoundError(f"Speaker map not found: {path}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+    else:
+        data = dict(path_or_mapping)
+    if "speakers" in data and isinstance(data["speakers"], dict):
+        data = data["speakers"]
+
+    roles = {}
+    for index, (speaker, raw) in enumerate(data.items()):
+        fallback = DEFAULT_SPEAKER_COLORS[index % len(DEFAULT_SPEAKER_COLORS)]
+        if isinstance(raw, str):
+            name, color = raw, fallback
+        else:
+            name = str(raw.get("name", speaker)).strip() or str(speaker)
+            color = _normalize_hex_color(raw.get("color", ""), fallback)
+        roles[str(speaker)] = SpeakerRole(name=name, color=color)
+    return roles
+
+
 # ========== Generate ==========
 
-def generate(input_path, output_path, style=None, bilingual=False, bilingual_layout="top_ja"):
+def generate(
+    input_path,
+    output_path,
+    style=None,
+    bilingual=False,
+    bilingual_layout="top_ja",
+    speaker_map=None,
+    speaker_prefix=True,
+):
     with open(input_path, encoding="utf-8") as f:
         data = json.load(f)
 
@@ -208,6 +270,7 @@ def generate(input_path, output_path, style=None, bilingual=False, bilingual_lay
     if warnings:
         print(f"CPS warnings: {len(warnings)}")
 
+    roles = load_speaker_map(speaker_map)
     subs = pysubs2.SSAFile()
     subs.info["Title"] = "Anime Accurate Sub"
     subs.info["Original Script"] = "Anime Accurate Sub"
@@ -218,22 +281,33 @@ def generate(input_path, output_path, style=None, bilingual=False, bilingual_lay
     subs.info["Wrap Style"] = "0"
     subs.info["Scaled Border And Shadow"] = "yes"
 
-    for seg in segments:
-        subs.append(pysubs2.SSAEvent(
-            start=int(seg.start * 1000),
-            end=int(seg.end * 1000),
-            text=seg.text,
-        ))
-
     ext = Path(output_path).suffix.lower()
+    role_styles = {}
     if ext == ".ass" and style:
         sc = STYLES.get(style, STYLES["anime"])
         s = pysubs2.SSAStyle(**sc)
         subs.styles.clear()
         subs.styles[style] = s
-        for ev in subs.events:
-            if not ev.style:
-                ev.style = style
+        for index, (speaker, role) in enumerate(roles.items()):
+            style_name = f"{style}_speaker_{index:02d}"
+            role_style = copy.deepcopy(s)
+            role_style.primarycolor = _pysubs_color(role.color)
+            subs.styles[style_name] = role_style
+            role_styles[speaker] = style_name
+
+    for seg in segments:
+        role = roles.get(str(seg.speaker)) if seg.speaker is not None else None
+        text = seg.text
+        if role and speaker_prefix:
+            text = f"{role.name}：{text}"
+        event_style = role_styles.get(str(seg.speaker), style or "Default")
+        subs.append(pysubs2.SSAEvent(
+            start=int(seg.start * 1000),
+            end=int(seg.end * 1000),
+            text=text,
+            style=event_style,
+            name=role.name if role else "",
+        ))
 
     subs.events.sort(key=lambda e: e.start)
     subs.save(output_path)
@@ -340,6 +414,10 @@ def main():
     parser.add_argument("--style", type=str, choices=list(STYLES.keys()), default="anime")
     parser.add_argument("--bilingual", action="store_true")
     parser.add_argument("--bilingual-layout", type=str, choices=["top_ja", "top_zh"], default="top_ja")
+    parser.add_argument("--speaker-map", type=str, default="",
+                        help="JSON mapping from speaker IDs to names/colors")
+    parser.add_argument("--no-speaker-prefix", action="store_true",
+                        help="Use role colors without adding a visible character-name prefix")
     parser.add_argument("--list-styles", action="store_true")
     parser.add_argument("--evaluate", action="store_true")
     args = parser.parse_args()
@@ -356,7 +434,15 @@ def main():
         return
 
     if args.input and args.output:
-        generate(args.input, args.output, args.style, args.bilingual, args.bilingual_layout)
+        generate(
+            args.input,
+            args.output,
+            args.style,
+            args.bilingual,
+            args.bilingual_layout,
+            speaker_map=args.speaker_map or None,
+            speaker_prefix=not args.no_speaker_prefix,
+        )
         return
 
     parser.print_help()
