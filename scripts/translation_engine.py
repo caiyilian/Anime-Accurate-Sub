@@ -149,4 +149,6 @@ class PipelineTranslator:
         }
         if "confidence" in segment:
             result["asr_confidence"] = segment["confidence"]
+        if segment.get("speaker"):
+            result["speaker"] = segment["speaker"]
         return result
