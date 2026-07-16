@@ -29,6 +29,8 @@ from typing import Optional, Sequence
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
+from scripts.plugin_system import load_plugins, plugin_registry
+
 DEFAULT_CONFIG = {
     "backend": "sakura",
     "sakura": {
@@ -107,17 +109,9 @@ class TranslatorAdapter(abc.ABC):
     @classmethod
     def from_config(cls, config: dict) -> "TranslatorAdapter":
         """Factory: create adapter from config."""
-        backend = config.get("backend", "sakura")
-        adapters = {
-            "sakura": SakuraAdapter,
-            "qwen": QwenAdapter,
-            "galtransl": GalTranslAdapter,
-            "external": ExternalAdapter,
-        }
-        adapter_cls = adapters.get(backend)
-        if not adapter_cls:
-            raise ValueError(f"Unknown backend: {backend}. Available: {list(adapters.keys())}")
-        return adapter_cls(config)
+        _ensure_builtin_translator_plugins()
+        backend = str(config.get("backend", "sakura")).lower()
+        return plugin_registry.create("translator", backend, config)
 
 
 # ============ Ollama Base ============
@@ -495,6 +489,22 @@ class ExternalAdapter(TranslatorAdapter):
             return f"[API Error: {e}]"
 
 
+def _ensure_builtin_translator_plugins() -> None:
+    for name, adapter_class in {
+        "sakura": SakuraAdapter,
+        "qwen": QwenAdapter,
+        "galtransl": GalTranslAdapter,
+        "external": ExternalAdapter,
+    }.items():
+        plugin_registry.register_if_missing(
+            "translator",
+            name,
+            adapter_class,
+            source="builtin:translator_adapter",
+            description=f"Built-in {adapter_class.__name__}",
+        )
+
+
 # ============ Config ============
 
 def load_config(path: str = "") -> dict:
@@ -583,20 +593,22 @@ def evaluate():
 def main():
     parser = argparse.ArgumentParser(description="S14.1 Translator Adapter")
     parser.add_argument("--text", type=str, help="Japanese text to translate")
-    parser.add_argument("--backend", type=str, choices=["sakura", "qwen", "galtransl", "external"],
-                        help="Translation backend")
+    parser.add_argument("--backend", type=str, help="Translation backend or plugin name")
     parser.add_argument("--config", type=str, default="", help="Config file path")
+    parser.add_argument("--plugin", action="append", default=[],
+                        help="Trusted local plugin .py file (repeatable)")
     parser.add_argument("--list-backends", action="store_true", help="List available backends")
     parser.add_argument("--save-config", type=str, help="Save default config to file")
     parser.add_argument("--evaluate", action="store_true")
     args = parser.parse_args()
 
+    load_plugins(args.plugin)
+    _ensure_builtin_translator_plugins()
+
     if args.list_backends:
         print("Available backends:")
-        print("  sakura    - Sakura-7B/14B (Ollama)")
-        print("  qwen      - Qwen2.5 (Ollama)")
-        print("  galtransl - GalTransl-7B (Ollama)")
-        print("  external  - OpenAI-compatible API")
+        for spec in plugin_registry.specs("translator"):
+            print(f"  {spec['name']:<12} {spec['description']} [{spec['source']}]")
         return
 
     if args.save_config:
