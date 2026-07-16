@@ -128,7 +128,8 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    translation_batch_size: int = 0,
                    oped_series: str = "", episode_number: int = 0,
                    oped_ranges: list[str] = None,
-                   oped_strict: bool = True) -> dict:
+                   oped_strict: bool = True,
+                   speaker_map_path: str = "") -> dict:
     """Process a single video through the full pipeline."""
     video_name = Path(video_path).stem
     work_dir = Path(output_dir) / video_name
@@ -247,8 +248,15 @@ def process_video(video_path: str, output_dir: str, config: dict,
         if seg_path.exists():
             srt_path = work_dir / f"{video_name}.srt"
             ass_path = work_dir / f"{video_name}.ass"
-            generate_subtitles(str(seg_path), str(srt_path))
-            generate_subtitles(str(seg_path), str(ass_path), style="anime")
+            generate_subtitles(
+                str(seg_path), str(srt_path), speaker_map=speaker_map_path or None
+            )
+            generate_subtitles(
+                str(seg_path),
+                str(ass_path),
+                style="anime",
+                speaker_map=speaker_map_path or None,
+            )
             cp.mark_completed("subtitle", output_file=str(srt_path),
                               duration_s=time.time()-t0)
 
@@ -384,6 +392,8 @@ Examples:
     parser.add_argument("--oped-best-effort", action="store_true",
                         help="Continue without OP/ED filtering if automatic detection fails")
     parser.add_argument("--quality-check", action="store_true", help="Enable quality checks")
+    parser.add_argument("--speaker-map", type=str, default="",
+                        help="JSON mapping from speaker IDs to ASS character names/colors")
     parser.add_argument("--auto", action="store_true", help="Auto-detect hardware and set optimal params")
     parser.add_argument("--batch", type=str, nargs="+", help="Batch process multiple videos")
     parser.add_argument("--test", action="store_true", help="Run pipeline test")
@@ -428,6 +438,7 @@ Examples:
             oped_series=args.oped_series, episode_number=args.episode_number,
             oped_ranges=args.oped_range,
             oped_strict=not args.oped_best_effort,
+            speaker_map_path=args.speaker_map,
         )
         return
 
@@ -456,7 +467,8 @@ Examples:
                           oped_series=args.oped_series,
                           episode_number=args.episode_number,
                           oped_ranges=args.oped_range,
-                          oped_strict=not args.oped_best_effort)
+                          oped_strict=not args.oped_best_effort,
+                          speaker_map_path=args.speaker_map)
         return
 
     parser.print_help()
