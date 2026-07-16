@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-07-15T23:27:57",
-  "total": 17,
-  "pass": 17,
+  "timestamp": "2026-07-16T11:09:10",
+  "total": 22,
+  "pass": 22,
   "fail": 0,
   "skip": 0,
-  "elapsed_s": 1.0,
+  "elapsed_s": 0.5,
   "results": [
     {
       "name": "S3.1  ASR evaluation module",
       "status": "PASS",
-      "time_s": 0.09,
+      "time_s": 0.12,
       "error": ""
     },
     {
@@ -33,13 +33,13 @@
     {
       "name": "S10.1 Subtitle generation module",
       "status": "PASS",
-      "time_s": 0.02,
+      "time_s": 0.04,
       "error": ""
     },
     {
       "name": "S11.1 Quality check module",
       "status": "PASS",
-      "time_s": 0.01,
+      "time_s": 0.0,
       "error": ""
     },
     {
@@ -99,13 +99,43 @@
     {
       "name": "S15.1 Pipeline CLI module",
       "status": "PASS",
-      "time_s": 0.02,
+      "time_s": 0.01,
       "error": ""
     },
     {
       "name": "S15.2 Hardware detection module",
       "status": "PASS",
-      "time_s": 0.73,
+      "time_s": 0.17,
+      "error": ""
+    },
+    {
+      "name": "S16.1 Speaker role styles",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S16.2 FastAPI Web UI",
+      "status": "PASS",
+      "time_s": 0.02,
+      "error": ""
+    },
+    {
+      "name": "S16.3 Proofreading workflow",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S16.4 Plugin system",
+      "status": "PASS",
+      "time_s": 0.0,
+      "error": ""
+    },
+    {
+      "name": "S16.5 Video preview",
+      "status": "PASS",
+      "time_s": 0.0,
       "error": ""
     }
   ]
