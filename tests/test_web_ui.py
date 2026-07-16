@@ -163,3 +163,43 @@ def test_fastapi_proofreading_updates_json_and_regenerates_subtitles(tmp_path):
     page = client.get(f"/proofread/{record['id']}")
     assert page.status_code == 200
     assert "保存修正并重建字幕" in page.text
+
+
+def test_fastapi_video_preview_page_and_api(tmp_path, monkeypatch):
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+
+    app = create_app(tmp_path / "jobs")
+    manager = app.state.job_manager
+    record, input_path = manager.create_job("episode.mp4", {"backend": "sakura"})
+    manager.save_upload(input_path, io.BytesIO(b"video"))
+    episode_dir = Path(record["output_dir"]) / "episode"
+    episode_dir.mkdir()
+    (episode_dir / "episode.ass").write_text("subtitle", encoding="utf-8")
+
+    def fake_render(video, subtitle, output, options):
+        output.write_bytes(b"preview")
+        return {
+            "output": str(output),
+            "output_bytes": len(b"preview"),
+            "elapsed_s": 0.01,
+            "options": {"duration": options.duration},
+        }
+
+    monkeypatch.setattr("scripts.web_ui.render_video_preview", fake_render)
+    client = TestClient(app)
+    page = client.get(f"/preview/{record['id']}")
+    assert page.status_code == 200
+    assert "字幕效果预览" in page.text
+
+    response = client.post(
+        f"/api/jobs/{record['id']}/preview",
+        json={"start": 10, "duration": 5, "width": 640},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["duration"] == 5
+    assert result["preview_url"].endswith("episode/episode_preview.mp4")
+    assert client.get(result["preview_url"]).content == b"preview"
+    assert "字幕预览" in client.get(f"/api/jobs/{record['id']}").text
