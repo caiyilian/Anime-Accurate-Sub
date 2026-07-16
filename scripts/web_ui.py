@@ -23,6 +23,7 @@ from scripts.proofread import (
     build_proofread_sheet,
     regenerate_subtitles,
 )
+from scripts.video_preview import PreviewOptions, render_preview as render_video_preview
 
 
 DEFAULT_JOB_ROOT = PROJECT_ROOT / ".omo" / "web_jobs"
@@ -311,6 +312,16 @@ class JobManager:
                     "kind": "action",
                 }
             )
+        if any(item["name"].lower().endswith(".ass") for item in results):
+            results.append(
+                {
+                    "name": "字幕预览",
+                    "path": "",
+                    "size": 0,
+                    "download_url": f"/preview/{record['id']}",
+                    "kind": "action",
+                }
+            )
         return results
 
     def _log_tail(self, job_id: str, max_bytes: int = 16_384) -> str:
@@ -370,6 +381,21 @@ class JobManager:
         translated = candidates[0]
         quality = translated.parent / "quality_report.json"
         return record, translated, quality if quality.exists() else None
+
+    def preview_paths(self, job_id: str) -> tuple[dict[str, Any], Path, Path, Path]:
+        record = self._load(job_id)
+        input_path = Path(record["input_path"]).resolve()
+        output_dir = Path(record["output_dir"]).resolve()
+        subtitles = sorted(
+            output_dir.rglob("*.ass"),
+            key=lambda path: path.stat().st_mtime,
+            reverse=True,
+        )
+        if not input_path.is_file() or not subtitles:
+            raise FileNotFoundError("preview inputs")
+        subtitle = subtitles[0]
+        output = subtitle.parent / f"{Path(record['filename']).stem}_preview.mp4"
+        return record, input_path, subtitle, output
 
 
 INDEX_HTML = """<!doctype html>
@@ -432,6 +458,17 @@ reviewOnly.addEventListener('change',render);document.querySelector('#save').add
 </script></body></html>"""
 
 
+PREVIEW_HTML = """<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>字幕预览 · Anime Accurate Sub</title><style>
+:root{color-scheme:dark;--bg:#0c111b;--card:#151d2b;--line:#2b3850;--accent:#ff78b5;--text:#e8edf6;--muted:#9ba9bd}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#1d2940,var(--bg) 48%);color:var(--text);font:15px/1.5 system-ui,sans-serif}main{width:min(1060px,94vw);margin:32px auto 70px}a{color:#9ed7ff}.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px}.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}label{display:grid;gap:5px;color:var(--muted)}input,select,button{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#0b111b;color:var(--text)}button{border:0;background:linear-gradient(120deg,var(--accent),#9c7cff);color:#10131d;font-weight:750;cursor:pointer}video{width:100%;max-height:70vh;background:#05070a;border-radius:12px;margin-top:16px}#message{min-height:24px;color:#ffd09e;margin-top:10px}@media(max-width:700px){.controls{grid-template-columns:1fr 1fr}}
+</style></head><body><main><a href="/">← 返回任务</a><h1>字幕效果预览</h1><p>选取最多 60 秒的片段，以低码率 MP4 快速查看当前 ASS 的实际 libass 渲染效果。</p>
+<section class="panel"><div class="controls"><label>起点（秒）<input id="start" type="number" min="0" step="0.1" value="0"></label><label>时长（秒）<input id="duration" type="number" min="0.5" max="60" step="0.5" value="8"></label><label>宽度<select id="width"><option value="640">640</option><option value="960" selected>960</option><option value="1280">1280</option></select></label><button id="render">生成预览</button></div><div id="message"></div><video id="video" controls playsinline></video></section>
+</main><script>
+const jobId='__JOB_ID__',button=document.querySelector('#render'),message=document.querySelector('#message'),video=document.querySelector('#video');button.addEventListener('click',async()=>{button.disabled=true;message.textContent='正在生成预览…';try{const response=await fetch(`/api/jobs/${jobId}/preview`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start:Number(document.querySelector('#start').value),duration:Number(document.querySelector('#duration').value),width:Number(document.querySelector('#width').value)})});const result=await response.json();if(!response.ok)throw new Error(result.detail||response.statusText);video.src=result.preview_url+'?v='+Date.now();video.load();message.textContent=`已生成 ${result.duration}s 预览，用时 ${result.elapsed_s}s，大小 ${(result.output_bytes/1048576).toFixed(2)} MB。`}catch(error){message.textContent='生成失败：'+error.message}finally{button.disabled=false}});
+</script></body></html>"""
+
+
 def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
     """Create the FastAPI application; Web dependencies remain optional."""
     try:
@@ -473,6 +510,14 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
             raise HTTPException(status_code=404, detail="任务译文不存在") from error
         return PROOFREAD_HTML.replace("__JOB_ID__", job_id)
 
+    @app.get("/preview/{job_id}", response_class=HTMLResponse)
+    def preview_page(job_id: str):
+        try:
+            manager.preview_paths(job_id)
+        except (KeyError, FileNotFoundError) as error:
+            raise HTTPException(status_code=404, detail="任务视频或 ASS 字幕不存在") from error
+        return PREVIEW_HTML.replace("__JOB_ID__", job_id)
+
     @app.get("/api/jobs/{job_id}/proofread")
     def get_proofread_sheet(job_id: str, only_review: bool = False):
         try:
@@ -503,6 +548,34 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
             raise HTTPException(status_code=404, detail="任务译文不存在") from error
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
+
+    @app.post("/api/jobs/{job_id}/preview")
+    def create_preview(job_id: str, payload: dict):
+        try:
+            record, video, subtitle, output = manager.preview_paths(job_id)
+            mute = payload.get("mute", False)
+            if not isinstance(mute, bool):
+                raise ValueError("mute 必须是布尔值")
+            options = PreviewOptions(
+                start=float(payload.get("start", 0)),
+                duration=float(payload.get("duration", 8)),
+                width=int(payload.get("width", 960)),
+                crf=int(payload.get("crf", 27)),
+                mute=mute,
+            )
+            result = render_video_preview(video, subtitle, output, options)
+            relative = output.relative_to(Path(record["output_dir"])).as_posix()
+            result["preview_url"] = (
+                f"/api/jobs/{job_id}/files/{quote(relative)}"
+            )
+            result["duration"] = options.duration
+            return result
+        except (KeyError, FileNotFoundError) as error:
+            raise HTTPException(status_code=404, detail="任务视频或 ASS 字幕不存在") from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(status_code=500, detail=str(error)) from error
 
     @app.post("/api/jobs", status_code=202)
     def create_job(
