@@ -18,6 +18,11 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5",
 ]
+web = [
+    "fastapi>=0.115",
+    "python-multipart>=0.0.9",
+    "uvicorn[standard]>=0.30",
+]
 
 [tool.ruff]
 line-length = 100
