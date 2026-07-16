@@ -1,0 +1,12 @@
+{
+  "speakers": {
+    "SPEAKER_00": {
+      "name": "唯",
+      "color": "#FF80C0"
+    },
+    "SPEAKER_01": {
+      "name": "澪",
+      "color": "#80C0FF"
+    }
+  }
+}
