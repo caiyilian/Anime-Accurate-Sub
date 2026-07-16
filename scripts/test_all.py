@@ -11,6 +11,7 @@
 #   S13: Term discovery + AB eval + Extract subs (discover_terms, ab_eval, extract_subs)
 #   S14: Translator adapter + Series memory (translator_adapter, series_memory)
 #   S15: Pipeline CLI (anime_sub, hardware)
+#   S16: Speaker styles + Web UI + proofreading + plugins + video preview
 #
 # Usage:
 #   python scripts/test_all.py
@@ -228,6 +229,43 @@ def test_hardware():
     assert "translation" in rec["recommendations"]
 
 
+# ============ S16: Advanced Features ============
+
+def test_speaker_styles():
+    """Test speaker role names and colors."""
+    from scripts.subtitle_gen import load_speaker_map
+    roles = load_speaker_map({"speaker_00": {"name": "唯", "color": "#FF80C0"}})
+    assert roles["speaker_00"].name == "唯"
+    assert roles["speaker_00"].color == "#FF80C0"
+
+
+def test_web_ui():
+    """Test the dependency-light Web UI helpers."""
+    from scripts.web_ui import safe_upload_name, validate_job_options
+    assert safe_upload_name("../episode.mp4") == "episode.mp4"
+    assert validate_job_options({"backend": "sakura"})["backend"] == "sakura"
+
+
+def test_proofreading():
+    """Test proofreading schema is available to CLI and Web UI."""
+    from scripts.proofread import SHEET_SCHEMA
+    assert SHEET_SCHEMA == "anime-accurate-sub/proofread-v1"
+
+
+def test_plugin_system():
+    """Test plugin registration and style contract."""
+    from scripts.plugin_system import PluginRegistry
+    registry = PluginRegistry()
+    registry.register("subtitle_style", "smoke_style", lambda config: {"fontname": "Arial"})
+    assert registry.create("subtitle_style", "smoke_style", {})["fontname"] == "Arial"
+
+
+def test_video_preview():
+    """Test preview option validation without invoking ffmpeg."""
+    from scripts.video_preview import PreviewOptions
+    assert PreviewOptions(start=10, duration=5, width=960).validate().duration == 5
+
+
 # ============ Test Registry ============
 
 ALL_TESTS = [
@@ -256,6 +294,12 @@ ALL_TESTS = [
     # S15
     ("S15.1 Pipeline CLI module", test_anime_sub),
     ("S15.2 Hardware detection module", test_hardware),
+    # S16
+    ("S16.1 Speaker role styles", test_speaker_styles),
+    ("S16.2 FastAPI Web UI", test_web_ui),
+    ("S16.3 Proofreading workflow", test_proofreading),
+    ("S16.4 Plugin system", test_plugin_system),
+    ("S16.5 Video preview", test_video_preview),
 ]
 
 
@@ -271,7 +315,7 @@ def main():
     print("\n" + "=" * 60)
     print("S15.3 REGRESSION TEST SUITE")
     print("=" * 60)
-    print(f"Testing {len(ALL_TESTS)} modules across S3-S15...\n")
+    print(f"Testing {len(ALL_TESTS)} modules across S3-S16...\n")
 
     t0 = time.time()
 
