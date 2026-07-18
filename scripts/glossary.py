@@ -87,7 +87,9 @@ class Glossary:
         if not self.terms:
             return ""
         lines = ["以下术语表的翻译必须严格遵守："]
-        for ja, zh in self.terms:
+        # Put specific aliases before their shorter substrings so instructions
+        # such as 唯ちゃん->小唯 take precedence over 唯->唯.
+        for ja, zh in sorted(self.terms, key=lambda item: len(item[0]), reverse=True):
             lines.append(f"  {ja} -> {zh}")
         return "\n".join(lines)
 
