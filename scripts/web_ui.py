@@ -40,7 +40,9 @@ ALLOWED_VIDEO_EXTENSIONS = {
     ".ts",
     ".webm",
 }
-DOWNLOADABLE_NAMES = {"translated.json", "quality_report.json"}
+DOWNLOADABLE_NAMES = {
+    "translated.json", "reviewed.json", "multi_agent_review.json", "quality_report.json"
+}
 DOWNLOADABLE_SUFFIXES = {".ass", ".srt"}
 DOWNLOADABLE_VIDEO_SUFFIXES = ("_subs.mp4", "_preview.mp4", "_proofread_subs.mp4")
 
@@ -70,6 +72,7 @@ def validate_job_options(options: dict[str, Any]) -> dict[str, Any]:
     return {
         "backend": backend,
         "quality_check": bool(options.get("quality_check", False)),
+        "multi_agent_review": bool(options.get("multi_agent_review", False)),
         "translation_batch_size": batch_size,
     }
 
@@ -93,6 +96,12 @@ def build_pipeline_command(
     ]
     if normalized["quality_check"]:
         command.append("--quality-check")
+    if normalized["multi_agent_review"]:
+        command.extend([
+            "--multi-agent-review",
+            "--review-config",
+            str(PROJECT_ROOT / "config" / "quality_review.sensenova.json"),
+        ])
     if normalized["translation_batch_size"]:
         command.extend(
             ["--translation-batch-size", str(normalized["translation_batch_size"])]
@@ -100,9 +109,16 @@ def build_pipeline_command(
     return command
 
 
-def checkpoint_progress(output_dir: str | Path, quality_check: bool = False) -> dict[str, Any]:
+def checkpoint_progress(
+    output_dir: str | Path,
+    quality_check: bool = False,
+    multi_agent_review: bool = False,
+) -> dict[str, Any]:
     """Summarize the newest pipeline checkpoint below a Web job output directory."""
     stages = PIPELINE_STAGES if quality_check else PIPELINE_STAGES[:-1]
+    if multi_agent_review:
+        stages = list(stages)
+        stages.insert(stages.index("subtitle"), "multi_agent_review")
     checkpoints = sorted(
         Path(output_dir).rglob("checkpoint.json"),
         key=lambda path: path.stat().st_mtime,
@@ -339,7 +355,9 @@ class JobManager:
             if key not in {"input_path", "output_dir", "command"}
         }
         public["progress"] = checkpoint_progress(
-            record["output_dir"], record["options"]["quality_check"]
+            record["output_dir"],
+            record["options"]["quality_check"],
+            record["options"].get("multi_agent_review", False),
         )
         public["outputs"] = self._outputs(record)
         public["log_tail"] = self._log_tail(record["id"])
@@ -426,7 +444,7 @@ INDEX_HTML = """<!doctype html>
       <label>视频文件<input name="video" type="file" accept="video/*,.mkv,.ts" required></label>
       <label>翻译后端<select name="backend"><option value="sakura">Sakura</option><option value="galtransl">GalTransl</option><option value="qwen">Qwen</option><option value="external">External</option></select></label>
       <label>批大小（0=配置默认）<input name="translation_batch_size" type="number" min="0" max="100" value="0"></label>
-      <div class="checks"><label><input name="quality_check" type="checkbox"> 运行质量检查</label></div>
+      <div class="checks"><label><input name="quality_check" type="checkbox"> 运行规则质量检查</label><label><input name="multi_agent_review" type="checkbox"> SenseNova 多 Agent 审查</label></div>
       <button id="submit" type="submit">上传并开始</button>
     </form><div id="message"></div>
   </section>
@@ -437,7 +455,7 @@ const form=document.querySelector('#job-form'), message=document.querySelector('
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
 function render(items){ jobs.innerHTML=items.length?'':'<div class="job">还没有任务。</div>'; for(const job of items){const p=job.progress||{}, links=(job.outputs||[]).map(x=>`<a href="${x.download_url}">${esc(x.name)}</a>`).join(''); const el=document.createElement('article'); el.className='job'; el.innerHTML=`<header><strong>${esc(job.filename)}</strong><span class="pill">${esc(job.status)}</span></header><div class="meta">${esc(job.id)} · 当前阶段 ${esc(p.active_stage)} · ${p.completed||0}/${p.total||0}</div><progress value="${p.percent||0}" max="100"></progress><div class="outputs">${links||'结果生成后会显示下载链接'}</div>${job.log_tail?`<details><summary>日志尾部</summary><pre>${esc(job.log_tail)}</pre></details>`:''}`; jobs.appendChild(el); }}
 async function refresh(){try{const response=await fetch('/api/jobs'); render(await response.json())}catch(e){message.textContent='读取任务失败：'+e}}
-form.addEventListener('submit',async event=>{event.preventDefault(); submit.disabled=true; message.textContent='正在上传…'; const data=new FormData(form); data.set('quality_check',form.quality_check.checked?'true':'false'); try{const response=await fetch('/api/jobs',{method:'POST',body:data}); const body=await response.json(); if(!response.ok)throw new Error(body.detail||response.statusText); message.textContent=`任务 ${body.id} 已启动`; form.reset(); await refresh()}catch(e){message.textContent='启动失败：'+e.message}finally{submit.disabled=false}});
+form.addEventListener('submit',async event=>{event.preventDefault(); submit.disabled=true; message.textContent='正在上传…'; const data=new FormData(form); data.set('quality_check',form.quality_check.checked?'true':'false'); data.set('multi_agent_review',form.multi_agent_review.checked?'true':'false'); try{const response=await fetch('/api/jobs',{method:'POST',body:data}); const body=await response.json(); if(!response.ok)throw new Error(body.detail||response.statusText); message.textContent=`任务 ${body.id} 已启动`; form.reset(); await refresh()}catch(e){message.textContent='启动失败：'+e.message}finally{submit.disabled=false}});
 refresh(); setInterval(refresh,3000);
 </script></body></html>"""
 
@@ -582,6 +600,7 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
         video: UploadFile = File(...),
         backend: str = Form("sakura"),
         quality_check: bool = Form(False),
+        multi_agent_review: bool = Form(False),
         translation_batch_size: int = Form(0),
     ):
         job_id = ""
@@ -591,6 +610,7 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
                 {
                     "backend": backend,
                     "quality_check": quality_check,
+                    "multi_agent_review": multi_agent_review,
                     "translation_batch_size": translation_batch_size,
                 },
             )

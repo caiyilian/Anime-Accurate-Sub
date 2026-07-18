@@ -123,9 +123,29 @@ def test_quality_check():
 
 
 def test_review_agents():
-    """Test review agents module imports."""
-    from scripts.review_agents import AGENTS
+    """Test strict review parsing and production configuration."""
+    from scripts.review_agents import AGENTS, ReviewConfig, parse_agent_response
     assert len(AGENTS) == 5  # 5 agents
+    config = ReviewConfig.from_dict({
+        "provider": "openai",
+        "base_url": "https://example.invalid/v1",
+        "api_key_file": "keys.txt",
+        "min_fix_votes": 2,
+        "min_reviewer_confidence": 0.75,
+        "min_editor_confidence": 0.85,
+    }).validate()
+    assert config.min_fix_votes == 2
+    parsed = parse_agent_response(
+        '{"verdict":"ok","suggested_zh":"","reason":"自然",'
+        '"confidence":0.9}'
+    )
+    assert parsed["verdict"] == "ok"
+    try:
+        parse_agent_response("提示词写着 [OK]，但这不是 JSON 结论")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("natural-language keyword guessing must be rejected")
 
 
 def test_gemba_mqm():

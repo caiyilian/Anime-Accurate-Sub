@@ -23,13 +23,22 @@ def test_build_pipeline_command_is_shell_free_and_validated(tmp_path):
     command = build_pipeline_command(
         tmp_path / "input;still-video.mp4",
         tmp_path / "output",
-        {"backend": "galtransl", "quality_check": True, "translation_batch_size": 6},
+        {
+            "backend": "galtransl",
+            "quality_check": True,
+            "multi_agent_review": True,
+            "translation_batch_size": 6,
+        },
         python_executable="python-test",
     )
     assert command[0] == "python-test"
     assert command[2].endswith("input;still-video.mp4")
     assert command[command.index("--backend") + 1] == "galtransl"
     assert "--quality-check" in command
+    assert "--multi-agent-review" in command
+    assert command[command.index("--review-config") + 1].endswith(
+        "quality_review.sensenova.json"
+    )
     assert command[command.index("--translation-batch-size") + 1] == "6"
     with pytest.raises(ValueError):
         build_pipeline_command("video.mp4", "out", {"backend": "sakura && calc"})
@@ -48,9 +57,11 @@ def test_checkpoint_progress_reads_real_stage_state(tmp_path):
         ),
         encoding="utf-8",
     )
-    progress = checkpoint_progress(tmp_path / "output", quality_check=True)
+    progress = checkpoint_progress(
+        tmp_path / "output", quality_check=True, multi_agent_review=True
+    )
     assert progress["completed"] == 2
-    assert progress["total"] == 6
+    assert progress["total"] == 7
     assert progress["active_stage"] == "translate"
     assert progress["failed_stages"] == ["translate"]
 
@@ -105,6 +116,7 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
         data={
             "backend": "sakura",
             "quality_check": "true",
+            "multi_agent_review": "true",
             "translation_batch_size": "6",
         },
     )
@@ -113,6 +125,7 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
     body = response.json()
     assert body["status"] == "pending"
     assert body["options"]["quality_check"] is True
+    assert body["options"]["multi_agent_review"] is True
     record = manager._load(body["id"])
     assert Path(record["input_path"]).read_bytes() == b"fake-video"
 
