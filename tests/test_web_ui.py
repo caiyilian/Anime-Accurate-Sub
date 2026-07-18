@@ -33,6 +33,7 @@ def test_build_pipeline_command_is_shell_free_and_validated(tmp_path):
             "backend": "galtransl",
             "quality_check": True,
             "multi_agent_review": True,
+            "mqm_quality_review": True,
             "japanese_subtitle_path": str(japanese_subtitle),
             "translation_batch_size": 6,
         },
@@ -48,6 +49,10 @@ def test_build_pipeline_command_is_shell_free_and_validated(tmp_path):
     )
     assert command[command.index("--translation-batch-size") + 1] == "6"
     assert command[command.index("--japanese-subtitle") + 1] == str(japanese_subtitle)
+    assert "--mqm-quality-review" in command
+    assert command[command.index("--mqm-config") + 1].endswith(
+        "quality_mqm.sensenova.json"
+    )
     with pytest.raises(ValueError):
         build_pipeline_command("video.mp4", "out", {"backend": "sakura && calc"})
 
@@ -88,11 +93,14 @@ def test_checkpoint_progress_replaces_audio_and_asr_for_japanese_source(tmp_path
     )
 
     progress = checkpoint_progress(
-        tmp_path / "output", quality_check=True, japanese_subtitle=True
+        tmp_path / "output",
+        quality_check=True,
+        japanese_subtitle=True,
+        mqm_quality_review=True,
     )
     assert progress["completed"] == 2
-    assert progress["total"] == 5
-    assert progress["active_stage"] == "subtitle"
+    assert progress["total"] == 6
+    assert progress["active_stage"] == "mqm_quality_review"
 
 
 def test_job_download_path_stays_inside_output(tmp_path):
@@ -153,6 +161,7 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
             "backend": "sakura",
             "quality_check": "true",
             "multi_agent_review": "true",
+            "mqm_quality_review": "true",
             "translation_batch_size": "6",
         },
     )
@@ -162,6 +171,7 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
     assert body["status"] == "pending"
     assert body["options"]["quality_check"] is True
     assert body["options"]["multi_agent_review"] is True
+    assert body["options"]["mqm_quality_review"] is True
     assert body["options"]["japanese_subtitle_path"].endswith("K-ON! S1E01.jp.srt")
     record = manager._load(body["id"])
     assert Path(record["input_path"]).read_bytes() == b"fake-video"
