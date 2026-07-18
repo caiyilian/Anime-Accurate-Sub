@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-07-16T11:09:10",
+  "timestamp": "2026-07-19T02:05:48",
   "total": 22,
   "pass": 22,
   "fail": 0,
   "skip": 0,
-  "elapsed_s": 0.5,
+  "elapsed_s": 5.6,
   "results": [
     {
       "name": "S3.1  ASR evaluation module",
       "status": "PASS",
-      "time_s": 0.12,
+      "time_s": 1.35,
       "error": ""
     },
     {
       "name": "S9.1  Translate module",
       "status": "PASS",
-      "time_s": 0.03,
+      "time_s": 0.07,
       "error": ""
     },
     {
@@ -33,7 +33,7 @@
     {
       "name": "S10.1 Subtitle generation module",
       "status": "PASS",
-      "time_s": 0.04,
+      "time_s": 0.09,
       "error": ""
     },
     {
@@ -45,7 +45,7 @@
     {
       "name": "S11.2 Review agents module",
       "status": "PASS",
-      "time_s": 0.01,
+      "time_s": 0.02,
       "error": ""
     },
     {
@@ -57,37 +57,37 @@
     {
       "name": "S12.1 Checkpoint module",
       "status": "PASS",
-      "time_s": 0.01,
+      "time_s": 0.02,
       "error": ""
     },
     {
       "name": "S12.2 Batch process module",
       "status": "PASS",
-      "time_s": 0.0,
+      "time_s": 0.01,
       "error": ""
     },
     {
       "name": "S13.1 Term discovery module",
       "status": "PASS",
-      "time_s": 0.0,
+      "time_s": 0.01,
       "error": ""
     },
     {
       "name": "S13.2 AB evaluation module",
       "status": "PASS",
-      "time_s": 0.0,
+      "time_s": 0.01,
       "error": ""
     },
     {
       "name": "S13.3 Extract subs module",
       "status": "PASS",
-      "time_s": 0.03,
+      "time_s": 0.22,
       "error": ""
     },
     {
       "name": "S14.1 Translator adapter module",
       "status": "PASS",
-      "time_s": 0.0,
+      "time_s": 0.01,
       "error": ""
     },
     {
@@ -99,13 +99,13 @@
     {
       "name": "S15.1 Pipeline CLI module",
       "status": "PASS",
-      "time_s": 0.01,
+      "time_s": 0.02,
       "error": ""
     },
     {
       "name": "S15.2 Hardware detection module",
       "status": "PASS",
-      "time_s": 0.17,
+      "time_s": 3.65,
       "error": ""
     },
     {
@@ -117,7 +117,7 @@
     {
       "name": "S16.2 FastAPI Web UI",
       "status": "PASS",
-      "time_s": 0.02,
+      "time_s": 0.1,
       "error": ""
     },
     {
@@ -135,7 +135,7 @@
     {
       "name": "S16.5 Video preview",
       "status": "PASS",
-      "time_s": 0.0,
+      "time_s": 0.02,
       "error": ""
     }
   ]
