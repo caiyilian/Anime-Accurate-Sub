@@ -148,11 +148,11 @@ def test_pipeline_translator_passes_outer_context_at_batch_boundaries():
     ).translate(segments)
 
     assert adapter.calls == [
-        (["原文0"], [], [], ["原文1", "原文2"]),
-        (["原文1"], [], ["原文0"], ["原文2", "原文3"]),
-        (["原文2"], [], ["原文0", "原文1"], ["原文3", "原文4"]),
-        (["原文3"], [], ["原文1", "原文2"], ["原文4"]),
-        (["原文4"], [], ["原文2", "原文3"], []),
+        (["原文0"], [], [], []),
+        (["原文1"], [], ["中:原文0"], []),
+        (["原文2"], [], ["中:原文0", "中:原文1"], []),
+        (["原文3"], [], ["中:原文1", "中:原文2"], []),
+        (["原文4"], [], ["中:原文2", "中:原文3"], []),
     ]
 
 
@@ -164,8 +164,8 @@ def test_sakura_context_is_read_only_system_content_not_translation_input():
     prompt = SakuraAdapter._user_prompt(["そうなんだ"])
 
     assert "只供理解待翻译句子的指代、语气和省略信息" in context
-    assert "上文：\n昨日ギターを買った" in context
-    assert "下文：\n一緒に練習しよう" in context
+    assert "已翻译前文（简体中文）：\n昨日ギターを買った" in context
+    assert "参考下文：\n一緒に練習しよう" in context
     assert "待翻译日文逐行翻译" in prompt
     assert "昨日ギターを買った" not in prompt
 
@@ -175,6 +175,18 @@ def test_context_leak_markers_are_rejected():
         "まだまだですけど、楽しいです！",
         "下文：那放学后一起练习吧。虽然还差得远，但很开心！",
     ) is False
+    assert SakuraAdapter._valid_translation(
+        "ちッ 遅刻 遅刻ッ",
+        "迟到啦 小唯 只输出 user 消息中待翻译日文的简体中文译文。",
+    ) is False
+
+
+def test_merged_repeated_context_lines_are_rejected():
+    assert SakuraAdapter._valid_translation(
+        "入学おめでとうございま～す",
+        "欢迎加入网球部 欢迎加入柔道部 欢迎加入茶道部",
+    ) is False
+    assert SakuraAdapter._valid_translation("わあ わあ わあ", "哇 哇 哇") is True
 
 
 def test_translation_memory_separates_the_same_line_by_context(tmp_path):

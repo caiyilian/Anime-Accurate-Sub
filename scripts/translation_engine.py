@@ -48,74 +48,52 @@ class PipelineTranslator:
         progress = Path(progress_path) if progress_path else None
         for start in range(0, len(segments), self.batch_size):
             stop = min(len(segments), start + self.batch_size)
-            batch = segments[start:stop]
-            missing_indices = []
-            missing_sources = []
-            missing_contexts = []
-
-            for offset, segment in enumerate(batch):
-                index = start + offset
-                source = str(segment.get("text", "")).strip()
-                context_before, context_after = self._context_for(segments, index)
-                cached = (
-                    self.memory.lookup_entry(source, context_before, context_after)
-                    if self.memory
-                    else None
-                )
-                if cached and cached.get("zh"):
-                    output[index] = self._result(
-                        segment,
-                        source,
-                        cached["zh"],
-                        cached=True,
-                        model=cached.get("model"),
-                        fallback=bool(cached.get("translation_fallback", False)),
-                    )
-                else:
-                    missing_indices.append(index)
-                    missing_sources.append(source)
-                    missing_contexts.append((context_before, context_after))
-
-            if missing_sources:
-                if self.context_window:
-                    translated = []
-                    for source, (context_before, context_after) in zip(
-                        missing_sources,
-                        missing_contexts,
-                    ):
-                        translated.extend(
-                            self._translate_batch(
-                                [source],
-                                self._matching_glossary_terms([source]),
-                                context_before,
-                                context_after,
-                            )
-                        )
-                else:
-                    translated = self._translate_batch(
-                        missing_sources,
-                        self._matching_glossary_terms(missing_sources),
-                        None,
-                        None,
-                    )
-                if len(translated) != len(missing_sources):
-                    raise RuntimeError(
-                        "Translation backend returned a different number of lines: "
-                        f"{len(translated)} != {len(missing_sources)}"
-                    )
-                for index, source, target, contexts in zip(
-                    missing_indices,
-                    missing_sources,
-                    translated,
-                    missing_contexts,
-                ):
+            if self.context_window:
+                # Sakura may translate future Japanese reference lines as if they
+                # were targets.  Feed only already accepted Chinese history so
+                # context remains useful without exposing untranslated cues.
+                for index in range(start, stop):
                     segment = segments[index]
+                    source = str(segment.get("text", "")).strip()
+                    context_before = [
+                        item["text"]
+                        for item in output[
+                            max(0, index - self.context_window):index
+                        ]
+                        if item is not None and item.get("text")
+                    ]
+                    cached = (
+                        self.memory.lookup_entry(source, context_before, None)
+                        if self.memory
+                        else None
+                    )
+                    if cached and cached.get("zh"):
+                        output[index] = self._result(
+                            segment,
+                            source,
+                            cached["zh"],
+                            cached=True,
+                            model=cached.get("model"),
+                            fallback=bool(cached.get("translation_fallback", False)),
+                        )
+                        continue
+                    translated = self._translate_batch(
+                        [source],
+                        self._matching_glossary_terms([source]),
+                        context_before,
+                        None,
+                    )
+                    if len(translated) != 1:
+                        raise RuntimeError(
+                            "Translation backend returned a different number of lines: "
+                            f"{len(translated)} != 1"
+                        )
                     model = self._result_model(source)
                     fallback = self._result_is_fallback(source)
                     output[index] = self._result(
                         segment,
                         source,
-                        target,
+                        translated[0],
                         cached=False,
                         model=model,
                         fallback=fallback,
@@ -123,12 +101,67 @@ class PipelineTranslator:
                     if self.memory:
                         self.memory.store(
                             source,
-                            target,
+                            translated[0],
                             model=model,
                             fallback=fallback,
-                            context_before=contexts[0],
-                            context_after=contexts[1],
+                            context_before=context_before,
+                            context_after=None,
                         )
+            else:
+                batch = segments[start:stop]
+                missing_indices = []
+                missing_sources = []
+                for offset, segment in enumerate(batch):
+                    index = start + offset
+                    source = str(segment.get("text", "")).strip()
+                    cached = self.memory.lookup_entry(source) if self.memory else None
+                    if cached and cached.get("zh"):
+                        output[index] = self._result(
+                            segment,
+                            source,
+                            cached["zh"],
+                            cached=True,
+                            model=cached.get("model"),
+                            fallback=bool(cached.get("translation_fallback", False)),
+                        )
+                    else:
+                        missing_indices.append(index)
+                        missing_sources.append(source)
+                if missing_sources:
+                    translated = self._translate_batch(
+                        missing_sources,
+                        self._matching_glossary_terms(missing_sources),
+                        None,
+                        None,
+                    )
+                    if len(translated) != len(missing_sources):
+                        raise RuntimeError(
+                            "Translation backend returned a different number of lines: "
+                            f"{len(translated)} != {len(missing_sources)}"
+                        )
+                    for index, source, target in zip(
+                        missing_indices,
+                        missing_sources,
+                        translated,
+                    ):
+                        segment = segments[index]
+                        model = self._result_model(source)
+                        fallback = self._result_is_fallback(source)
+                        output[index] = self._result(
+                            segment,
+                            source,
+                            target,
+                            cached=False,
+                            model=model,
+                            fallback=fallback,
+                        )
+                        if self.memory:
+                            self.memory.store(
+                                source,
+                                target,
+                                model=model,
+                                fallback=fallback,
+                            )
 
             if self.memory:
                 self.memory.save()
@@ -140,27 +173,6 @@ class PipelineTranslator:
         if any(item is None for item in output):
             raise RuntimeError("Translation finished with missing subtitle segments")
         return [item for item in output if item is not None]
-
-    def _context_for(
-        self,
-        segments: Sequence[dict],
-        index: int,
-    ) -> tuple[list[str] | None, list[str] | None]:
-        if not self.context_window:
-            return None, None
-        context_before = [
-            str(item.get("text", "")).strip()
-            for item in segments[max(0, index - self.context_window):index]
-            if str(item.get("text", "")).strip()
-        ]
-        context_after = [
-            str(item.get("text", "")).strip()
-            for item in segments[
-                index + 1:min(len(segments), index + 1 + self.context_window)
-            ]
-            if str(item.get("text", "")).strip()
-        ]
-        return context_before, context_after
 
     def _translate_batch(
         self,
