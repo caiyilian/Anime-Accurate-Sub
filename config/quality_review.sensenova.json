@@ -19,6 +19,6 @@
   "min_fix_votes": 2,
   "min_reviewer_confidence": 0.75,
   "min_editor_confidence": 0.85,
-  "retries": 4,
+  "retries": 6,
   "timeout_s": 600
 }
