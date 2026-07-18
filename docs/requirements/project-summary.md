@@ -93,6 +93,7 @@
 - [ ] **翻译记忆库（Translation Memory）** — JSONL 双层缓存，相同台词自动复用。参考 SubForge MAPS + JAVTrans
 - [ ] **OP/ED 自动检测与跳过** — 自动识别片头片尾，避免 ASR 识别歌词。参考 SenseVoice 音频事件分类 / AniChapters
 - [x] **多 Agent 脚本审查** — 5 个角色并行审查字幕，总编在全员成功、达到投票和置信度门槛时才自动修正；支持 SenseNova 六账号轮询与完整审计
+- [x] **外挂日文字幕优先** — 单集/整季日文 sidecar 与内嵌文本轨可直接进入翻译；拒绝中文参考误用，按源 SHA-256 管理下游失效
 
 ### 阶段 2：体验完善
 

@@ -40,6 +40,7 @@ ALLOWED_VIDEO_EXTENSIONS = {
     ".ts",
     ".webm",
 }
+ALLOWED_SUBTITLE_EXTENSIONS = {".srt", ".ass", ".ssa", ".vtt"}
 DOWNLOADABLE_NAMES = {
     "translated.json", "reviewed.json", "multi_agent_review.json", "quality_report.json"
 }
@@ -62,6 +63,17 @@ def safe_upload_name(filename: str) -> str:
     return name
 
 
+def safe_subtitle_name(filename: str) -> str:
+    """Return a safe Japanese subtitle basename accepted by the source loader."""
+    name = str(filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    name = re.sub(r"[\x00-\x1f<>:\"|?*]", "_", name).rstrip(". ")
+    if not name or name in {".", ".."}:
+        raise ValueError("日文字幕文件名无效")
+    if Path(name).suffix.lower() not in ALLOWED_SUBTITLE_EXTENSIONS:
+        raise ValueError(f"不支持的字幕格式：{Path(name).suffix or '无扩展名'}")
+    return name
+
+
 def validate_job_options(options: dict[str, Any]) -> dict[str, Any]:
     backend = str(options.get("backend", "sakura")).lower().strip()
     if backend not in ALLOWED_BACKENDS:
@@ -69,10 +81,18 @@ def validate_job_options(options: dict[str, Any]) -> dict[str, Any]:
     batch_size = int(options.get("translation_batch_size") or 0)
     if batch_size < 0 or batch_size > 100:
         raise ValueError("翻译批大小必须在 0 到 100 之间")
+    japanese_subtitle_path = str(options.get("japanese_subtitle_path") or "").strip()
+    if japanese_subtitle_path:
+        subtitle = Path(japanese_subtitle_path)
+        if subtitle.suffix.lower() not in ALLOWED_SUBTITLE_EXTENSIONS:
+            raise ValueError(f"不支持的字幕格式：{subtitle.suffix or '无扩展名'}")
+        if not subtitle.is_file():
+            raise FileNotFoundError(subtitle)
     return {
         "backend": backend,
         "quality_check": bool(options.get("quality_check", False)),
         "multi_agent_review": bool(options.get("multi_agent_review", False)),
+        "japanese_subtitle_path": japanese_subtitle_path,
         "translation_batch_size": batch_size,
     }
 
@@ -102,6 +122,10 @@ def build_pipeline_command(
             "--review-config",
             str(PROJECT_ROOT / "config" / "quality_review.sensenova.json"),
         ])
+    if normalized["japanese_subtitle_path"]:
+        command.extend(
+            ["--japanese-subtitle", normalized["japanese_subtitle_path"]]
+        )
     if normalized["translation_batch_size"]:
         command.extend(
             ["--translation-batch-size", str(normalized["translation_batch_size"])]
@@ -113,9 +137,13 @@ def checkpoint_progress(
     output_dir: str | Path,
     quality_check: bool = False,
     multi_agent_review: bool = False,
+    japanese_subtitle: bool = False,
 ) -> dict[str, Any]:
     """Summarize the newest pipeline checkpoint below a Web job output directory."""
     stages = PIPELINE_STAGES if quality_check else PIPELINE_STAGES[:-1]
+    if japanese_subtitle:
+        stages = list(stages)
+        stages[:2] = ["japanese_subtitle"]
     if multi_agent_review:
         stages = list(stages)
         stages.insert(stages.index("subtitle"), "multi_agent_review")
@@ -240,6 +268,19 @@ class JobManager:
             raise ValueError("上传的视频为空")
         return total
 
+    def save_japanese_subtitle(
+        self, job_id: str, filename: str, source: BinaryIO
+    ) -> Path:
+        """Save an optional Japanese source beside the uploaded video."""
+        name = safe_subtitle_name(filename)
+        with self._lock:
+            record = self._load(job_id)
+            path = Path(record["input_path"]).parent / name
+            self.save_upload(path, source)
+            record["options"]["japanese_subtitle_path"] = str(path)
+            self._save(record)
+        return path
+
     def start_job(self, job_id: str) -> dict[str, Any]:
         with self._lock:
             record = self._load(job_id)
@@ -358,6 +399,7 @@ class JobManager:
             record["output_dir"],
             record["options"]["quality_check"],
             record["options"].get("multi_agent_review", False),
+            bool(record["options"].get("japanese_subtitle_path")),
         )
         public["outputs"] = self._outputs(record)
         public["log_tail"] = self._log_tail(record["id"])
@@ -443,6 +485,7 @@ INDEX_HTML = """<!doctype html>
     <form id="job-form">
       <label>视频文件<input name="video" type="file" accept="video/*,.mkv,.ts" required></label>
       <label>翻译后端<select name="backend"><option value="sakura">Sakura</option><option value="galtransl">GalTransl</option><option value="qwen">Qwen</option><option value="external">External</option></select></label>
+      <label>日文字幕（可选，提供后跳过 ASR）<input name="japanese_subtitle" type="file" accept=".srt,.ass,.ssa,.vtt"></label>
       <label>批大小（0=配置默认）<input name="translation_batch_size" type="number" min="0" max="100" value="0"></label>
       <div class="checks"><label><input name="quality_check" type="checkbox"> 运行规则质量检查</label><label><input name="multi_agent_review" type="checkbox"> SenseNova 多 Agent 审查</label></div>
       <button id="submit" type="submit">上传并开始</button>
@@ -598,6 +641,7 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
     @app.post("/api/jobs", status_code=202)
     def create_job(
         video: UploadFile = File(...),
+        japanese_subtitle: UploadFile | None = File(None),
         backend: str = Form("sakura"),
         quality_check: bool = Form(False),
         multi_agent_review: bool = Form(False),
@@ -616,6 +660,10 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
             )
             job_id = record["id"]
             manager.save_upload(input_path, video.file)
+            if japanese_subtitle and japanese_subtitle.filename:
+                manager.save_japanese_subtitle(
+                    job_id, japanese_subtitle.filename, japanese_subtitle.file
+                )
             return manager.start_job(job_id)
         except (ValueError, FileNotFoundError) as error:
             if job_id:
@@ -623,6 +671,8 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
             raise HTTPException(status_code=400, detail=str(error)) from error
         finally:
             video.file.close()
+            if japanese_subtitle:
+                japanese_subtitle.file.close()
 
     @app.get("/api/jobs/{job_id}/files/{relative_path:path}")
     def download(job_id: str, relative_path: str):
