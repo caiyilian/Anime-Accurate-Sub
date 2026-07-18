@@ -8,6 +8,7 @@ from scripts.review_agents import (
     _api_keys,
     _segment_key,
     parse_agent_response,
+    run_agent,
     review_segment,
     review_translation_file,
 )
@@ -77,6 +78,87 @@ def test_api_key_file_loads_multiple_accounts_without_exposing_values(tmp_path):
     keys = _api_keys(str(key_file))
     assert len(keys) == 2
     assert keys == ["key-a", "key-b"]
+
+
+def test_flash_agent_uses_deepseek_only_after_primary_retries_fail():
+    calls = []
+
+    def chat(messages, **kwargs):
+        calls.append(kwargs["model"])
+        if kwargs["model"] == "flash-primary":
+            return ""
+        return _response({
+            "verdict": "ok", "suggested_zh": "", "reason": "准确",
+            "confidence": 0.95,
+        })
+
+    result = run_agent(
+        "naturalness",
+        {"ja": "おはよう", "text": "早上好"},
+        "上下文",
+        "",
+        _config(
+            review_model="flash-primary",
+            review_fallback_model="deepseek-fallback",
+        ),
+        chat,
+    )
+
+    assert calls == ["flash-primary", "deepseek-fallback"]
+    assert result["verdict"] == "ok"
+    assert result["model"] == "deepseek-fallback"
+    assert result["primary_model"] == "flash-primary"
+    assert result["fallback_used"] is True
+    assert result["primary_error"]
+    assert result["attempts"] == 2
+
+
+def test_editor_uses_deepseek_fallback_after_flash_failure():
+    calls = []
+
+    def chat(messages, **kwargs):
+        model = kwargs["model"]
+        calls.append(model)
+        system = messages[0]["content"]
+        if model == "editor-primary":
+            return ""
+        if model == "editor-fallback":
+            return _response({
+                "decision": "replace",
+                "corrected_zh": "迟到！迟到！",
+                "reason": "还原重复和焦急语气",
+                "confidence": 0.95,
+            })
+        verdict = (
+            "fix"
+            if "Accuracy Checker" in system or "Naturalness Checker" in system
+            else "ok"
+        )
+        return _response({
+            "verdict": verdict,
+            "suggested_zh": "迟到！迟到！" if verdict == "fix" else "",
+            "reason": "需要修正语气" if verdict == "fix" else "无问题",
+            "confidence": 0.95,
+        })
+
+    result = review_segment(
+        0,
+        {"ja": "遅刻 遅刻", "text": "都迟到了"},
+        "上下文",
+        "",
+        _config(
+            editor_model="editor-primary",
+            editor_fallback_model="editor-fallback",
+        ),
+        chat,
+    )
+
+    assert calls.count("editor-primary") == 1
+    assert calls.count("editor-fallback") == 1
+    assert result["status"] == "corrected"
+    assert result["final_zh"] == "迟到！迟到！"
+    assert result["editor_result"]["model"] == "editor-fallback"
+    assert result["editor_result"]["fallback_used"] is True
 
 
 def test_consensus_and_high_confidence_editor_apply_fix():
