@@ -692,7 +692,7 @@ Examples:
     parser.add_argument("--translation-batch-size", type=int, default=0,
                         help="Lines per translation request (default: backend configuration)")
     parser.add_argument("--translation-context-window", type=int, default=3,
-                        help="Read-only Japanese lines before/after each subtitle")
+                        help="Accepted previous Chinese lines used as translation history")
     parser.add_argument(
         "--japanese-subtitle",
         type=str,
