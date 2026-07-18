@@ -151,4 +151,7 @@ class PipelineTranslator:
             result["asr_confidence"] = segment["confidence"]
         if segment.get("speaker"):
             result["speaker"] = segment["speaker"]
+        for key in ("source", "subtitle_index"):
+            if key in segment:
+                result[key] = segment[key]
         return result

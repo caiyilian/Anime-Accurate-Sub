@@ -8,7 +8,13 @@
 #   python scripts/anime_sub.py --batch data/video/*.mp4
 #   python scripts/anime_sub.py --test
 
-import json, os, sys, time, argparse, subprocess
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 project_root = Path(__file__).resolve().parent.parent
@@ -48,9 +54,16 @@ from scripts.quality_check import (
     segments_from_dicts as quality_segments_from_dicts,
 )
 from scripts.review_agents import ReviewConfig, review_translation_file
+from scripts.extract_subs import (
+    extract_embedded_japanese,
+    load_japanese_subtitle,
+    resolve_japanese_subtitle,
+    subtitle_fingerprint,
+)
 
 PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
 MULTI_AGENT_STAGE = "multi_agent_review"
+JAPANESE_SUBTITLE_STAGE = "japanese_subtitle"
 _ASR_ENGINES = {}
 
 
@@ -162,6 +175,55 @@ def translate_segments(segments: list, adapter: TranslatorAdapter,
     return engine.translate(segments, progress_path=progress_path or None)
 
 
+def _resolve_oped_ranges(
+    video_path: str,
+    work_dir: Path,
+    oped_ranges: list[str] | None,
+    oped_series: str,
+    episode_number: int,
+    oped_strict: bool,
+) -> list:
+    ranges = []
+    if oped_ranges:
+        ranges = parse_explicit_ranges(oped_ranges)
+    elif oped_series:
+        print(f"  Detecting OP/ED for series: {oped_series}")
+        try:
+            ranges = detect_oped(
+                video_path,
+                oped_series,
+                episode=episode_number or None,
+            )
+        except Exception as error:
+            if oped_strict:
+                raise
+            print(f"  Warning: OP/ED detection failed; continuing without filter: {error}")
+    if ranges:
+        range_path = work_dir / "oped_ranges.json"
+        with range_path.open("w", encoding="utf-8") as file:
+            json.dump(
+                [item.to_dict() for item in ranges],
+                file,
+                ensure_ascii=False,
+                indent=2,
+            )
+        for item in ranges:
+            print(
+                f"  {item.kind}: {item.start:.3f}s -> {item.end:.3f}s "
+                f"(score={item.score:.3f}, source={item.source})"
+            )
+    return ranges
+
+
+def _reset_source_downstream(cp: Checkpoint, include_asr: bool = False) -> None:
+    stages = ["translate", MULTI_AGENT_STAGE, "subtitle", "embed_subtitle", "quality_check"]
+    if include_asr:
+        stages[0:0] = ["extract_audio", "asr"]
+    for stage in stages:
+        if cp.is_completed(stage):
+            cp.reset(stage)
+
+
 def process_video(video_path: str, output_dir: str, config: dict,
                    backend: str = "sakura", memory_path: str = "",
                    quality_check: bool = False, glossary_path: str = "",
@@ -174,19 +236,63 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    asr_backend: str = "anime_whisper",
                    subtitle_style: str = "anime",
                    multi_agent_review: bool = False,
-                   review_config: dict = None) -> dict:
+                   review_config: dict = None,
+                   japanese_subtitle_path: str = "",
+                   japanese_subtitle_dir: str = "",
+                   prefer_japanese_subtitles: bool = False) -> dict:
     """Process a single video through the full pipeline."""
     video_name = Path(video_path).stem
     work_dir = Path(output_dir) / video_name
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    active_stages = PIPELINE_STAGES[:-1]
+    japanese_source = resolve_japanese_subtitle(
+        video_path,
+        explicit_path=japanese_subtitle_path,
+        search_dir=japanese_subtitle_dir,
+    )
+    if japanese_subtitle_dir and japanese_source is None:
+        raise FileNotFoundError(
+            f"No unique Japanese subtitle matched {Path(video_path).name} in "
+            f"{Path(japanese_subtitle_dir)}"
+        )
+    if japanese_source is None and prefer_japanese_subtitles:
+        japanese_source = resolve_japanese_subtitle(
+            video_path, search_dir=Path(video_path).parent
+        )
+        if japanese_source is None:
+            japanese_source = extract_embedded_japanese(video_path, str(work_dir))
+        if japanese_source is None:
+            print("  No Japanese sidecar or text track found; falling back to ASR")
+
+    active_stages = list(PIPELINE_STAGES[:-1])
+    if japanese_source:
+        active_stages[:2] = [JAPANESE_SUBTITLE_STAGE]
     if multi_agent_review:
         active_stages.insert(active_stages.index("subtitle"), MULTI_AGENT_STAGE)
     if quality_check:
         active_stages.append("quality_check")
     cp = Checkpoint(str(work_dir), stages=active_stages)
     result = {"video": video_name, "path": video_path, "status": "ok"}
+
+    source_manifest_path = work_dir / "japanese_source.json"
+    if japanese_source:
+        fingerprint = subtitle_fingerprint(japanese_source)
+        source_is_current = False
+        if cp.is_completed(JAPANESE_SUBTITLE_STAGE) and source_manifest_path.exists():
+            try:
+                manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))
+                source_is_current = manifest.get("sha256") == fingerprint
+            except json.JSONDecodeError:
+                source_is_current = False
+        if not source_is_current:
+            if cp.is_completed(JAPANESE_SUBTITLE_STAGE):
+                cp.reset(JAPANESE_SUBTITLE_STAGE)
+            _reset_source_downstream(cp)
+    elif cp.is_completed(JAPANESE_SUBTITLE_STAGE):
+        # Switching back to ASR must not reuse translated output that came from
+        # a previous external subtitle source.
+        cp.reset(JAPANESE_SUBTITLE_STAGE)
+        _reset_source_downstream(cp, include_asr=True)
 
     # Enabling review on an existing work directory must regenerate every
     # downstream artifact from reviewed.json rather than silently keeping the
@@ -196,7 +302,7 @@ def process_video(video_path: str, output_dir: str, config: dict,
             if cp.is_completed(downstream):
                 cp.reset(downstream)
 
-    # Stage 1: Extract audio
+    # Stage 1: Extract audio (skipped when a validated Japanese subtitle is used)
     audio_path = None
     if "extract_audio" in cp.get_pending_stages():
         print("[extract_audio]")
@@ -205,9 +311,67 @@ def process_video(video_path: str, output_dir: str, config: dict,
         cp.mark_completed("extract_audio", input_file=video_path,
                           output_file=audio_path, duration_s=time.time()-t0)
 
-    # Stage 2: ASR
+    # Stage 2a: external Japanese source, or Stage 2b: ASR fallback
     asr_segments = None
-    if "asr" in cp.get_pending_stages():
+    if japanese_source and JAPANESE_SUBTITLE_STAGE in cp.get_pending_stages():
+        print(f"[{JAPANESE_SUBTITLE_STAGE}]")
+        t0 = time.time()
+        asr_segments = load_japanese_subtitle(japanese_source)
+        original_count = len(asr_segments)
+        ranges = _resolve_oped_ranges(
+            video_path,
+            work_dir,
+            oped_ranges,
+            oped_series,
+            episode_number,
+            oped_strict,
+        )
+        if ranges:
+            asr_segments, removed_segments = filter_oped_segments(asr_segments, ranges)
+            removed_path = work_dir / "oped_removed_segments.json"
+            removed_path.write_text(
+                json.dumps(removed_segments, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            result["oped_removed_segments"] = len(removed_segments)
+        asr_path = work_dir / "asr_results.json"
+        asr_path.write_text(
+            json.dumps(asr_segments, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        archived_source = work_dir / f"japanese_source{japanese_source.suffix.lower()}"
+        if japanese_source.resolve() != archived_source.resolve():
+            shutil.copy2(japanese_source, archived_source)
+        manifest = {
+            "schema": "anime-accurate-sub/japanese-source-v1",
+            "source_path": str(japanese_source.resolve()),
+            "archived_path": str(archived_source.resolve()),
+            "sha256": subtitle_fingerprint(japanese_source),
+            "format": japanese_source.suffix.lower(),
+            "original_segments": original_count,
+            "dialogue_segments": len(asr_segments),
+        }
+        source_manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        result["japanese_source"] = manifest
+        cp.mark_completed(
+            JAPANESE_SUBTITLE_STAGE,
+            input_file=str(japanese_source),
+            output_file=str(asr_path),
+            duration_s=time.time() - t0,
+        )
+    elif japanese_source:
+        asr_path = work_dir / "asr_results.json"
+        if not asr_path.exists():
+            raise FileNotFoundError(
+                f"Japanese subtitle checkpoint has no source segments: {asr_path}"
+            )
+        asr_segments = json.loads(asr_path.read_text(encoding="utf-8"))
+        if source_manifest_path.exists():
+            result["japanese_source"] = json.loads(
+                source_manifest_path.read_text(encoding="utf-8")
+            )
+    elif "asr" in cp.get_pending_stages():
         print("[asr]")
         t0 = time.time()
         if not audio_path:
@@ -218,31 +382,14 @@ def process_video(video_path: str, output_dir: str, config: dict,
                 )
             audio_path = str(existing_audio)
 
-        ranges = []
-        if oped_ranges:
-            ranges = parse_explicit_ranges(oped_ranges)
-        elif oped_series:
-            print(f"  Detecting OP/ED for series: {oped_series}")
-            try:
-                ranges = detect_oped(
-                    video_path,
-                    oped_series,
-                    episode=episode_number or None,
-                )
-            except Exception as error:
-                if oped_strict:
-                    raise
-                print(f"  Warning: OP/ED detection failed; continuing without filter: {error}")
-
-        if ranges:
-            range_path = work_dir / "oped_ranges.json"
-            with open(range_path, "w", encoding="utf-8") as file:
-                json.dump([item.to_dict() for item in ranges], file, ensure_ascii=False, indent=2)
-            for item in ranges:
-                print(
-                    f"  {item.kind}: {item.start:.3f}s -> {item.end:.3f}s "
-                    f"(score={item.score:.3f}, source={item.source})"
-                )
+        ranges = _resolve_oped_ranges(
+            video_path,
+            work_dir,
+            oped_ranges,
+            oped_series,
+            episode_number,
+            oped_strict,
+        )
 
         asr_segments = run_asr(
             audio_path, str(work_dir), backend=asr_backend, config=config
@@ -478,6 +625,23 @@ Examples:
                         help="Shared translation memory JSONL (defaults to the episode work directory)")
     parser.add_argument("--translation-batch-size", type=int, default=0,
                         help="Lines per translation request (default: backend configuration)")
+    parser.add_argument(
+        "--japanese-subtitle",
+        type=str,
+        default="",
+        help="Validated Japanese SRT/ASS/VTT source for one video; skips ASR",
+    )
+    parser.add_argument(
+        "--japanese-subtitle-dir",
+        type=str,
+        default="",
+        help="Directory of Japanese subtitles matched uniquely by episode number",
+    )
+    parser.add_argument(
+        "--prefer-japanese-subtitles",
+        action="store_true",
+        help="Prefer a Japanese sidecar/embedded text track and fall back to ASR",
+    )
     parser.add_argument("--oped-series", type=str, default="",
                         help="AnimeThemes series name used for automatic OP/ED detection")
     parser.add_argument("--episode-number", type=int, default=0,
@@ -509,6 +673,11 @@ Examples:
     parser.add_argument("--version", action="store_true", help="Show version info")
     args = parser.parse_args()
 
+    if args.japanese_subtitle and args.japanese_subtitle_dir:
+        parser.error("--japanese-subtitle and --japanese-subtitle-dir are mutually exclusive")
+    if args.batch and args.japanese_subtitle:
+        parser.error("--japanese-subtitle is only valid for one video; use --japanese-subtitle-dir")
+
     load_plugins(args.plugin)
     _ensure_builtin_pipeline_plugins()
 
@@ -522,7 +691,10 @@ Examples:
 
     if args.version:
         print("Anime Accurate Sub v1.0.0")
-        print("Pipeline stages: extract_audio -> asr -> translate -> subtitle -> quality_check")
+        print(
+            "Pipeline source: Japanese subtitle when requested/available, otherwise audio -> ASR"
+        )
+        print("Then: translate -> optional review -> subtitle -> embed -> optional quality")
         return
 
     if args.test:
@@ -583,6 +755,13 @@ Examples:
             subtitle_style=args.subtitle_style,
             multi_agent_review=args.multi_agent_review,
             review_config=review_config,
+            japanese_subtitle_path=args.japanese_subtitle,
+            japanese_subtitle_dir=args.japanese_subtitle_dir,
+            prefer_japanese_subtitles=(
+                args.prefer_japanese_subtitles
+                or bool(args.japanese_subtitle)
+                or bool(args.japanese_subtitle_dir)
+            ),
         )
         return
 
@@ -616,7 +795,12 @@ Examples:
                           asr_backend=args.asr_backend,
                           subtitle_style=args.subtitle_style,
                           multi_agent_review=args.multi_agent_review,
-                          review_config=review_config)
+                          review_config=review_config,
+                          japanese_subtitle_dir=args.japanese_subtitle_dir,
+                          prefer_japanese_subtitles=(
+                              args.prefer_japanese_subtitles
+                              or bool(args.japanese_subtitle_dir)
+                          ))
 
         return
 
