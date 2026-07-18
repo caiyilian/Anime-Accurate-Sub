@@ -121,7 +121,9 @@ class MQMConfig:
             "deepseek-v4-flash",
         ]
     )
+    judge_fallback_models: dict[str, str] = field(default_factory=dict)
     editor_model: str = "sensenova-6.7-flash-lite"
+    editor_fallback_model: str = ""
     max_workers: int = 2
     context_window: int = 5
     review_threshold: float = 80.0
@@ -145,6 +147,25 @@ class MQMConfig:
             raise ValueError("provider must be openai or ollama")
         if len(self.judge_models) < 2 or len(set(self.judge_models)) < 2:
             raise ValueError("judge_models must contain at least two distinct models")
+        self.judge_fallback_models = {
+            str(primary).strip(): str(fallback).strip()
+            for primary, fallback in self.judge_fallback_models.items()
+            if str(primary).strip() and str(fallback).strip()
+        }
+        self.editor_fallback_model = self.editor_fallback_model.strip()
+        for primary, fallback in self.judge_fallback_models.items():
+            if primary not in self.judge_models:
+                raise ValueError(
+                    f"judge fallback primary model is not configured: {primary}"
+                )
+            if fallback in self.judge_models:
+                raise ValueError(
+                    "judge fallback models must remain distinct from all primary judges"
+                )
+        if len(set(self.judge_fallback_models.values())) != len(
+            self.judge_fallback_models
+        ):
+            raise ValueError("judge fallback models must be distinct")
         if self.max_workers < 1:
             raise ValueError("max_workers must be >= 1")
         if self.context_window < 0:
@@ -164,7 +185,10 @@ class MQMConfig:
         return self
 
     def signature(self) -> str:
-        value = {**asdict(self), "prompt_version": PROMPT_VERSION}
+        value = asdict(self)
+        value.pop("judge_fallback_models", None)
+        value.pop("editor_fallback_model", None)
+        value["prompt_version"] = PROMPT_VERSION
         return hashlib.sha256(
             json.dumps(value, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).hexdigest()[:20]
@@ -351,6 +375,51 @@ def _call_with_retries(
     return None, raw, error, config.retries, time.time() - started
 
 
+def _call_with_model_fallback(
+    messages: list[dict],
+    model: str,
+    fallback_model: str,
+    config: MQMConfig,
+    parser: Callable[[str], dict],
+    schema: dict,
+    chat_fn: Callable = model_chat,
+) -> tuple[Optional[dict], str, str, int, float, str, bool, str]:
+    parsed, raw, error, attempts, elapsed = _call_with_retries(
+        messages, model, config, parser, schema, chat_fn
+    )
+    fallback_model = fallback_model.strip()
+    if parsed is not None or not fallback_model or fallback_model == model:
+        return parsed, raw, error, attempts, elapsed, model, False, ""
+
+    primary_error = error
+    (
+        parsed,
+        raw,
+        fallback_error,
+        fallback_attempts,
+        fallback_elapsed,
+    ) = _call_with_retries(
+        messages, fallback_model, config, parser, schema, chat_fn
+    )
+    if parsed is None:
+        error = (
+            f"primary {model}: {primary_error}; "
+            f"fallback {fallback_model}: {fallback_error}"
+        )
+    else:
+        error = ""
+    return (
+        parsed,
+        raw,
+        error,
+        attempts + fallback_attempts,
+        elapsed + fallback_elapsed,
+        fallback_model,
+        True,
+        primary_error,
+    )
+
+
 def run_judge(
     model: str,
     segment: dict,
@@ -393,7 +462,16 @@ errors 只列真实错误，必须给日文/中文证据片段；没有错误时
   "suggested_zh": "完整建议译文；keep 时为空字符串",
   "confidence": 0.95
 }}"""
-    parsed, raw, error, attempts, elapsed = _call_with_retries(
+    (
+        parsed,
+        raw,
+        error,
+        attempts,
+        elapsed,
+        used_model,
+        fallback_used,
+        primary_error,
+    ) = _call_with_model_fallback(
         [
             {
                 "role": "system",
@@ -402,13 +480,17 @@ errors 只列真实错误，必须给日文/中文证据片段；没有错误时
             {"role": "user", "content": prompt},
         ],
         model,
+        config.judge_fallback_models.get(model, ""),
         config,
         parse_judge_response,
         JUDGE_SCHEMA,
         chat_fn,
     )
     result = {
-        "model": model,
+        "model": used_model,
+        "primary_model": model,
+        "fallback_used": fallback_used,
+        "primary_error": primary_error or None,
         "attempts": attempts,
         "time_s": round(elapsed, 2),
         "raw_response": raw,
@@ -463,19 +545,32 @@ def run_editor(
   "reason": "简短证据",
   "confidence": 0.95
 }}"""
-    parsed, raw, error, attempts, elapsed = _call_with_retries(
+    (
+        parsed,
+        raw,
+        error,
+        attempts,
+        elapsed,
+        used_model,
+        fallback_used,
+        primary_error,
+    ) = _call_with_model_fallback(
         [
             {"role": "system", "content": "你是保守的日中字幕质量总编。"},
             {"role": "user", "content": prompt},
         ],
         config.editor_model,
+        config.editor_fallback_model,
         config,
         parse_editor_response,
         EDITOR_SCHEMA,
         chat_fn,
     )
     result = {
-        "model": config.editor_model,
+        "model": used_model,
+        "primary_model": config.editor_model,
+        "fallback_used": fallback_used,
+        "primary_error": primary_error or None,
         "attempts": attempts,
         "time_s": round(elapsed, 2),
         "raw_response": raw,

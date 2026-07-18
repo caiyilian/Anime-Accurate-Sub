@@ -6,7 +6,11 @@
     "sensenova-6.7-flash-lite",
     "deepseek-v4-flash"
   ],
+  "judge_fallback_models": {
+    "sensenova-6.7-flash-lite": "glm-5.2"
+  },
   "editor_model": "sensenova-6.7-flash-lite",
+  "editor_fallback_model": "glm-5.2",
   "max_workers": 2,
   "context_window": 5,
   "review_threshold": 80,
