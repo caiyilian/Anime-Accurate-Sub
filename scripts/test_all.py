@@ -200,11 +200,20 @@ def test_ab_eval():
 
 
 def test_extract_subs():
-    """Test subtitle extraction module imports."""
-    from scripts.extract_subs import get_subtitle_tracks, check_subtitle_available
+    """Test Japanese subtitle priority and ASR-compatible import."""
+    import tempfile
+    from scripts.extract_subs import get_subtitle_tracks, load_japanese_subtitle
     # Test with non-existent video
     tracks = get_subtitle_tracks("nonexistent.mp4")
     assert tracks == []
+    with tempfile.TemporaryDirectory() as directory:
+        source = Path(directory) / "episode.jp.srt"
+        source.write_text(
+            "1\n00:00:01,000 --> 00:00:02,000\nおはよう\n", encoding="utf-8"
+        )
+        segments = load_japanese_subtitle(source)
+        assert segments[0]["text"] == "おはよう"
+        assert segments[0]["source"] == "external_japanese_subtitle"
 
 
 # ============ S14: Translation Infrastructure ============
