@@ -22,7 +22,7 @@
 #   python scripts/translator_adapter.py --list-backends
 #   python scripts/translator_adapter.py --evaluate
 
-import json, os, sys, time, argparse, urllib.request, urllib.error, abc, re, socket, unicodedata
+import json, os, sys, time, argparse, urllib.request, urllib.error, abc, inspect, re, socket, unicodedata
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -71,6 +71,35 @@ DEFAULT_CONFIG = {
 }
 
 
+def _call_batch_with_optional_context(
+    adapter,
+    texts,
+    glossary_terms,
+    context_before=None,
+    context_after=None,
+):
+    """Call old and new translator plugins without masking adapter errors."""
+    method = adapter.translate_batch
+    try:
+        parameters = inspect.signature(method).parameters.values()
+        supports_keywords = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters
+        )
+        parameter_names = {parameter.name for parameter in parameters}
+    except (TypeError, ValueError):
+        supports_keywords = False
+        parameter_names = set()
+    if supports_keywords or {"context_before", "context_after"} <= parameter_names:
+        return method(
+            texts,
+            glossary_terms,
+            context_before=context_before,
+            context_after=context_after,
+        )
+    return method(texts, glossary_terms)
+
+
 # ============ Abstract Base ============
 
 class TranslatorAdapter(abc.ABC):
@@ -87,9 +116,25 @@ class TranslatorAdapter(abc.ABC):
         """Translate Japanese text to Chinese."""
         pass
 
-    def translate_batch(self, texts: Sequence[str], glossary_terms=None) -> list[str]:
+    def translate_batch(
+        self,
+        texts: Sequence[str],
+        glossary_terms=None,
+        context_before=None,
+        context_after=None,
+    ) -> list[str]:
         """Translate ordered lines, falling back to the single-line interface."""
-        return [self.translate(text) for text in texts]
+        texts = list(texts)
+        outer_before = list(context_before or [])
+        outer_after = list(context_after or [])
+        return [
+            self.translate(
+                text,
+                context_before=outer_before + texts[:index],
+                context_after=texts[index + 1:] + outer_after,
+            )
+            for index, text in enumerate(texts)
+        ]
 
     def result_model(self, source: str) -> str:
         """Return the model that produced a source line's latest translation."""
@@ -204,17 +249,36 @@ class OllamaAdapter(TranslatorAdapter):
         return prompt
 
     @staticmethod
-    def _user_prompt(texts: Sequence[str], glossary_terms=None) -> str:
+    def _user_prompt(
+        texts: Sequence[str],
+        glossary_terms=None,
+    ) -> str:
         raw_text = "\n".join(texts)
         terms = list(glossary_terms or [])
         if not terms:
-            return f"将下面的日文文本翻译成中文：\n{raw_text}"
+            return f"将下面的待翻译日文逐行翻译成中文：\n{raw_text}"
         glossary = "\n".join(f"{source}->{target}" for source, target in terms)
         return (
             "根据以下术语表（可以为空）：\n"
             f"{glossary}\n"
-            "将下面的日文文本根据对应关系和备注翻译成中文：\n"
+            "将下面的待翻译日文根据对应关系和备注逐行翻译成中文：\n"
             f"{raw_text}"
+        )
+
+    @staticmethod
+    def _context_block(context_before=None, context_after=None) -> str:
+        parts = []
+        if context_before:
+            parts.append("上文：\n" + "\n".join(context_before))
+        if context_after:
+            parts.append("下文：\n" + "\n".join(context_after))
+        if not parts:
+            return ""
+        return (
+            "\n\n参考对话（只供理解待翻译句子的指代、语气和省略信息，"
+            "禁止翻译、复述或输出）：\n"
+            + "\n".join(parts)
+            + "\n只输出 user 消息中待翻译日文的简体中文译文。"
         )
 
     @staticmethod
@@ -281,7 +345,20 @@ class OllamaAdapter(TranslatorAdapter):
     def _valid_translation(source: str, target: str) -> bool:
         if not target or target.startswith("[API Error"):
             return False
-        if any(marker in target for marker in ("将下面", "术语表", "翻译结果如下")):
+        if any(
+            marker in target
+            for marker in (
+                "将下面",
+                "术语表",
+                "翻译结果如下",
+                "上文：",
+                "上文:",
+                "下文：",
+                "下文:",
+                "参考对话",
+                "只供理解",
+            )
+        ):
             return False
         nonverbal_source = OllamaAdapter._is_nonverbal_source(source)
         if (
@@ -298,14 +375,38 @@ class OllamaAdapter(TranslatorAdapter):
             return False
         return True
 
-    def translate_batch(self, texts: Sequence[str], glossary_terms=None) -> list[str]:
+    def translate_batch(
+        self,
+        texts: Sequence[str],
+        glossary_terms=None,
+        context_before=None,
+        context_after=None,
+    ) -> list[str]:
         texts = [str(text).strip() for text in texts]
         if not texts:
             return []
         glossary_terms = self._matching_terms(texts, glossary_terms)
+        context_enabled = context_before is not None or context_after is not None
+        if context_enabled and len(texts) > 1:
+            translated = []
+            outer_before = list(context_before or [])
+            outer_after = list(context_after or [])
+            for index, text in enumerate(texts):
+                translated.extend(
+                    self.translate_batch(
+                        [text],
+                        self._matching_terms([text], glossary_terms),
+                        context_before=outer_before + texts[:index],
+                        context_after=texts[index + 1:] + outer_after,
+                    )
+                )
+            return translated
         tagged_batch = len(texts) > 1
         prompt_texts = self._tagged_texts(texts) if tagged_batch else texts
-        system_prompt = self._system_prompt(self.series_info)
+        system_prompt = self._system_prompt(self.series_info) + self._context_block(
+            context_before,
+            context_after,
+        )
         if tagged_batch:
             system_prompt += (
                 "\n逐行翻译。每行开头的 [[Lnnn]] 是不可翻译的行号；译文必须保留"
@@ -313,7 +414,10 @@ class OllamaAdapter(TranslatorAdapter):
             )
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": self._user_prompt(prompt_texts, glossary_terms)},
+            {
+                "role": "user",
+                "content": self._user_prompt(prompt_texts, glossary_terms),
+            },
         ]
         raw = self._call(messages, num_predict=min(4096, max(512, len(texts) * 128)))
         translated = (
@@ -331,15 +435,38 @@ class OllamaAdapter(TranslatorAdapter):
             return translated
 
         if len(texts) == 1:
-            return [self._recover_invalid_single(texts[0], glossary_terms, raw)]
+            return [
+                self._recover_invalid_single(
+                    texts[0],
+                    glossary_terms,
+                    raw,
+                    context_before=context_before,
+                    context_after=context_after,
+                )
+            ]
         # A model may occasionally merge or drop a line. Recursively reduce the
         # batch instead of guessing which result belongs to which timestamp.
         middle = len(texts) // 2
-        return self.translate_batch(texts[:middle], glossary_terms) + self.translate_batch(
-            texts[middle:], glossary_terms
+        return self.translate_batch(
+            texts[:middle],
+            glossary_terms,
+            context_before=context_before,
+            context_after=texts[middle:] + list(context_after or []),
+        ) + self.translate_batch(
+            texts[middle:],
+            glossary_terms,
+            context_before=list(context_before or []) + texts[:middle],
+            context_after=context_after,
         )
 
-    def _recover_invalid_single(self, source: str, glossary_terms, raw: str) -> str:
+    def _recover_invalid_single(
+        self,
+        source: str,
+        glossary_terms,
+        raw: str,
+        context_before=None,
+        context_after=None,
+    ) -> str:
         """Retry a rejected line with a constrained prompt before using a fallback."""
         last_raw = raw
         for attempt in range(1, self.validation_retries + 1):
@@ -348,6 +475,7 @@ class OllamaAdapter(TranslatorAdapter):
                     "role": "system",
                     "content": (
                         self._system_prompt(self.series_info)
+                        + self._context_block(context_before, context_after)
                         + "\n只输出一行简洁的简体中文译文；禁止解释、重复、引号包裹和遗漏。"
                     ),
                 },
@@ -369,9 +497,22 @@ class OllamaAdapter(TranslatorAdapter):
                     f"{attempt}/{self.validation_retries}"
                 )
                 return parsed[0]
-        return self._fallback_invalid_single(source, glossary_terms, last_raw)
+        return self._fallback_invalid_single(
+            source,
+            glossary_terms,
+            last_raw,
+            context_before=context_before,
+            context_after=context_after,
+        )
 
-    def _fallback_invalid_single(self, source: str, glossary_terms, raw: str) -> str:
+    def _fallback_invalid_single(
+        self,
+        source: str,
+        glossary_terms,
+        raw: str,
+        context_before=None,
+        context_after=None,
+    ) -> str:
         raise RuntimeError(
             f"{self.name()} returned an invalid single-line translation after "
             f"{self.validation_retries} validation retries: {raw[:200]}"
@@ -387,7 +528,11 @@ class OllamaAdapter(TranslatorAdapter):
         ]
 
     def translate(self, text, context_before=None, context_after=None):
-        return self.translate_batch([text])[0]
+        return self.translate_batch(
+            [text],
+            context_before=context_before,
+            context_after=context_after,
+        )[0]
 
 
 # ============ Sakura ============
@@ -403,12 +548,31 @@ class SakuraAdapter(OllamaAdapter):
         if fallback_name == "galtransl" and fallback_config.get("model"):
             self.fallback_adapter = GalTranslAdapter(config)
 
-    def _fallback_invalid_single(self, source: str, glossary_terms, raw: str) -> str:
+    def _fallback_invalid_single(
+        self,
+        source: str,
+        glossary_terms,
+        raw: str,
+        context_before=None,
+        context_after=None,
+    ) -> str:
         if self.fallback_adapter is None:
-            return super()._fallback_invalid_single(source, glossary_terms, raw)
+            return super()._fallback_invalid_single(
+                source,
+                glossary_terms,
+                raw,
+                context_before=context_before,
+                context_after=context_after,
+            )
         self.fallback_adapter.series_info = self.series_info
         try:
-            target = self.fallback_adapter.translate_batch([source], glossary_terms)[0]
+            target = _call_batch_with_optional_context(
+                self.fallback_adapter,
+                [source],
+                glossary_terms,
+                context_before=context_before,
+                context_after=context_after,
+            )[0]
         except Exception as error:
             raise RuntimeError(
                 "Sakura validation retries and configured GalTransl fallback both failed: "
@@ -472,8 +636,17 @@ class ExternalAdapter(TranslatorAdapter):
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": "你是一个轻小说翻译模型，可以将日语翻译成中文。"},
-                {"role": "user", "content": f"将下面的日语文本翻译成中文：{text}"},
+                {
+                    "role": "system",
+                    "content": self._external_system_prompt()
+                    + OllamaAdapter._context_block(context_before, context_after),
+                },
+                {
+                    "role": "user",
+                    "content": OllamaAdapter._user_prompt(
+                        [text],
+                    ),
+                },
             ],
             "temperature": 0.1,
         }
@@ -487,6 +660,12 @@ class ExternalAdapter(TranslatorAdapter):
             return result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
         except Exception as e:
             return f"[API Error: {e}]"
+
+    def _external_system_prompt(self) -> str:
+        prompt = "你是一个轻小说翻译模型，可以将日语翻译成简体中文。"
+        if self.series_info:
+            prompt += f"\n\n系列设定与角色信息：\n{self.series_info}"
+        return prompt
 
 
 def _ensure_builtin_translator_plugins() -> None:
