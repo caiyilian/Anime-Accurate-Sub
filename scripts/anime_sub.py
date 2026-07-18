@@ -47,8 +47,10 @@ from scripts.quality_check import (
     generate_report as run_quality_check,
     segments_from_dicts as quality_segments_from_dicts,
 )
+from scripts.review_agents import ReviewConfig, review_translation_file
 
 PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
+MULTI_AGENT_STAGE = "multi_agent_review"
 _ASR_ENGINES = {}
 
 
@@ -170,15 +172,29 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    oped_strict: bool = True,
                    speaker_map_path: str = "",
                    asr_backend: str = "anime_whisper",
-                   subtitle_style: str = "anime") -> dict:
+                   subtitle_style: str = "anime",
+                   multi_agent_review: bool = False,
+                   review_config: dict = None) -> dict:
     """Process a single video through the full pipeline."""
     video_name = Path(video_path).stem
     work_dir = Path(output_dir) / video_name
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    active_stages = PIPELINE_STAGES if quality_check else PIPELINE_STAGES[:-1]
+    active_stages = PIPELINE_STAGES[:-1]
+    if multi_agent_review:
+        active_stages.insert(active_stages.index("subtitle"), MULTI_AGENT_STAGE)
+    if quality_check:
+        active_stages.append("quality_check")
     cp = Checkpoint(str(work_dir), stages=active_stages)
     result = {"video": video_name, "path": video_path, "status": "ok"}
+
+    # Enabling review on an existing work directory must regenerate every
+    # downstream artifact from reviewed.json rather than silently keeping the
+    # pre-review subtitle/video checkpoints.
+    if multi_agent_review and not cp.is_completed(MULTI_AGENT_STAGE):
+        for downstream in ("subtitle", "embed_subtitle", "quality_check"):
+            if cp.is_completed(downstream):
+                cp.reset(downstream)
 
     # Stage 1: Extract audio
     audio_path = None
@@ -283,11 +299,40 @@ def process_video(video_path: str, output_dir: str, config: dict,
             cp.mark_completed("translate", output_file=str(seg_path),
                               duration_s=time.time()-t0)
 
+    # Stage 3b: Five reviewers + conservative editor
+    if multi_agent_review and MULTI_AGENT_STAGE in cp.get_pending_stages():
+        print(f"[{MULTI_AGENT_STAGE}]")
+        t0 = time.time()
+        translated_path = work_dir / "translated.json"
+        if not translated_path.exists():
+            raise FileNotFoundError(
+                f"Translated segments are missing for multi-agent review: {translated_path}"
+            )
+        reviewed_path = work_dir / "reviewed.json"
+        review_report_path = work_dir / "multi_agent_review.json"
+        review_progress_path = work_dir / "multi_agent_review.progress.jsonl"
+        review_result = review_translation_file(
+            str(translated_path),
+            str(reviewed_path),
+            str(review_report_path),
+            progress_path=str(review_progress_path),
+            glossary_path=glossary_path,
+            config=ReviewConfig.from_dict(review_config).validate(),
+            apply_fixes=True,
+        )
+        result["multi_agent_review"] = review_result["summary"]
+        cp.mark_completed(
+            MULTI_AGENT_STAGE,
+            input_file=str(translated_path),
+            output_file=str(reviewed_path),
+            duration_s=time.time() - t0,
+        )
+
     # Stage 4: Generate subtitles
     if "subtitle" in cp.get_pending_stages():
         print("[subtitle]")
         t0 = time.time()
-        seg_path = work_dir / "translated.json"
+        seg_path = work_dir / ("reviewed.json" if multi_agent_review else "translated.json")
         if seg_path.exists():
             srt_path = work_dir / f"{video_name}.srt"
             ass_path = work_dir / f"{video_name}.ass"
@@ -320,7 +365,7 @@ def process_video(video_path: str, output_dir: str, config: dict,
     if quality_check and "quality_check" in cp.get_pending_stages():
         print("[quality_check]")
         t0 = time.time()
-        seg_path = work_dir / "translated.json"
+        seg_path = work_dir / ("reviewed.json" if multi_agent_review else "translated.json")
         if not seg_path.exists():
             raise FileNotFoundError(
                 f"Translated segments are missing for quality check: {seg_path}"
@@ -442,6 +487,20 @@ Examples:
     parser.add_argument("--oped-best-effort", action="store_true",
                         help="Continue without OP/ED filtering if automatic detection fails")
     parser.add_argument("--quality-check", action="store_true", help="Enable quality checks")
+    parser.add_argument(
+        "--multi-agent-review", action="store_true",
+        help="Run five structured reviewers and a conservative editor before subtitles",
+    )
+    parser.add_argument("--review-config", type=str, default="",
+                        help="JSON configuration for multi-agent review")
+    parser.add_argument("--review-host", type=str, default="")
+    parser.add_argument("--review-model", type=str, default="")
+    parser.add_argument("--editor-host", type=str, default="")
+    parser.add_argument("--editor-model", type=str, default="")
+    parser.add_argument("--review-workers", type=int, default=0)
+    parser.add_argument("--review-min-votes", type=int, default=0)
+    parser.add_argument("--review-min-confidence", type=float, default=-1.0)
+    parser.add_argument("--review-context-window", type=int, default=-1)
     parser.add_argument("--speaker-map", type=str, default="",
                         help="JSON mapping from speaker IDs to ASS character names/colors")
     parser.add_argument("--auto", action="store_true", help="Auto-detect hardware and set optimal params")
@@ -471,6 +530,26 @@ Examples:
         return
 
     config = load_config(args.config)
+    review_config = {}
+    if args.review_config:
+        review_config = json.loads(Path(args.review_config).read_text(encoding="utf-8"))
+    review_overrides = {
+        "host": args.review_host or None,
+        "review_model": args.review_model or None,
+        "editor_host": args.editor_host or None,
+        "editor_model": args.editor_model or None,
+        "max_workers": args.review_workers or None,
+        "min_fix_votes": args.review_min_votes or None,
+        "min_editor_confidence": (
+            args.review_min_confidence if args.review_min_confidence >= 0 else None
+        ),
+        "context_window": (
+            args.review_context_window if args.review_context_window >= 0 else None
+        ),
+    }
+    review_config.update(
+        {key: value for key, value in review_overrides.items() if value is not None}
+    )
 
     if args.auto:
         from scripts.hardware import HardwareDetector
@@ -502,6 +581,8 @@ Examples:
             speaker_map_path=args.speaker_map,
             asr_backend=args.asr_backend,
             subtitle_style=args.subtitle_style,
+            multi_agent_review=args.multi_agent_review,
+            review_config=review_config,
         )
         return
 
@@ -533,7 +614,9 @@ Examples:
                           oped_strict=not args.oped_best_effort,
                           speaker_map_path=args.speaker_map,
                           asr_backend=args.asr_backend,
-                          subtitle_style=args.subtitle_style)
+                          subtitle_style=args.subtitle_style,
+                          multi_agent_review=args.multi_agent_review,
+                          review_config=review_config)
 
         return
 
