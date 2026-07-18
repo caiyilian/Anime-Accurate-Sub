@@ -166,7 +166,7 @@ def evaluate():
     print(f"  Characters: {len(mem.data['characters'])}")
     print(f"  Terms: {len(mem.data['terms'])}")
     assert len(mem.data["characters"]) == 9
-    assert len(mem.data["terms"]) == 15
+    assert len(mem.data["terms"]) == 20
     print("  Memory creation: OK")
 
     # Test 2: Prompt injection
@@ -190,7 +190,7 @@ def evaluate():
 
     mem2 = SeriesMemory(str(tmp_path))
     assert len(mem2.data["characters"]) == 9
-    assert len(mem2.data["terms"]) == 15
+    assert len(mem2.data["terms"]) == 20
     assert mem2.get_term("軽音部") == "轻音部"
     print("  Save and reload: OK")
 
