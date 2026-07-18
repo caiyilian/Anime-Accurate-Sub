@@ -32,6 +32,7 @@ from typing import Optional
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
+K_ON_MEMORY_PATH = project_root / "data" / "series_memory" / "k-on_s1.json"
 
 
 class SeriesMemory:
@@ -96,23 +97,34 @@ class SeriesMemory:
     def to_prompt_block(self) -> str:
         """Format series memory as prompt block for injection."""
         lines = []
-        lines.append(f"[Series: {self.data['series_name']}]")
+        lines.append(f"[系列：{self.data['series_name']}]")
+
+        if self.data["notes"]:
+            lines.append("\n系列说明：")
+            lines.append(f"  {self.data['notes']}")
 
         if self.data["characters"]:
-            lines.append("\nCharacters:")
+            lines.append("\n角色与说话风格：")
             for name, info in self.data["characters"].items():
                 nick = ", ".join(info["nicknames"]) if info["nicknames"] else ""
                 style = f" ({info['speech_style']})" if info["speech_style"] else ""
                 rels = "; ".join(f"{k}: {v}" for k, v in info["relationships"].items()) if info["relationships"] else ""
+                catchphrases = ", ".join(info["catchphrases"]) if info["catchphrases"] else ""
                 lines.append(f"  {info['full_name_zh']} ({info['full_name_ja']}){style}")
                 if nick:
-                    lines.append(f"    Nicknames: {nick}")
+                    lines.append(f"    称呼映射: {nick}")
                 if rels:
-                    lines.append(f"    Relationships: {rels}")
+                    lines.append(f"    关系: {rels}")
+                if catchphrases:
+                    lines.append(f"    固定说法: {catchphrases}")
 
         if self.data["terms"]:
-            lines.append("\nTerms:")
-            for ja, info in self.data["terms"].items():
+            lines.append("\n系列固定术语：")
+            for ja, info in sorted(
+                self.data["terms"].items(),
+                key=lambda item: len(item[0]),
+                reverse=True,
+            ):
                 desc = f" ({info['description']})" if info["description"] else ""
                 lines.append(f"  {ja} -> {info['zh']}{desc}")
 
@@ -135,59 +147,10 @@ class SeriesMemory:
 
 
 def create_k_on_memory() -> SeriesMemory:
-    """Create K-On! series memory with known characters."""
-    mem = SeriesMemory()
-    mem.data["series_name"] = "K-On!"
-    mem.data["notes"] = "First-year high school girls in light music club at Sakuragaoka Girls' High School."
-
-    mem.add_character("Yui", "平沢唯", "平泽唯",
-                       nicknames=["唯", "小唯"],
-                       speech_style="genki, casual, airheaded, cute",
-                       relationships={"Mio": "friend", "Ritsu": "friend", "Tsumugi": "friend", "Ui": "sister", "Sawako": "teacher"},
-                       catchphrases=["ふにゃふにゃ"])
-
-    mem.add_character("Mio", "秋山澪", "秋山澪",
-                       nicknames=["澪", "小澪", "澪ちゃん"],
-                       speech_style="polite, shy, easily embarrassed, tsukkomi",
-                       relationships={"Yui": "friend", "Ritsu": "childhood friend", "Tsumugi": "friend"},
-                       catchphrases=[])
-
-    mem.add_character("Ritsu", "田井中律", "田井中律",
-                       nicknames=["律", "律ちゃん"],
-                       speech_style="casual, energetic, teasing, leader-type",
-                       relationships={"Yui": "friend", "Mio": "childhood friend", "Tsumugi": "friend"},
-                       catchphrases=[])
-
-    mem.add_character("Tsumugi", "琴吹紬", "琴吹䌷",
-                       nicknames=["紬", "紬紬", "Mugi"],
-                       speech_style="polite, gentle, upper-class, kind",
-                       relationships={"Yui": "friend", "Mio": "friend", "Ritsu": "friend"},
-                       catchphrases=[])
-
-    mem.add_character("Ui", "平沢憂", "平泽忧",
-                       nicknames=["憂", "小忧"],
-                       speech_style="polite, caring, mature for her age",
-                       relationships={"Yui": "sister"},
-                       catchphrases=[])
-
-    mem.add_character("Sawako", "山中さわ子", "山中佐和子",
-                       nicknames=["さわ子", "佐和子", "さわちゃん"],
-                       speech_style="casual, cool, sometimes strict as teacher",
-                       relationships={"Yui": "teacher", "Mio": "teacher", "Ritsu": "teacher", "Tsumugi": "teacher"},
-                       catchphrases=[])
-
-    mem.add_term("軽音部", "轻音部", "light music club")
-    mem.add_term("音楽室", "音乐室", "music room")
-    mem.add_term("放課後", "放学后", "after school")
-    mem.add_term("ギター", "吉他", "guitar")
-    mem.add_term("ベース", "贝斯", "bass")
-    mem.add_term("ドラム", "架子鼓", "drums")
-    mem.add_term("キーボード", "键盘", "keyboard")
-    mem.add_term("文化祭", "文化祭", "school festival")
-    mem.add_term("合宿", "合宿", "training camp")
-    mem.add_term("武道館", "武道馆", "Budokan")
-
-    return mem
+    """Load the production K-On! season-one memory shipped with the project."""
+    if not K_ON_MEMORY_PATH.exists():
+        raise FileNotFoundError(f"K-On! series memory is missing: {K_ON_MEMORY_PATH}")
+    return SeriesMemory(str(K_ON_MEMORY_PATH))
 
 
 # ============ Evaluate ============
@@ -202,8 +165,8 @@ def evaluate():
     mem = create_k_on_memory()
     print(f"  Characters: {len(mem.data['characters'])}")
     print(f"  Terms: {len(mem.data['terms'])}")
-    assert len(mem.data["characters"]) == 6
-    assert len(mem.data["terms"]) == 10
+    assert len(mem.data["characters"]) == 9
+    assert len(mem.data["terms"]) == 15
     print("  Memory creation: OK")
 
     # Test 2: Prompt injection
@@ -214,7 +177,7 @@ def evaluate():
     assert "轻音部" in injected
     assert "将下面的日语文本翻译成中文" in injected
     print(f"  Injected length: {len(injected)} chars")
-    print(f"  Contains characters: {'Yui' in injected}")
+    print(f"  Contains characters: {'平泽唯' in injected}")
     print(f"  Contains terms: {'軽音部' in injected}")
     print("  Prompt injection: OK")
 
@@ -226,8 +189,8 @@ def evaluate():
     mem.save()
 
     mem2 = SeriesMemory(str(tmp_path))
-    assert len(mem2.data["characters"]) == 6
-    assert len(mem2.data["terms"]) == 10
+    assert len(mem2.data["characters"]) == 9
+    assert len(mem2.data["terms"]) == 15
     assert mem2.get_term("軽音部") == "轻音部"
     print("  Save and reload: OK")
 
@@ -235,7 +198,7 @@ def evaluate():
     print("\n--- Test 4: Character info ---")
     mio = mem2.get_character("Mio")
     assert mio["full_name_zh"] == "秋山澪"
-    assert "shy" in mio["speech_style"]
+    assert "害羞" in mio["speech_style"]
     print(f"  Mio: {mio['full_name_zh']}, speech: {mio['speech_style']}")
     print("  Character info: OK")
 
