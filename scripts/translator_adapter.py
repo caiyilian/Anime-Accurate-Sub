@@ -269,9 +269,9 @@ class OllamaAdapter(TranslatorAdapter):
     def _context_block(context_before=None, context_after=None) -> str:
         parts = []
         if context_before:
-            parts.append("上文：\n" + "\n".join(context_before))
+            parts.append("已翻译前文（简体中文）：\n" + "\n".join(context_before))
         if context_after:
-            parts.append("下文：\n" + "\n".join(context_after))
+            parts.append("参考下文：\n" + "\n".join(context_after))
         if not parts:
             return ""
         return (
@@ -357,6 +357,8 @@ class OllamaAdapter(TranslatorAdapter):
                 "下文:",
                 "参考对话",
                 "只供理解",
+                "只输出 user 消息",
+                "待翻译日文的简体中文译文",
             )
         ):
             return False
@@ -370,10 +372,27 @@ class OllamaAdapter(TranslatorAdapter):
             return False
         if re.search(r"(.)\1{15,}", target):
             return False
+        if OllamaAdapter._has_suspicious_repeated_phrase(source, target):
+            return False
         has_kana = bool(re.search(r"[\u3040-\u30ff]", source))
         if has_kana and target.strip() == source.strip():
             return False
         return True
+
+    @staticmethod
+    def _has_suspicious_repeated_phrase(source: str, target: str) -> bool:
+        """Detect three merged neighboring lines with a repeated Chinese lead-in."""
+        compact_target = re.sub(r"[^\u3400-\u9fffA-Za-z0-9]", "", target)
+        compact_source = re.sub(r"\s+", "", source)
+        source_has_triplet = bool(re.search(r"(.{1,4})\1\1", compact_source))
+        if source_has_triplet:
+            return False
+        for size in range(8, 2, -1):
+            for start in range(0, max(0, len(compact_target) - size + 1)):
+                phrase = compact_target[start:start + size]
+                if compact_target.count(phrase) >= 3:
+                    return True
+        return False
 
     def translate_batch(
         self,
