@@ -71,3 +71,16 @@ def test_specific_honorific_alias_precedes_its_short_name():
     assert ("唯ちゃん", "小唯") in terms
     assert ("唯", "唯") in terms
     assert terms.index(("唯ちゃん", "小唯")) < terms.index(("唯", "唯"))
+
+
+def test_role_and_family_titles_have_stable_series_translations():
+    glossary = Glossary(str(GLOSSARY_PATH))
+
+    assert glossary.get("先輩") == "前辈"
+    assert glossary.get("先生") == "老师"
+    assert glossary.get("部長") == "部长"
+    assert glossary.get("顧問") == "顾问老师"
+    assert glossary.get("後輩") == "后辈"
+    assert glossary.get("お姉ちゃん") == "姐姐"
+    assert glossary.get("姉妹") == "姐妹"
+    assert glossary.get("妹") == "妹妹"
