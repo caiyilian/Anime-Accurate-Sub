@@ -162,6 +162,33 @@ def test_any_reviewer_error_blocks_automatic_rewrite():
     assert result["status"] == "error"
 
 
+def test_editor_failure_marks_segment_as_retryable_error():
+    def chat(messages, **kwargs):
+        system = messages[0]["content"]
+        if "字幕总编" in system:
+            raise RuntimeError("editor returned an empty response")
+        verdict = (
+            "fix"
+            if "Accuracy Checker" in system or "Naturalness Checker" in system
+            else "ok"
+        )
+        return _response({
+            "verdict": verdict,
+            "suggested_zh": "迟到！迟到！" if verdict == "fix" else "",
+            "reason": "需要修正语气" if verdict == "fix" else "无问题",
+            "confidence": 0.95,
+        })
+
+    result = review_segment(
+        0, {"ja": "遅刻 遅刻", "text": "都迟到了"}, "上下文", "", _config(), chat
+    )
+
+    assert result["fix_votes"] == 2
+    assert result["editor_result"]["decision"] == "error"
+    assert result["applied"] is False
+    assert result["status"] == "error"
+
+
 def test_file_review_preserves_metadata_and_resumes_progress(tmp_path):
     source = tmp_path / "translated.json"
     reviewed = tmp_path / "reviewed.json"
@@ -263,6 +290,58 @@ def test_file_review_retries_error_progress_without_repeating_success(tmp_path):
         str(source), str(reviewed), str(report),
         progress_path=str(progress), config=_config(), chat_fn=must_not_run,
     )
+
+
+def test_file_review_retries_transient_editor_failure(tmp_path):
+    source = tmp_path / "translated.json"
+    reviewed = tmp_path / "reviewed.json"
+    report = tmp_path / "review.json"
+    progress = tmp_path / "review.progress.jsonl"
+    source.write_text(
+        json.dumps([{"ja": "遅刻 遅刻", "text": "都迟到了"}], ensure_ascii=False),
+        encoding="utf-8",
+    )
+    editor_calls = 0
+
+    def transient_editor(messages, **kwargs):
+        nonlocal editor_calls
+        system = messages[0]["content"]
+        if "字幕总编" in system:
+            editor_calls += 1
+            if editor_calls == 1:
+                raise RuntimeError("temporary empty response")
+            return _response({
+                "decision": "replace",
+                "corrected_zh": "迟到！迟到！",
+                "reason": "还原重复和着急语气",
+                "confidence": 0.95,
+            })
+        verdict = (
+            "fix"
+            if "Accuracy Checker" in system or "Naturalness Checker" in system
+            else "ok"
+        )
+        return _response({
+            "verdict": verdict,
+            "suggested_zh": "迟到！迟到！" if verdict == "fix" else "",
+            "reason": "需要修正语气" if verdict == "fix" else "无问题",
+            "confidence": 0.95,
+        })
+
+    result = review_translation_file(
+        str(source), str(reviewed), str(report),
+        progress_path=str(progress), config=_config(), chat_fn=transient_editor,
+    )
+
+    assert editor_calls == 2
+    assert result["summary"]["corrected"] == 1
+    assert result["summary"]["errors"] == 0
+    statuses = [
+        json.loads(line)["status"]
+        for line in progress.read_text(encoding="utf-8").splitlines()
+    ]
+    assert statuses == ["error", "corrected"]
+    assert json.loads(reviewed.read_text(encoding="utf-8"))[0]["text"] == "迟到！迟到！"
 
 
 def test_file_review_blocks_completion_after_persistent_errors(tmp_path):
