@@ -6,6 +6,7 @@ from scripts.checkpoint import Checkpoint
 from scripts.review_agents import (
     ReviewConfig,
     _api_keys,
+    _segment_key,
     parse_agent_response,
     review_segment,
     review_translation_file,
@@ -342,6 +343,47 @@ def test_file_review_retries_transient_editor_failure(tmp_path):
     ]
     assert statuses == ["error", "corrected"]
     assert json.loads(reviewed.read_text(encoding="utf-8"))[0]["text"] == "迟到！迟到！"
+
+
+def test_legacy_needs_review_with_editor_error_is_not_resumed(tmp_path):
+    source = tmp_path / "translated.json"
+    reviewed = tmp_path / "reviewed.json"
+    report = tmp_path / "review.json"
+    progress = tmp_path / "review.progress.jsonl"
+    segment = {"ja": "遅刻 遅刻", "text": "都迟到了"}
+    source.write_text(
+        json.dumps([segment], ensure_ascii=False), encoding="utf-8"
+    )
+    progress.write_text(
+        json.dumps(
+            {
+                "segment_key": _segment_key(0, segment),
+                "status": "needs_review",
+                "editor_result": {"decision": "error"},
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    calls = 0
+
+    def all_ok(messages, **kwargs):
+        nonlocal calls
+        calls += 1
+        return _response({
+            "verdict": "ok", "suggested_zh": "", "reason": "正确",
+            "confidence": 0.95,
+        })
+
+    result = review_translation_file(
+        str(source), str(reviewed), str(report),
+        progress_path=str(progress), config=_config(), chat_fn=all_ok,
+    )
+
+    assert calls == 5
+    assert result["summary"]["approved"] == 1
+    assert result["summary"]["errors"] == 0
 
 
 def test_file_review_blocks_completion_after_persistent_errors(tmp_path):

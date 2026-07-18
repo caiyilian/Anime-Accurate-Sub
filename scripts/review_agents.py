@@ -692,7 +692,11 @@ def _load_progress(path: Optional[Path]) -> dict[str, dict]:
             key = item.get("segment_key")
             if not key:
                 continue
-            if item.get("status") == "error":
+            editor_result = item.get("editor_result") or {}
+            if (
+                item.get("status") == "error"
+                or editor_result.get("decision") == "error"
+            ):
                 completed.pop(key, None)
             else:
                 completed[key] = item
