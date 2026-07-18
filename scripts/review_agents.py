@@ -649,16 +649,18 @@ def review_segment(
 
     original = _segment_text(segment)
     errors = sum(result.get("verdict") == "error" for result in results.values())
+    editor_error = bool(editor and editor.get("decision") == "error")
     applied = bool(
         editor
         and errors == 0
+        and not editor_error
         and editor.get("decision") == "replace"
         and editor.get("corrected_zh")
         and editor.get("corrected_zh") != original
         and editor.get("confidence", 0.0) >= config.min_editor_confidence
     )
     status = "corrected" if applied else "approved"
-    if errors:
+    if errors or editor_error:
         status = "error"
     elif fix_votes and not applied:
         status = "needs_review"
