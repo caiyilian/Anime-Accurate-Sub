@@ -48,6 +48,7 @@ MQM_DIMENSIONS = {
 SEVERITIES = {"none", "minor", "major", "critical"}
 RECOMMENDATIONS = {"keep", "revise"}
 PROMPT_VERSION = "gemba-mqm-dual-judge-v2"
+MAX_INCOMPLETE_PASSES = 3
 
 
 DIMENSION_SCHEMA = {
@@ -615,8 +616,13 @@ def _load_progress(path: Optional[Path]) -> dict[str, dict]:
                 item = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if item.get("segment_key"):
-                completed[item["segment_key"]] = item
+            key = item.get("segment_key")
+            if not key:
+                continue
+            if item.get("status") == "error":
+                completed.pop(key, None)
+            else:
+                completed[key] = item
     return completed
 
 
@@ -634,11 +640,13 @@ def review_batch(
     config: MQMConfig,
     glossary: str,
     progress_path: str = "",
+    completed_results: Optional[dict[str, dict]] = None,
     chat_fn: Callable = model_chat,
 ) -> list[dict]:
     config.validate()
     progress = Path(progress_path) if progress_path else None
     cached = _load_progress(progress)
+    cached.update(completed_results or {})
     signature = config.signature()
     contexts = [
         _context(segments, position, config.context_window)
@@ -707,13 +715,31 @@ def review_translation_file(
     if not isinstance(segments, list):
         raise ValueError("MQM input must be a JSON list")
     config = (config or MQMConfig()).validate()
-    reviews = review_batch(
-        segments,
-        config,
-        load_glossary_prompt(glossary_path),
-        progress_path,
-        chat_fn,
-    )
+    glossary = load_glossary_prompt(glossary_path)
+    reviews = []
+    completed_results = {}
+    for pass_index in range(1, MAX_INCOMPLETE_PASSES + 1):
+        reviews = review_batch(
+            segments,
+            config,
+            glossary,
+            progress_path,
+            completed_results,
+            chat_fn,
+        )
+        error_count = sum(item["status"] == "error" for item in reviews)
+        completed_results.update(
+            (item["segment_key"], item)
+            for item in reviews
+            if item["status"] != "error"
+        )
+        if error_count == 0:
+            break
+        if pass_index < MAX_INCOMPLETE_PASSES:
+            print(
+                f"Retrying {error_count} incomplete MQM review(s); "
+                f"pass {pass_index + 1}/{MAX_INCOMPLETE_PASSES}"
+            )
 
     output = []
     for segment, review in zip(segments, reviews):
@@ -756,6 +782,11 @@ def review_translation_file(
     }
     _atomic_json(Path(output_path), output)
     _atomic_json(Path(report_path), report)
+    if summary["errors"]:
+        raise RuntimeError(
+            f"MQM review has {summary['errors']} incomplete segment(s); "
+            "rerun with the same progress path"
+        )
     return report
 
 

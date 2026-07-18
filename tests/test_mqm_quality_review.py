@@ -331,6 +331,85 @@ def test_file_review_preserves_metadata_supports_dry_run_and_resumes(tmp_path):
     assert json.loads(output.read_text(encoding="utf-8"))[0]["text"] == "我是猫。"
 
 
+def test_file_review_retries_error_progress_without_repeating_success(tmp_path):
+    source = tmp_path / "reviewed.json"
+    output = tmp_path / "mqm_reviewed.json"
+    report = tmp_path / "mqm_report.json"
+    progress = tmp_path / "mqm.progress.jsonl"
+    source.write_text(
+        json.dumps(
+            [
+                {"ja": "おはよう", "text": "早上好"},
+                {"ja": "こんばんは", "text": "晚上好"},
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    deepseek_calls = 0
+    successful_segment_calls = 0
+
+    def transient_failure(messages, **kwargs):
+        nonlocal deepseek_calls, successful_segment_calls
+        prompt = messages[1]["content"]
+        if "目标日文：こんばんは" in prompt:
+            successful_segment_calls += 1
+        if (
+            kwargs["model"] == "deepseek-judge"
+            and "目标日文：おはよう" in prompt
+        ):
+            deepseek_calls += 1
+            if deepseek_calls == 1:
+                raise RuntimeError("temporary empty response")
+        return _response(_judge_payload(score=92))
+
+    result = review_translation_file(
+        str(source), str(output), str(report),
+        progress_path=str(progress), config=_config(), chat_fn=transient_failure,
+    )
+
+    assert result["summary"]["approved"] == 2
+    assert result["summary"]["errors"] == 0
+    assert deepseek_calls == 2
+    assert successful_segment_calls == 2
+    statuses = [
+        json.loads(line)["status"]
+        for line in progress.read_text(encoding="utf-8").splitlines()
+    ]
+    assert statuses == ["error", "approved", "approved"]
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("successful retry should be resumed")
+
+    review_translation_file(
+        str(source), str(output), str(report),
+        progress_path=str(progress), config=_config(), chat_fn=must_not_run,
+    )
+
+
+def test_file_review_blocks_completion_after_persistent_errors(tmp_path):
+    source = tmp_path / "reviewed.json"
+    output = tmp_path / "mqm_reviewed.json"
+    report = tmp_path / "mqm_report.json"
+    source.write_text(
+        json.dumps([{"ja": "おはよう", "text": "早上好"}], ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    def persistent_failure(messages, **kwargs):
+        if kwargs["model"] == "deepseek-judge":
+            raise RuntimeError("provider unavailable")
+        return _response(_judge_payload(score=92))
+
+    with pytest.raises(RuntimeError, match="incomplete segment"):
+        review_translation_file(
+            str(source), str(output), str(report),
+            config=_config(), chat_fn=persistent_failure,
+        )
+
+    assert json.loads(report.read_text(encoding="utf-8"))["summary"]["errors"] == 1
+
+
 def test_progress_key_changes_when_neighboring_context_changes():
     config = _config()
     first = [
