@@ -9,6 +9,7 @@ from scripts.web_ui import (
     build_pipeline_command,
     checkpoint_progress,
     create_app,
+    safe_subtitle_name,
     safe_upload_name,
 )
 
@@ -17,9 +18,14 @@ def test_safe_upload_name_blocks_traversal_and_unknown_extensions():
     assert safe_upload_name(r"..\轻音少女 01.mp4") == "轻音少女 01.mp4"
     with pytest.raises(ValueError):
         safe_upload_name("payload.exe")
+    assert safe_subtitle_name(r"..\K-ON! S1E01.jp.srt") == "K-ON! S1E01.jp.srt"
+    with pytest.raises(ValueError):
+        safe_subtitle_name("subtitle.exe")
 
 
 def test_build_pipeline_command_is_shell_free_and_validated(tmp_path):
+    japanese_subtitle = tmp_path / "episode.jp.srt"
+    japanese_subtitle.write_text("subtitle", encoding="utf-8")
     command = build_pipeline_command(
         tmp_path / "input;still-video.mp4",
         tmp_path / "output",
@@ -27,6 +33,7 @@ def test_build_pipeline_command_is_shell_free_and_validated(tmp_path):
             "backend": "galtransl",
             "quality_check": True,
             "multi_agent_review": True,
+            "japanese_subtitle_path": str(japanese_subtitle),
             "translation_batch_size": 6,
         },
         python_executable="python-test",
@@ -40,6 +47,7 @@ def test_build_pipeline_command_is_shell_free_and_validated(tmp_path):
         "quality_review.sensenova.json"
     )
     assert command[command.index("--translation-batch-size") + 1] == "6"
+    assert command[command.index("--japanese-subtitle") + 1] == str(japanese_subtitle)
     with pytest.raises(ValueError):
         build_pipeline_command("video.mp4", "out", {"backend": "sakura && calc"})
 
@@ -64,6 +72,27 @@ def test_checkpoint_progress_reads_real_stage_state(tmp_path):
     assert progress["total"] == 7
     assert progress["active_stage"] == "translate"
     assert progress["failed_stages"] == ["translate"]
+
+
+def test_checkpoint_progress_replaces_audio_and_asr_for_japanese_source(tmp_path):
+    episode = tmp_path / "output" / "episode"
+    episode.mkdir(parents=True)
+    (episode / "checkpoint.json").write_text(
+        json.dumps(
+            {
+                "japanese_subtitle": {"status": "completed"},
+                "translate": {"status": "completed"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    progress = checkpoint_progress(
+        tmp_path / "output", quality_check=True, japanese_subtitle=True
+    )
+    assert progress["completed"] == 2
+    assert progress["total"] == 5
+    assert progress["active_stage"] == "subtitle"
 
 
 def test_job_download_path_stays_inside_output(tmp_path):
@@ -112,7 +141,14 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
     client = TestClient(app)
     response = client.post(
         "/api/jobs",
-        files={"video": ("轻音少女01.mp4", b"fake-video", "video/mp4")},
+        files={
+            "video": ("轻音少女01.mp4", b"fake-video", "video/mp4"),
+            "japanese_subtitle": (
+                "K-ON! S1E01.jp.srt",
+                "1\n00:00:01,000 --> 00:00:02,000\nおはよう\n".encode("utf-8"),
+                "application/x-subrip",
+            ),
+        },
         data={
             "backend": "sakura",
             "quality_check": "true",
@@ -126,8 +162,12 @@ def test_fastapi_upload_saves_video_and_starts_job(tmp_path, monkeypatch):
     assert body["status"] == "pending"
     assert body["options"]["quality_check"] is True
     assert body["options"]["multi_agent_review"] is True
+    assert body["options"]["japanese_subtitle_path"].endswith("K-ON! S1E01.jp.srt")
     record = manager._load(body["id"])
     assert Path(record["input_path"]).read_bytes() == b"fake-video"
+    assert Path(record["options"]["japanese_subtitle_path"]).read_text(
+        encoding="utf-8"
+    ).endswith("おはよう\n")
 
 
 def test_fastapi_proofreading_updates_json_and_regenerates_subtitles(tmp_path):
