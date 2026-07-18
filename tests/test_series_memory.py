@@ -13,7 +13,7 @@ def test_production_k_on_memory_has_first_season_cast_and_stable_names():
     memory = create_k_on_memory()
 
     assert len(memory.data["characters"]) == 9
-    assert len(memory.data["terms"]) == 15
+    assert len(memory.data["terms"]) == 20
     assert memory.get_character("Tsumugi")["full_name_zh"] == "琴吹紬"
     assert memory.get_character("Azusa")["full_name_zh"] == "中野梓"
     assert memory.get_character("Nodoka")["full_name_zh"] == "真锅和"

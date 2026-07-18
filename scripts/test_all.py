@@ -252,7 +252,7 @@ def test_series_memory():
     from scripts.series_memory import SeriesMemory, create_k_on_memory
     mem = create_k_on_memory()
     assert len(mem.data["characters"]) == 9
-    assert len(mem.data["terms"]) == 15
+    assert len(mem.data["terms"]) == 20
     prompt = mem.inject_into_prompt("test")
     assert "平泽唯" in prompt
     assert "轻音部" in prompt
