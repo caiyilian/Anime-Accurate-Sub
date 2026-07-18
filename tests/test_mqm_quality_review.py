@@ -8,6 +8,7 @@ from scripts.mqm_quality_review import (
     parse_judge_response,
     _context,
     _segment_key,
+    run_judge,
     review_segment,
     review_translation_file,
 )
@@ -139,6 +140,91 @@ def test_dual_judges_editor_and_dual_rescore_apply_only_proven_improvement():
     assert calls.count("flash-judge") == 2
     assert calls.count("deepseek-judge") == 2
     assert calls.count("flash-editor") == 1
+
+
+def test_flash_judge_uses_distinct_glm_fallback_after_retries_fail():
+    calls = []
+
+    def chat(messages, **kwargs):
+        calls.append(kwargs["model"])
+        if kwargs["model"] == "flash-judge":
+            return ""
+        return _response(_judge_payload(score=92))
+
+    result = run_judge(
+        "flash-judge",
+        {"ja": "おはよう", "text": "早上好"},
+        "上下文",
+        "",
+        _config(judge_fallback_models={"flash-judge": "glm-judge"}),
+        chat,
+    )
+
+    assert calls == ["flash-judge", "glm-judge"]
+    assert result["status"] == "ok"
+    assert result["model"] == "glm-judge"
+    assert result["primary_model"] == "flash-judge"
+    assert result["fallback_used"] is True
+    assert result["primary_error"]
+    assert result["attempts"] == 2
+
+
+def test_glm_editor_fallback_candidate_still_requires_dual_rescore():
+    calls = []
+
+    def chat(messages, **kwargs):
+        model = kwargs["model"]
+        calls.append(model)
+        prompt = messages[1]["content"]
+        if model == "flash-editor":
+            return ""
+        if model == "glm-editor":
+            return _response({
+                "decision": "revise",
+                "corrected_zh": "我是猫。",
+                "reason": "修正语义",
+                "confidence": 0.98,
+            })
+        if "目标中文：我是猫。" in prompt:
+            return _response(_judge_payload(score=94))
+        return _response(
+            _judge_payload(
+                recommendation="revise",
+                score=20,
+                suggested_zh="我是猫。",
+                severity="critical",
+            )
+        )
+
+    result = review_segment(
+        0,
+        {"ja": "私は猫です。", "text": "今天天气很好。"},
+        "上下文",
+        "",
+        _config(editor_fallback_model="glm-editor"),
+        chat,
+    )
+
+    assert result["status"] == "corrected"
+    assert result["eligible_for_application"] is True
+    assert result["editor"]["model"] == "glm-editor"
+    assert result["editor"]["fallback_used"] is True
+    assert len(result["rescore_judges"]) == 2
+
+
+def test_judge_fallback_transport_does_not_invalidate_successful_progress():
+    base = _config()
+    with_fallback = _config(
+        judge_fallback_models={"flash-judge": "glm-judge"},
+        editor_fallback_model="glm-editor",
+    )
+
+    assert base.signature() == with_fallback.signature()
+
+
+def test_judge_fallback_cannot_duplicate_a_primary_judge():
+    with pytest.raises(ValueError, match="distinct from all primary judges"):
+        _config(judge_fallback_models={"flash-judge": "deepseek-judge"})
 
 
 def test_clean_translation_does_not_call_editor_or_rewrite():
