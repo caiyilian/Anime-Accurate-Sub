@@ -54,6 +54,10 @@ from scripts.quality_check import (
     segments_from_dicts as quality_segments_from_dicts,
 )
 from scripts.review_agents import ReviewConfig, review_translation_file
+from scripts.mqm_quality_review import (
+    MQMConfig,
+    review_translation_file as review_mqm_translation_file,
+)
 from scripts.extract_subs import (
     extract_embedded_japanese,
     load_japanese_subtitle,
@@ -63,6 +67,7 @@ from scripts.extract_subs import (
 
 PIPELINE_STAGES = ["extract_audio", "asr", "translate", "subtitle", "embed_subtitle", "quality_check"]
 MULTI_AGENT_STAGE = "multi_agent_review"
+MQM_QUALITY_STAGE = "mqm_quality_review"
 JAPANESE_SUBTITLE_STAGE = "japanese_subtitle"
 _ASR_ENGINES = {}
 
@@ -216,7 +221,14 @@ def _resolve_oped_ranges(
 
 
 def _reset_source_downstream(cp: Checkpoint, include_asr: bool = False) -> None:
-    stages = ["translate", MULTI_AGENT_STAGE, "subtitle", "embed_subtitle", "quality_check"]
+    stages = [
+        "translate",
+        MULTI_AGENT_STAGE,
+        MQM_QUALITY_STAGE,
+        "subtitle",
+        "embed_subtitle",
+        "quality_check",
+    ]
     if include_asr:
         stages[0:0] = ["extract_audio", "asr"]
     for stage in stages:
@@ -237,6 +249,8 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    subtitle_style: str = "anime",
                    multi_agent_review: bool = False,
                    review_config: dict = None,
+                   mqm_quality_review: bool = False,
+                   mqm_config: dict = None,
                    japanese_subtitle_path: str = "",
                    japanese_subtitle_dir: str = "",
                    prefer_japanese_subtitles: bool = False) -> dict:
@@ -269,6 +283,8 @@ def process_video(video_path: str, output_dir: str, config: dict,
         active_stages[:2] = [JAPANESE_SUBTITLE_STAGE]
     if multi_agent_review:
         active_stages.insert(active_stages.index("subtitle"), MULTI_AGENT_STAGE)
+    if mqm_quality_review:
+        active_stages.insert(active_stages.index("subtitle"), MQM_QUALITY_STAGE)
     if quality_check:
         active_stages.append("quality_check")
     cp = Checkpoint(str(work_dir), stages=active_stages)
@@ -298,6 +314,15 @@ def process_video(video_path: str, output_dir: str, config: dict,
     # downstream artifact from reviewed.json rather than silently keeping the
     # pre-review subtitle/video checkpoints.
     if multi_agent_review and not cp.is_completed(MULTI_AGENT_STAGE):
+        for downstream in (
+            MQM_QUALITY_STAGE,
+            "subtitle",
+            "embed_subtitle",
+            "quality_check",
+        ):
+            if cp.is_completed(downstream):
+                cp.reset(downstream)
+    if mqm_quality_review and not cp.is_completed(MQM_QUALITY_STAGE):
         for downstream in ("subtitle", "embed_subtitle", "quality_check"):
             if cp.is_completed(downstream):
                 cp.reset(downstream)
@@ -475,11 +500,44 @@ def process_video(video_path: str, output_dir: str, config: dict,
             duration_s=time.time() - t0,
         )
 
+    # Stage 3c: dual-judge GEMBA-MQM gate + independently verified refinement
+    if mqm_quality_review and MQM_QUALITY_STAGE in cp.get_pending_stages():
+        print(f"[{MQM_QUALITY_STAGE}]")
+        t0 = time.time()
+        mqm_input = work_dir / (
+            "reviewed.json" if multi_agent_review else "translated.json"
+        )
+        if not mqm_input.exists():
+            raise FileNotFoundError(f"MQM input is missing: {mqm_input}")
+        mqm_output = work_dir / "mqm_reviewed.json"
+        mqm_report = work_dir / "mqm_quality_report.json"
+        mqm_progress = work_dir / "mqm_quality_review.progress.jsonl"
+        mqm_result = review_mqm_translation_file(
+            str(mqm_input),
+            str(mqm_output),
+            str(mqm_report),
+            progress_path=str(mqm_progress),
+            glossary_path=glossary_path,
+            config=MQMConfig.from_dict(mqm_config).validate(),
+            apply_fixes=True,
+        )
+        result["mqm_quality_review"] = mqm_result["summary"]
+        cp.mark_completed(
+            MQM_QUALITY_STAGE,
+            input_file=str(mqm_input),
+            output_file=str(mqm_output),
+            duration_s=time.time() - t0,
+        )
+
     # Stage 4: Generate subtitles
     if "subtitle" in cp.get_pending_stages():
         print("[subtitle]")
         t0 = time.time()
-        seg_path = work_dir / ("reviewed.json" if multi_agent_review else "translated.json")
+        seg_path = work_dir / (
+            "mqm_reviewed.json"
+            if mqm_quality_review
+            else ("reviewed.json" if multi_agent_review else "translated.json")
+        )
         if seg_path.exists():
             srt_path = work_dir / f"{video_name}.srt"
             ass_path = work_dir / f"{video_name}.ass"
@@ -512,7 +570,11 @@ def process_video(video_path: str, output_dir: str, config: dict,
     if quality_check and "quality_check" in cp.get_pending_stages():
         print("[quality_check]")
         t0 = time.time()
-        seg_path = work_dir / ("reviewed.json" if multi_agent_review else "translated.json")
+        seg_path = work_dir / (
+            "mqm_reviewed.json"
+            if mqm_quality_review
+            else ("reviewed.json" if multi_agent_review else "translated.json")
+        )
         if not seg_path.exists():
             raise FileNotFoundError(
                 f"Translated segments are missing for quality check: {seg_path}"
@@ -665,6 +727,17 @@ Examples:
     parser.add_argument("--review-min-votes", type=int, default=0)
     parser.add_argument("--review-min-confidence", type=float, default=-1.0)
     parser.add_argument("--review-context-window", type=int, default=-1)
+    parser.add_argument(
+        "--mqm-quality-review",
+        action="store_true",
+        help="Run dual-judge GEMBA-MQM scoring and verified refinement",
+    )
+    parser.add_argument(
+        "--mqm-config",
+        type=str,
+        default="",
+        help="JSON configuration for GEMBA-MQM quality review",
+    )
     parser.add_argument("--speaker-map", type=str, default="",
                         help="JSON mapping from speaker IDs to ASS character names/colors")
     parser.add_argument("--auto", action="store_true", help="Auto-detect hardware and set optimal params")
@@ -722,6 +795,9 @@ Examples:
     review_config.update(
         {key: value for key, value in review_overrides.items() if value is not None}
     )
+    mqm_config = {}
+    if args.mqm_config:
+        mqm_config = json.loads(Path(args.mqm_config).read_text(encoding="utf-8"))
 
     if args.auto:
         from scripts.hardware import HardwareDetector
@@ -755,6 +831,8 @@ Examples:
             subtitle_style=args.subtitle_style,
             multi_agent_review=args.multi_agent_review,
             review_config=review_config,
+            mqm_quality_review=args.mqm_quality_review,
+            mqm_config=mqm_config,
             japanese_subtitle_path=args.japanese_subtitle,
             japanese_subtitle_dir=args.japanese_subtitle_dir,
             prefer_japanese_subtitles=(
@@ -796,6 +874,8 @@ Examples:
                           subtitle_style=args.subtitle_style,
                           multi_agent_review=args.multi_agent_review,
                           review_config=review_config,
+                          mqm_quality_review=args.mqm_quality_review,
+                          mqm_config=mqm_config,
                           japanese_subtitle_dir=args.japanese_subtitle_dir,
                           prefer_japanese_subtitles=(
                               args.prefer_japanese_subtitles

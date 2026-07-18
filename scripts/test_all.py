@@ -149,11 +149,32 @@ def test_review_agents():
 
 
 def test_gemba_mqm():
-    """Test MQM module imports."""
-    from scripts.gemba_mqm import MQM_DIMENSIONS, score_segment, parse_score
+    """Test strict dual-judge MQM production module."""
+    from scripts.mqm_quality_review import (
+        MQMConfig,
+        MQM_DIMENSIONS,
+        parse_judge_response,
+    )
     assert len(MQM_DIMENSIONS) == 4  # 4 dimensions
-    score = parse_score("评分: 85")
-    assert score == 85
+    config = MQMConfig(provider="ollama", judge_models=["judge-a", "judge-b"])
+    assert len(config.validate().judge_models) == 2
+    parsed = parse_judge_response(json.dumps({
+        "dimensions": {
+            name: {"score": 90, "severity": "none", "reason": "正确"}
+            for name in MQM_DIMENSIONS
+        },
+        "errors": [],
+        "recommendation": "keep",
+        "suggested_zh": "",
+        "confidence": 0.9,
+    }, ensure_ascii=False))
+    assert parsed["overall"] == 90
+    try:
+        parse_judge_response("评分: 90")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("MQM keyword score guessing must be rejected")
 
 
 # ============ S12: Infrastructure ============

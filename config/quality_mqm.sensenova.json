@@ -1,0 +1,19 @@
+{
+  "provider": "openai",
+  "base_url": "https://token.sensenova.cn/v1",
+  "api_key_file": "config/sensenova_apikeys",
+  "judge_models": [
+    "sensenova-6.7-flash-lite",
+    "deepseek-v4-flash"
+  ],
+  "editor_model": "sensenova-6.7-flash-lite",
+  "max_workers": 2,
+  "context_window": 5,
+  "review_threshold": 80,
+  "min_judge_confidence": 0.75,
+  "min_editor_confidence": 0.85,
+  "min_final_score": 80,
+  "min_improvement": 5,
+  "retries": 4,
+  "timeout_s": 600
+}
