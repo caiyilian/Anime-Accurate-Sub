@@ -1,6 +1,6 @@
 """S9.3: Translation Memory system.
 
-JSONL-based bilingual cache with exact-match lookup.
+JSONL-based bilingual cache with exact-match and context-aware lookup.
 
 Format (JSONL):
   {"ja": "...", "zh": "...", "model": "...", "translation_fallback": false,
@@ -13,7 +13,7 @@ Usage:
   tm.save()                        # Flush to disk
 """
 
-import json, os, time
+import hashlib, json, os, time
 from pathlib import Path
 from typing import Optional
 
@@ -44,7 +44,15 @@ class TranslationMemory:
                     entry = json.loads(line)
                     ja = entry.get("ja", "")
                     if ja:
-                        self._cache[ja] = entry
+                        if entry.get("context_version") == 1:
+                            key = self._cache_key(
+                                ja,
+                                entry.get("context_before", []),
+                                entry.get("context_after", []),
+                            )
+                        else:
+                            key = ja
+                        self._cache[key] = entry
                         count += 1
                 except json.JSONDecodeError:
                     continue
@@ -61,26 +69,58 @@ class TranslationMemory:
         self._dirty = False
         print(f"  TM saved: {len(self._cache)} entries to {self.path}")
 
-    def lookup(self, ja: str) -> Optional[str]:
+    @staticmethod
+    def _cache_key(ja: str, context_before=None, context_after=None) -> str:
+        if context_before is None and context_after is None:
+            return ja
+        payload = json.dumps(
+            {
+                "ja": ja,
+                "context_before": list(context_before or []),
+                "context_after": list(context_after or []),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        return f"context-v1:{digest}"
+
+    def lookup(self, ja: str, context_before=None, context_after=None) -> Optional[str]:
         """Look up translation. Returns zh or None."""
-        entry = self.lookup_entry(ja)
+        entry = self.lookup_entry(ja, context_before, context_after)
         return entry.get("zh") if entry else None
 
-    def lookup_entry(self, ja: str) -> Optional[dict]:
+    def lookup_entry(
+        self,
+        ja: str,
+        context_before=None,
+        context_after=None,
+    ) -> Optional[dict]:
         """Look up a translation and retain model provenance."""
-        entry = self._cache.get(ja)
+        key = self._cache_key(ja, context_before, context_after)
+        entry = self._cache.get(key)
         if entry:
             self._stats["hits"] += 1
             return dict(entry)
         self._stats["misses"] += 1
         return None
 
-    def store(self, ja: str, zh: str, model: str = "", fallback: bool = False):
+    def store(
+        self,
+        ja: str,
+        zh: str,
+        model: str = "",
+        fallback: bool = False,
+        context_before=None,
+        context_after=None,
+    ):
         """Store a translation pair."""
         if not ja or not zh:
             return
+        key = self._cache_key(ja, context_before, context_after)
         # Preserve model provenance even when two models produce the same text.
-        existing = self._cache.get(ja)
+        existing = self._cache.get(key)
         if (
             existing
             and existing.get("zh") == zh
@@ -88,20 +128,29 @@ class TranslationMemory:
             and bool(existing.get("translation_fallback", False)) == fallback
         ):
             return
-        self._cache[ja] = {
+        entry = {
             "ja": ja,
             "zh": zh,
             "model": model,
             "translation_fallback": fallback,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
+        if context_before is not None or context_after is not None:
+            entry.update(
+                {
+                    "context_version": 1,
+                    "context_before": list(context_before or []),
+                    "context_after": list(context_after or []),
+                }
+            )
+        self._cache[key] = entry
         self._dirty = True
         self._stats["stored"] += 1
         if self.auto_save:
             self.save()
 
-    def contains(self, ja: str) -> bool:
-        return ja in self._cache
+    def contains(self, ja: str, context_before=None, context_after=None) -> bool:
+        return self._cache_key(ja, context_before, context_after) in self._cache
 
     def count(self) -> int:
         return len(self._cache)
