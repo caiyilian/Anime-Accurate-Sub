@@ -28,6 +28,7 @@ DEFAULT_MODEL = "EasonONLINE/Sakura-qwen2.5-v1.0:7b"
 DEFAULT_SENSENOVA_URL = "https://token.sensenova.cn/v1"
 VALID_VERDICTS = {"ok", "fix", "suspicious"}
 VALID_EDITOR_DECISIONS = {"keep", "replace"}
+MAX_INCOMPLETE_PASSES = 3
 AGENT_SCHEMA = {
     "type": "object",
     "properties": {
@@ -686,8 +687,13 @@ def _load_progress(path: Optional[Path]) -> dict[str, dict]:
                 item = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if item.get("segment_key"):
-                completed[item["segment_key"]] = item
+            key = item.get("segment_key")
+            if not key:
+                continue
+            if item.get("status") == "error":
+                completed.pop(key, None)
+            else:
+                completed[key] = item
     return completed
 
 
@@ -707,6 +713,7 @@ def review_batch(
     config: Optional[ReviewConfig] = None,
     glossary: str = "（未提供术语表）",
     progress_path: str = "",
+    completed_results: Optional[dict[str, dict]] = None,
     chat_fn: Callable = model_chat,
 ) -> list[dict]:
     config = config or ReviewConfig()
@@ -715,6 +722,7 @@ def review_batch(
     config.validate()
     progress = Path(progress_path) if progress_path else None
     cached = _load_progress(progress)
+    cached.update(completed_results or {})
     results: list[Optional[dict]] = [None] * len(segments)
     pending = []
     for position, segment in enumerate(segments):
@@ -782,13 +790,30 @@ def review_translation_file(
         raise ValueError("translated input must be a JSON list")
     config = (config or ReviewConfig()).validate()
     glossary = load_glossary_prompt(glossary_path)
-    reviews = review_batch(
-        segments,
-        config=config,
-        glossary=glossary,
-        progress_path=progress_path,
-        chat_fn=chat_fn,
-    )
+    reviews = []
+    completed_results = {}
+    for pass_index in range(1, MAX_INCOMPLETE_PASSES + 1):
+        reviews = review_batch(
+            segments,
+            config=config,
+            glossary=glossary,
+            progress_path=progress_path,
+            completed_results=completed_results,
+            chat_fn=chat_fn,
+        )
+        error_count = sum(item["status"] == "error" for item in reviews)
+        completed_results.update(
+            (item["segment_key"], item)
+            for item in reviews
+            if item["status"] != "error"
+        )
+        if error_count == 0:
+            break
+        if pass_index < MAX_INCOMPLETE_PASSES:
+            print(
+                f"Retrying {error_count} incomplete multi-agent review(s); "
+                f"pass {pass_index + 1}/{MAX_INCOMPLETE_PASSES}"
+            )
 
     reviewed_segments = []
     for segment, review in zip(segments, reviews):
@@ -824,6 +849,11 @@ def review_translation_file(
     }
     _atomic_json(Path(reviewed_path), reviewed_segments)
     _atomic_json(Path(report_path), report)
+    if summary["errors"]:
+        raise RuntimeError(
+            f"multi-agent review has {summary['errors']} incomplete segment(s); "
+            "rerun with the same progress path"
+        )
     return report
 
 

@@ -206,6 +206,91 @@ def test_file_review_preserves_metadata_and_resumes_progress(tmp_path):
     assert second["summary"]["approved"] == 2
 
 
+def test_file_review_retries_error_progress_without_repeating_success(tmp_path):
+    source = tmp_path / "translated.json"
+    reviewed = tmp_path / "reviewed.json"
+    report = tmp_path / "review.json"
+    progress = tmp_path / "review.progress.jsonl"
+    source.write_text(
+        json.dumps(
+            [
+                {"ja": "はい", "text": "好的"},
+                {"ja": "行こう", "text": "走吧"},
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    asr_calls = 0
+    successful_segment_calls = 0
+
+    def transient_failure(messages, **kwargs):
+        nonlocal asr_calls, successful_segment_calls
+        prompt = messages[1]["content"]
+        if "目标日文：行こう" in prompt:
+            successful_segment_calls += 1
+        if (
+            "ASR Quality Checker" in messages[0]["content"]
+            and "目标日文：はい" in prompt
+        ):
+            asr_calls += 1
+            if asr_calls == 1:
+                raise RuntimeError("temporary empty response")
+        return _response({
+            "verdict": "ok", "suggested_zh": "", "reason": "正确",
+            "confidence": 0.95,
+        })
+
+    result = review_translation_file(
+        str(source), str(reviewed), str(report),
+        progress_path=str(progress), config=_config(), chat_fn=transient_failure,
+    )
+
+    assert result["summary"]["approved"] == 2
+    assert result["summary"]["errors"] == 0
+    assert asr_calls == 2
+    assert successful_segment_calls == 5
+    statuses = [
+        json.loads(line)["status"]
+        for line in progress.read_text(encoding="utf-8").splitlines()
+    ]
+    assert statuses == ["error", "approved", "approved"]
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("successful retry should be resumed")
+
+    review_translation_file(
+        str(source), str(reviewed), str(report),
+        progress_path=str(progress), config=_config(), chat_fn=must_not_run,
+    )
+
+
+def test_file_review_blocks_completion_after_persistent_errors(tmp_path):
+    source = tmp_path / "translated.json"
+    reviewed = tmp_path / "reviewed.json"
+    report = tmp_path / "review.json"
+    source.write_text(
+        json.dumps([{"ja": "はい", "text": "好的"}], ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    def persistent_failure(messages, **kwargs):
+        if "ASR Quality Checker" in messages[0]["content"]:
+            raise RuntimeError("provider unavailable")
+        return _response({
+            "verdict": "ok", "suggested_zh": "", "reason": "正确",
+            "confidence": 0.95,
+        })
+
+    with pytest.raises(RuntimeError, match="incomplete segment"):
+        review_translation_file(
+            str(source), str(reviewed), str(report),
+            config=_config(), chat_fn=persistent_failure,
+        )
+
+    assert json.loads(report.read_text(encoding="utf-8"))["summary"]["errors"] == 1
+
+
 def test_pipeline_regenerates_downstream_files_from_reviewed_json(tmp_path, monkeypatch):
     from scripts import anime_sub
 
