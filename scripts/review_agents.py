@@ -90,6 +90,9 @@ class ReviewConfig:
     review_model: str = field(
         default_factory=lambda: os.environ.get("REVIEW_MODEL", DEFAULT_MODEL)
     )
+    review_fallback_model: str = field(
+        default_factory=lambda: os.environ.get("REVIEW_FALLBACK_MODEL", "")
+    )
     base_url: str = field(
         default_factory=lambda: os.environ.get("REVIEW_BASE_URL", "")
     )
@@ -109,6 +112,9 @@ class ReviewConfig:
         default_factory=lambda: os.environ.get(
             "EDITOR_MODEL", os.environ.get("REVIEW_MODEL", DEFAULT_MODEL)
         )
+    )
+    editor_fallback_model: str = field(
+        default_factory=lambda: os.environ.get("EDITOR_FALLBACK_MODEL", "")
     )
     editor_base_url: str = field(
         default_factory=lambda: os.environ.get("EDITOR_BASE_URL", "")
@@ -134,6 +140,8 @@ class ReviewConfig:
 
     def validate(self) -> "ReviewConfig":
         self.provider = self.provider.strip().lower()
+        self.review_fallback_model = self.review_fallback_model.strip()
+        self.editor_fallback_model = self.editor_fallback_model.strip()
         if self.provider not in {"ollama", "openai"}:
             raise ValueError("provider must be ollama or openai")
         self.editor_provider = (self.editor_provider or self.provider).strip().lower()
@@ -481,6 +489,73 @@ def _call_json_with_retries(
     return None, last_response, last_error, config.retries, time.time() - started
 
 
+def _call_json_with_fallback(
+    messages: list[dict],
+    *,
+    model: str,
+    fallback_model: str,
+    host: str,
+    provider: str,
+    base_url: str,
+    api_key_file: str,
+    config: ReviewConfig,
+    parser: Callable[[str], dict],
+    json_schema: dict,
+    chat_fn: Callable = model_chat,
+    temperature: float = 0.1,
+) -> tuple[Optional[dict], str, str, int, float, str, bool, str]:
+    primary = _call_json_with_retries(
+        messages,
+        model=model,
+        host=host,
+        provider=provider,
+        base_url=base_url,
+        api_key_file=api_key_file,
+        config=config,
+        parser=parser,
+        json_schema=json_schema,
+        chat_fn=chat_fn,
+        temperature=temperature,
+    )
+    parsed, raw, error, attempts, elapsed = primary
+    fallback_model = fallback_model.strip()
+    if parsed is not None or not fallback_model or fallback_model == model:
+        return parsed, raw, error, attempts, elapsed, model, False, ""
+
+    primary_error = error
+    fallback = _call_json_with_retries(
+        messages,
+        model=fallback_model,
+        host=host,
+        provider=provider,
+        base_url=base_url,
+        api_key_file=api_key_file,
+        config=config,
+        parser=parser,
+        json_schema=json_schema,
+        chat_fn=chat_fn,
+        temperature=temperature,
+    )
+    parsed, raw, fallback_error, fallback_attempts, fallback_elapsed = fallback
+    if parsed is None:
+        error = (
+            f"primary {model}: {primary_error}; "
+            f"fallback {fallback_model}: {fallback_error}"
+        )
+    else:
+        error = ""
+    return (
+        parsed,
+        raw,
+        error,
+        attempts + fallback_attempts,
+        elapsed + fallback_elapsed,
+        fallback_model,
+        True,
+        primary_error,
+    )
+
+
 def run_agent(
     agent_id: str,
     segment: dict,
@@ -511,9 +586,19 @@ def run_agent(
 {{"verdict":"ok|fix|suspicious","suggested_zh":"完整建议译文，ok 时为空字符串","reason":"简短依据","confidence":0.0}}
 confidence 范围为 0 到 1。ASR 可疑用 suspicious；翻译确有错误才用 fix。"""
     model = config.agent_models.get(agent_id, config.review_model)
-    parsed, raw, error, attempts, elapsed = _call_json_with_retries(
+    (
+        parsed,
+        raw,
+        error,
+        attempts,
+        elapsed,
+        used_model,
+        fallback_used,
+        primary_error,
+    ) = _call_json_with_fallback(
         [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
         model=model,
+        fallback_model=config.review_fallback_model,
         host=config.host,
         provider=config.provider,
         base_url=config.base_url,
@@ -526,7 +611,10 @@ confidence 范围为 0 到 1。ASR 可疑用 suspicious；翻译确有错误才�
     result = {
         "agent": agent_id,
         "agent_name": agent["name"],
-        "model": model,
+        "model": used_model,
+        "primary_model": model,
+        "fallback_used": fallback_used,
+        "primary_error": primary_error or None,
         "attempts": attempts,
         "time_s": round(elapsed, 2),
         "raw_response": raw,
@@ -578,9 +666,19 @@ def run_editor(
 
 只输出：
 {{"decision":"keep|replace","corrected_zh":"完整最终译文，keep 时可为空","reason":"依据","confidence":0.0}}"""
-    parsed, raw, error, attempts, elapsed = _call_json_with_retries(
+    (
+        parsed,
+        raw,
+        error,
+        attempts,
+        elapsed,
+        used_model,
+        fallback_used,
+        primary_error,
+    ) = _call_json_with_fallback(
         [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
         model=config.editor_model,
+        fallback_model=config.editor_fallback_model,
         host=config.editor_host,
         provider=config.editor_provider,
         base_url=config.editor_base_url,
@@ -592,7 +690,10 @@ def run_editor(
         temperature=0.05,
     )
     result = {
-        "model": config.editor_model,
+        "model": used_model,
+        "primary_model": config.editor_model,
+        "fallback_used": fallback_used,
+        "primary_error": primary_error or None,
         "attempts": attempts,
         "time_s": round(elapsed, 2),
         "raw_response": raw,

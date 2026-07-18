@@ -3,6 +3,7 @@
   "base_url": "https://token.sensenova.cn/v1",
   "api_key_file": "config/sensenova_apikeys",
   "review_model": "sensenova-6.7-flash-lite",
+  "review_fallback_model": "deepseek-v4-flash",
   "agent_models": {
     "consistency": "sensenova-6.7-flash-lite",
     "naturalness": "sensenova-6.7-flash-lite",
@@ -14,6 +15,7 @@
   "editor_base_url": "https://token.sensenova.cn/v1",
   "editor_api_key_file": "config/sensenova_apikeys",
   "editor_model": "sensenova-6.7-flash-lite",
+  "editor_fallback_model": "deepseek-v4-flash",
   "max_workers": 2,
   "context_window": 5,
   "min_fix_votes": 2,
