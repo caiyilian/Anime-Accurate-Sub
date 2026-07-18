@@ -1,0 +1,126 @@
+{
+  "series_name": "K-On! 第一季",
+  "characters": {
+    "Yui": {
+      "full_name_ja": "平沢唯",
+      "full_name_zh": "平泽唯",
+      "nicknames": ["唯ちゃん→小唯", "ゆい→唯", "ユイ→唯"],
+      "speech_style": "口语随意、活泼天然、可爱；原文省略主语时不要擅自补人称",
+      "relationships": {
+        "平沢憂": "亲妹妹，忧很照顾姐姐",
+        "真鍋和": "青梅竹马",
+        "秋山澪、田井中律、琴吹紬": "同级好友和乐队成员",
+        "中野梓": "轻音部后辈，梓会称她为唯前辈"
+      },
+      "catchphrases": []
+    },
+    "Mio": {
+      "full_name_ja": "秋山澪",
+      "full_name_zh": "秋山澪",
+      "nicknames": ["澪ちゃん→小澪"],
+      "speech_style": "较认真、害羞、容易慌张，常担任吐槽角色；不要翻成过度撒娇的语气",
+      "relationships": {
+        "田井中律": "青梅竹马，熟悉到可以直接吐槽",
+        "平沢唯、琴吹紬": "同级好友和乐队成员",
+        "中野梓": "轻音部后辈，乐器同为弦乐"
+      },
+      "catchphrases": []
+    },
+    "Ritsu": {
+      "full_name_ja": "田井中律",
+      "full_name_zh": "田井中律",
+      "nicknames": ["りっちゃん→小律", "律ちゃん→小律"],
+      "speech_style": "口语随意、精力充沛、爱开玩笑，作为部长常推动话题",
+      "relationships": {
+        "秋山澪": "青梅竹马，经常逗澪",
+        "平沢唯、琴吹紬": "同级好友和乐队成员",
+        "中野梓": "轻音部后辈"
+      },
+      "catchphrases": []
+    },
+    "Tsumugi": {
+      "full_name_ja": "琴吹紬",
+      "full_name_zh": "琴吹紬",
+      "nicknames": ["ムギ→小紬", "ムギちゃん→小紬", "紬ちゃん→小紬"],
+      "speech_style": "礼貌、温柔、大小姐气质，对普通校园生活充满兴趣",
+      "relationships": {
+        "平沢唯、秋山澪、田井中律": "同级好友和乐队成员",
+        "中野梓": "轻音部后辈"
+      },
+      "catchphrases": []
+    },
+    "Azusa": {
+      "full_name_ja": "中野梓",
+      "full_name_zh": "中野梓",
+      "nicknames": ["梓ちゃん→小梓", "あずにゃん→梓喵", "あずさ→梓"],
+      "speech_style": "认真、讲礼貌但会直接吐槽前辈；作为后辈通常使用较礼貌语气",
+      "relationships": {
+        "平沢唯、秋山澪、田井中律、琴吹紬": "轻音部前辈",
+        "平沢憂、鈴木純": "同年级好友"
+      },
+      "catchphrases": []
+    },
+    "Ui": {
+      "full_name_ja": "平沢憂",
+      "full_name_zh": "平泽忧",
+      "nicknames": ["憂ちゃん→小忧", "うい→忧", "ウイ→忧"],
+      "speech_style": "礼貌、体贴、成熟，照顾姐姐时自然亲近",
+      "relationships": {
+        "平沢唯": "亲姐姐",
+        "中野梓、鈴木純": "同年级好友"
+      },
+      "catchphrases": []
+    },
+    "Nodoka": {
+      "full_name_ja": "真鍋和",
+      "full_name_zh": "真锅和",
+      "nicknames": ["和ちゃん→小和", "のどか→和"],
+      "speech_style": "冷静、可靠、表达简洁，和唯说话自然熟稔",
+      "relationships": {
+        "平沢唯": "青梅竹马",
+        "轻音部成员": "朋友，后来参与学生会事务"
+      },
+      "catchphrases": []
+    },
+    "Jun": {
+      "full_name_ja": "鈴木純",
+      "full_name_zh": "铃木纯",
+      "nicknames": ["純ちゃん→小纯"],
+      "speech_style": "同龄人口语，活泼直接",
+      "relationships": {
+        "中野梓、平沢憂": "同年级好友"
+      },
+      "catchphrases": []
+    },
+    "Sawako": {
+      "full_name_ja": "山中さわ子",
+      "full_name_zh": "山中佐和子",
+      "nicknames": ["さわちゃん→小佐和", "さわ子→佐和子"],
+      "speech_style": "在教师身份下较端庄，私下会变得随意、夸张；根据场景切换语气",
+      "relationships": {
+        "轻音部成员": "顾问老师",
+        "桜が丘高校": "校友和现任教师"
+      },
+      "catchphrases": []
+    }
+  },
+  "terms": {
+    "放課後ティータイム": {"zh": "放学后茶会", "description": "乐队名"},
+    "桜が丘高校": {"zh": "樱丘高中", "description": "学校名"},
+    "新歓ライブ": {"zh": "迎新演出", "description": "迎新活动演出"},
+    "桜高祭": {"zh": "樱高祭", "description": "校内活动名"},
+    "軽音部": {"zh": "轻音部", "description": "社团名"},
+    "ギー太": {"zh": "吉太", "description": "唯给吉他取的名字"},
+    "音楽室": {"zh": "音乐室", "description": "轻音部活动地点"},
+    "武道館": {"zh": "武道馆", "description": "乐队目标中的场馆"},
+    "文化祭": {"zh": "文化祭", "description": "校园活动"},
+    "学園祭": {"zh": "学园祭", "description": "校园活动"},
+    "合宿": {"zh": "合宿", "description": "集体训练"},
+    "ギター": {"zh": "吉他", "description": "乐器"},
+    "ベース": {"zh": "贝斯", "description": "乐器"},
+    "ドラム": {"zh": "架子鼓", "description": "乐器"},
+    "キーボード": {"zh": "键盘", "description": "乐器"}
+  },
+  "notes": "第一季时间线：故事开头平泽唯、秋山澪、田井中律、琴吹紬是同级生；次年中野梓入学并成为一年级后辈。保持角色称呼和前后辈关系，不把未明示的主语或关系擅自补进译文。",
+  "version": "1.1"
+}
