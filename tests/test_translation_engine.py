@@ -37,6 +37,25 @@ class FakeFallbackAdapter:
         return self.model
 
 
+class FakeContextAdapter(FakeAdapter):
+    def translate_batch(
+        self,
+        texts,
+        glossary_terms=None,
+        context_before=None,
+        context_after=None,
+    ):
+        self.calls.append(
+            (
+                list(texts),
+                list(glossary_terms or []),
+                list(context_before or []),
+                list(context_after or []),
+            )
+        )
+        return [f"中:{text}" for text in texts]
+
+
 def test_pipeline_translator_uses_memory_glossary_and_progress(tmp_path):
     memory_path = tmp_path / "tm.jsonl"
     memory = TranslationMemory(str(memory_path), auto_save=False)
@@ -113,6 +132,106 @@ def test_pipeline_translator_only_sends_matching_glossary_terms():
     glossary.add("秋山澪", "秋山澪")
     engine = PipelineTranslator(FakeAdapter(), glossary=glossary)
     assert engine._matching_glossary_terms(["軽音部です"]) == [("軽音部", "轻音部")]
+
+
+def test_pipeline_translator_passes_outer_context_at_batch_boundaries():
+    adapter = FakeContextAdapter()
+    segments = [
+        {"start": index, "end": index + 1, "text": f"原文{index}"}
+        for index in range(5)
+    ]
+
+    PipelineTranslator(
+        adapter,
+        batch_size=2,
+        context_window=2,
+    ).translate(segments)
+
+    assert adapter.calls == [
+        (["原文0"], [], [], ["原文1", "原文2"]),
+        (["原文1"], [], ["原文0"], ["原文2", "原文3"]),
+        (["原文2"], [], ["原文0", "原文1"], ["原文3", "原文4"]),
+        (["原文3"], [], ["原文1", "原文2"], ["原文4"]),
+        (["原文4"], [], ["原文2", "原文3"], []),
+    ]
+
+
+def test_sakura_context_is_read_only_system_content_not_translation_input():
+    context = SakuraAdapter._context_block(
+        context_before=["昨日ギターを買った"],
+        context_after=["一緒に練習しよう"],
+    )
+    prompt = SakuraAdapter._user_prompt(["そうなんだ"])
+
+    assert "只供理解待翻译句子的指代、语气和省略信息" in context
+    assert "上文：\n昨日ギターを買った" in context
+    assert "下文：\n一緒に練習しよう" in context
+    assert "待翻译日文逐行翻译" in prompt
+    assert "昨日ギターを買った" not in prompt
+
+
+def test_context_leak_markers_are_rejected():
+    assert SakuraAdapter._valid_translation(
+        "まだまだですけど、楽しいです！",
+        "下文：那放学后一起练习吧。虽然还差得远，但很开心！",
+    ) is False
+
+
+def test_translation_memory_separates_the_same_line_by_context(tmp_path):
+    path = tmp_path / "context-memory.jsonl"
+    memory = TranslationMemory(str(path), auto_save=False)
+    before = ["昨日ギターを買ったんだ。"]
+    after = ["一緒に練習しよう。"]
+    memory.store(
+        "そうなんだ。",
+        "这样啊。",
+        model="fake-sakura",
+        context_before=before,
+        context_after=after,
+    )
+    memory.save()
+
+    reloaded = TranslationMemory(str(path))
+    assert reloaded.lookup("そうなんだ。", before, after) == "这样啊。"
+    assert reloaded.lookup("そうなんだ。", ["雨が降っている。"], after) is None
+    assert reloaded.lookup("そうなんだ。") is None
+    entry = reloaded.lookup_entry("そうなんだ。", before, after)
+    assert entry["context_version"] == 1
+    assert entry["context_before"] == before
+
+
+def test_pipeline_reuses_memory_only_when_neighboring_context_matches(tmp_path):
+    path = tmp_path / "pipeline-context-memory.jsonl"
+    first_adapter = FakeContextAdapter()
+    segments = [
+        {"start": 0, "end": 1, "text": "昨日ギターを買った。"},
+        {"start": 1, "end": 2, "text": "そうなんだ。"},
+        {"start": 2, "end": 3, "text": "一緒に練習しよう。"},
+    ]
+    PipelineTranslator(
+        first_adapter,
+        memory=TranslationMemory(str(path), auto_save=False),
+        context_window=1,
+    ).translate(segments)
+
+    same_context_adapter = FakeContextAdapter()
+    PipelineTranslator(
+        same_context_adapter,
+        memory=TranslationMemory(str(path), auto_save=False),
+        context_window=1,
+    ).translate(segments)
+    assert same_context_adapter.calls == []
+
+    changed_context_adapter = FakeContextAdapter()
+    changed = [dict(item) for item in segments]
+    changed[0]["text"] = "外は雨だ。"
+    PipelineTranslator(
+        changed_context_adapter,
+        memory=TranslationMemory(str(path), auto_save=False),
+        context_window=1,
+    ).translate(changed)
+    requested = [call[0][0] for call in changed_context_adapter.calls]
+    assert "そうなんだ。" in requested
 
 
 def test_sakura_batch_falls_back_to_smaller_requests():

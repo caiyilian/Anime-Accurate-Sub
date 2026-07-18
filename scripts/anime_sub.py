@@ -166,6 +166,7 @@ def translate_segments(segments: list, adapter: TranslatorAdapter,
                         glossary: Glossary = None,
                         translation_memory: TranslationMemory = None,
                         batch_size: int = None,
+                        context_window: int = 3,
                         progress_path: str = "") -> list:
     """Translate ASR segments in validated, resumable batches."""
     print(f"  Translating {len(segments)} segments...")
@@ -176,6 +177,7 @@ def translate_segments(segments: list, adapter: TranslatorAdapter,
         glossary=glossary,
         memory=translation_memory,
         batch_size=batch_size,
+        context_window=context_window,
     )
     return engine.translate(segments, progress_path=progress_path or None)
 
@@ -241,6 +243,7 @@ def process_video(video_path: str, output_dir: str, config: dict,
                    quality_check: bool = False, glossary_path: str = "",
                    translation_memory_path: str = "",
                    translation_batch_size: int = 0,
+                   translation_context_window: int = 3,
                    oped_series: str = "", episode_number: int = 0,
                    oped_ranges: list[str] = None,
                    oped_strict: bool = True,
@@ -466,6 +469,7 @@ def process_video(video_path: str, output_dir: str, config: dict,
                 glossary=glossary,
                 translation_memory=translation_memory,
                 batch_size=translation_batch_size or None,
+                context_window=translation_context_window,
                 progress_path=str(seg_path),
             )
             cp.mark_completed("translate", output_file=str(seg_path),
@@ -687,6 +691,8 @@ Examples:
                         help="Shared translation memory JSONL (defaults to the episode work directory)")
     parser.add_argument("--translation-batch-size", type=int, default=0,
                         help="Lines per translation request (default: backend configuration)")
+    parser.add_argument("--translation-context-window", type=int, default=3,
+                        help="Read-only Japanese lines before/after each subtitle")
     parser.add_argument(
         "--japanese-subtitle",
         type=str,
@@ -750,6 +756,8 @@ Examples:
         parser.error("--japanese-subtitle and --japanese-subtitle-dir are mutually exclusive")
     if args.batch and args.japanese_subtitle:
         parser.error("--japanese-subtitle is only valid for one video; use --japanese-subtitle-dir")
+    if args.translation_context_window < 0:
+        parser.error("--translation-context-window must be >= 0")
 
     load_plugins(args.plugin)
     _ensure_builtin_pipeline_plugins()
@@ -823,6 +831,7 @@ Examples:
             quality_check=args.quality_check, glossary_path=args.glossary,
             translation_memory_path=args.translation_memory,
             translation_batch_size=args.translation_batch_size,
+            translation_context_window=args.translation_context_window,
             oped_series=args.oped_series, episode_number=args.episode_number,
             oped_ranges=args.oped_range,
             oped_strict=not args.oped_best_effort,
@@ -865,6 +874,7 @@ Examples:
                           quality_check=args.quality_check, glossary_path=args.glossary,
                           translation_memory_path=args.translation_memory,
                           translation_batch_size=args.translation_batch_size,
+                          translation_context_window=args.translation_context_window,
                           oped_series=args.oped_series,
                           episode_number=args.episode_number,
                           oped_ranges=args.oped_range,
