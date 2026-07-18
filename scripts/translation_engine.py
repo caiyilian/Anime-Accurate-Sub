@@ -196,11 +196,12 @@ class PipelineTranslator:
         joined = "\n".join(sources)
         # Sending a large unrelated dictionary can make Sakura repeat or emit
         # garbage. Only include terms that occur in this translation batch.
-        return [
+        matches = [
             (source, target)
             for source, target in self.glossary.terms
             if source in joined
         ]
+        return sorted(matches, key=lambda item: len(item[0]), reverse=True)
 
     def _result_model(self, source: str) -> str:
         if hasattr(self.adapter, "result_model"):

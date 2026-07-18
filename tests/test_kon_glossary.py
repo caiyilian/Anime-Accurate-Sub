@@ -20,9 +20,17 @@ def test_kon_glossary_normalizes_common_asr_name_spellings():
     assert glossary.get("リツ") == "律"
     assert glossary.get("のどか") == "和"
     assert glossary.get("ムギ") == "小紬"
+    assert glossary.get("唯ちゃん") == "小唯"
+    assert glossary.get("澪ちゃん") == "小澪"
+    assert glossary.get("りっちゃん") == "小律"
+    assert glossary.get("律ちゃん") == "小律"
+    assert glossary.get("紬ちゃん") == "小紬"
     assert glossary.get("あずさ") == "梓"
+    assert glossary.get("梓ちゃん") == "小梓"
     assert glossary.get("あずにゃん") == "梓喵"
     assert glossary.get("うい") == "忧"
+    assert glossary.get("憂ちゃん") == "小忧"
+    assert glossary.get("和ちゃん") == "小和"
     assert glossary.get("純ちゃん") == "小纯"
     assert glossary.get("さわちゃん") == "小佐和"
 
@@ -52,3 +60,14 @@ def test_only_aliases_present_in_the_batch_are_injected():
     assert ("秋山", "秋山") in terms
     assert ("美桜", "澪") in terms
     assert ("タイナカ", "田井中") not in terms
+
+
+def test_specific_honorific_alias_precedes_its_short_name():
+    glossary = Glossary(str(GLOSSARY_PATH))
+    engine = PipelineTranslator(adapter=object(), glossary=glossary)
+
+    terms = engine._matching_glossary_terms(["唯ちゃん、おはよう"])
+
+    assert ("唯ちゃん", "小唯") in terms
+    assert ("唯", "唯") in terms
+    assert terms.index(("唯ちゃん", "小唯")) < terms.index(("唯", "唯"))
