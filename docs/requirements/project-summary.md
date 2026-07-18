@@ -92,7 +92,7 @@
 - [ ] **术语表系统（Glossary）** — 用户自定义角色名/招式名/地名翻译映射。参考 SakuraLLM GPT 字典格式
 - [ ] **翻译记忆库（Translation Memory）** — JSONL 双层缓存，相同台词自动复用。参考 SubForge MAPS + JAVTrans
 - [ ] **OP/ED 自动检测与跳过** — 自动识别片头片尾，避免 ASR 识别歌词。参考 SenseVoice 音频事件分类 / AniChapters
-- [ ] **多 Agent 脚本审查** — 5 个 Agent 并行审查字幕一致性/逻辑/翻译自然度/ASR 纠错，总编 Agent 汇总修正，目标 95%+ 自动修正
+- [x] **多 Agent 脚本审查** — 5 个角色并行审查字幕，总编在全员成功、达到投票和置信度门槛时才自动修正；支持 SenseNova 六账号轮询与完整审计
 
 ### 阶段 2：体验完善
 
@@ -216,7 +216,7 @@
 
 ### 6.1 多 Agent 脚本审查的实现策略
 
-**不引入 CrewAI/LangGraph 等框架**。5 个审查 Agent 各自独立，只是用不同 prompt 调同一个 Ollama 模型，用 `concurrent.futures.ThreadPoolExecutor` 并行执行，总编 Agent 汇总冲突。
+**不引入 CrewAI/LangGraph 等框架**。5 个审查角色各自独立，通过不同 prompt 调用可配置的 Ollama 或 OpenAI-compatible 模型，用 `concurrent.futures.ThreadPoolExecutor` 并行执行，总编汇总冲突。生产配置以 4:1 比例使用 SenseNova Flash Lite 与 DeepSeek Flash，并在六个账号间轮询。只有全部角色成功、修正票和置信度均达到门槛时才自动替换。
 
 ### 6.2 零额外依赖优先
 
@@ -248,4 +248,4 @@
 4. **是否有更轻量的翻译方案** — 6GB 以下显存能否跑出可用的翻译质量？
 5. **ASS 字幕的 CJK 字体最佳实践** — 中文字幕推荐字体、字号、描边参数
 6. **批量处理多集时的效率优化** — 模型加载/卸载策略
-7. **多 Agent 审查的准确性验证** — 这 5 个 Agent 实际跑起来效果如何？有没有 benchmark？
+7. **多 Agent 审查的整季收益验证** — 单句错误注入已验证能拦截；仍需在启用外挂日文字幕优先后，对 14 集做盲评并量化净收益与误改率。
