@@ -521,11 +521,12 @@ class OllamaAdapter(TranslatorAdapter):
     @staticmethod
     def _matching_terms(texts: Sequence[str], glossary_terms=None) -> list[tuple[str, str]]:
         joined = "\n".join(texts)
-        return [
+        matches = [
             (source, target)
             for source, target in (glossary_terms or [])
             if source in joined
         ]
+        return sorted(matches, key=lambda item: len(item[0]), reverse=True)
 
     def translate(self, text, context_before=None, context_after=None):
         return self.translate_batch(
