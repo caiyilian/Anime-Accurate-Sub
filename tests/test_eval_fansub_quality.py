@@ -1,11 +1,32 @@
 from scripts.eval_fansub_quality import (
     Segment,
+    _discover_prediction_files,
     align_segments,
     asr_health,
     char_f1,
     chrf,
     clean_subtitle_text,
 )
+
+
+def test_discovery_prefers_the_most_reviewed_episode_output(tmp_path):
+    episode1 = tmp_path / "episode01"
+    episode2 = tmp_path / "episode02"
+    episode3 = tmp_path / "episode03"
+    for episode in (episode1, episode2, episode3):
+        episode.mkdir()
+        (episode / "translated.json").write_text("[]", encoding="utf-8")
+    (episode1 / "reviewed.json").write_text("[]", encoding="utf-8")
+    (episode1 / "mqm_reviewed.json").write_text("[]", encoding="utf-8")
+    (episode2 / "reviewed.json").write_text("[]", encoding="utf-8")
+
+    discovered = _discover_prediction_files(tmp_path)
+
+    assert discovered == [
+        episode1 / "mqm_reviewed.json",
+        episode2 / "reviewed.json",
+        episode3 / "translated.json",
+    ]
 
 
 def test_clean_subtitle_text_removes_ass_markup():

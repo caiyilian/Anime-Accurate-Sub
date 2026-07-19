@@ -278,7 +278,17 @@ def evaluate_episode(
 
 
 def _discover_prediction_files(root: Path) -> list[Path]:
-    direct = sorted(root.glob("*/translated.json"))
+    if not root.exists():
+        return []
+
+    direct = []
+    prediction_names = ("mqm_reviewed.json", "reviewed.json", "translated.json")
+    for episode_dir in sorted(path for path in root.iterdir() if path.is_dir()):
+        for name in prediction_names:
+            candidate = episode_dir / name
+            if candidate.exists():
+                direct.append(candidate)
+                break
     if direct:
         return direct
     return sorted(root.glob("*.json"))
