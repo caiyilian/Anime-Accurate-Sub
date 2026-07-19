@@ -186,6 +186,32 @@ def check_suspicious_patterns(segments: List[SubSegment]) -> List[QualityIssue]:
     return issues
 
 
+def _is_kana_character(char: str) -> bool:
+    """Return whether one character belongs to the Japanese kana scripts."""
+    return (
+        "\u3041" <= char <= "\u3096"
+        or "\u30a1" <= char <= "\u30fa"
+        or char in {"\u30fc", "\u309d", "\u309e", "\u30fd", "\u30fe"}
+    )
+
+
+def _has_glossary_occurrence(text: str, term: str) -> bool:
+    """Match short kana terms only at a conservative left word boundary."""
+    if len(term) <= 1:
+        return False
+    if len(term) > 2 or not all(_is_kana_character(char) for char in term):
+        return term in text
+
+    start = 0
+    while True:
+        index = text.find(term, start)
+        if index < 0:
+            return False
+        if index == 0 or not _is_kana_character(text[index - 1]):
+            return True
+        start = index + 1
+
+
 def check_term_consistency(segments: List[SubSegment],
                             glossary_path: Optional[str] = None) -> List[QualityIssue]:
     issues = []
@@ -202,14 +228,12 @@ def check_term_consistency(segments: List[SubSegment],
         if not seg.ja or not seg.text:
             continue
         for ja_term, zh_term in terms.items():
-            if ja_term in seg.ja and zh_term not in seg.text:
-                # Check if the translation contains a similar term
-                if len(ja_term) > 1:  # Skip single-char terms (too many false positives)
-                    issues.append(QualityIssue(
-                        rule="term_inconsistency", severity="warning",
-                        segment_index=seg.index,
-                        message=f"Term '{ja_term}' should be '{zh_term}' but not found in translation",
-                    ))
+            if _has_glossary_occurrence(seg.ja, ja_term) and zh_term not in seg.text:
+                issues.append(QualityIssue(
+                    rule="term_inconsistency", severity="warning",
+                    segment_index=seg.index,
+                    message=f"Term '{ja_term}' should be '{zh_term}' but not found in translation",
+                ))
     return issues
 
 
