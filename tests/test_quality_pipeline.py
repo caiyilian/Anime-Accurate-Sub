@@ -2,7 +2,11 @@ import json
 
 from scripts.anime_sub import PIPELINE_STAGES, process_video
 from scripts.checkpoint import Checkpoint
-from scripts.quality_check import generate_report, segments_from_dicts
+from scripts.quality_check import (
+    check_term_consistency,
+    generate_report,
+    segments_from_dicts,
+)
 
 
 def _translated_items():
@@ -64,6 +68,38 @@ def test_quality_report_flags_translation_fallback(tmp_path):
     assert len(fallback) == 1
     assert fallback[0]["translation_model"] == "crosery/GalTransl-7B-v2.6:Q6_k"
     assert fallback[0]["translation_fallback"] is True
+
+
+def test_short_kana_glossary_requires_a_left_boundary(tmp_path):
+    glossary = tmp_path / "glossary.json"
+    glossary.write_text(
+        json.dumps({"terms": [{"ja": "\u3046\u3044", "zh": "\u5fe7"}]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    segments = segments_from_dicts([
+        {
+            "start": 0.0,
+            "end": 1.0,
+            "ja": "\u305d\u3046\u3044\u3046\u554f\u984c\u3058\u3083\u306d\u3048",
+            "text": "\u95ee\u9898\u4e0d\u5728\u8fd9\u91cc",
+        },
+        {
+            "start": 1.0,
+            "end": 2.0,
+            "ja": "\u3046\u3044\u3061\u3083\u3093 \u304a\u306f\u3088\u3046",
+            "text": "\u65e9\u4e0a\u597d",
+        },
+        {
+            "start": 2.0,
+            "end": 3.0,
+            "ja": "\u5e73\u6ca2\u3046\u3044\u3067\u3059",
+            "text": "\u6211\u662f\u5e73\u6cfd\u5fe7",
+        },
+    ])
+
+    issues = check_term_consistency(segments, str(glossary))
+
+    assert [issue.segment_index for issue in issues] == [1]
 
 
 def test_main_pipeline_quality_stage_reads_translated_json(tmp_path):
