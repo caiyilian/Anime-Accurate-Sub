@@ -23,10 +23,12 @@ from scripts.proofread import (
     build_proofread_sheet,
     regenerate_subtitles,
 )
+from scripts.season_monitor import MONITOR_HTML, SeasonProgressMonitor
 from scripts.video_preview import PreviewOptions, render_preview as render_video_preview
 
 
 DEFAULT_JOB_ROOT = PROJECT_ROOT / ".omo" / "web_jobs"
+DEFAULT_SEASON_ROOT = PROJECT_ROOT / ".omo" / "season_v6_quality"
 ALLOWED_BACKENDS = {"sakura", "galtransl", "qwen", "external"}
 ALLOWED_VIDEO_EXTENSIONS = {
     ".avi",
@@ -549,7 +551,11 @@ const jobId='__JOB_ID__',button=document.querySelector('#render'),message=docume
 </script></body></html>"""
 
 
-def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
+def create_app(
+    job_root: str | Path = DEFAULT_JOB_ROOT,
+    season_root: str | Path = DEFAULT_SEASON_ROOT,
+    season_episode_count: int = 14,
+):
     """Create the FastAPI application; Web dependencies remain optional."""
     try:
         from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -561,7 +567,9 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
 
     app = FastAPI(title="Anime Accurate Sub", version="0.1.0")
     manager = JobManager(job_root)
+    season_monitor = SeasonProgressMonitor(season_root, season_episode_count)
     app.state.job_manager = manager
+    app.state.season_monitor = season_monitor
 
     @app.get("/", response_class=HTMLResponse)
     def index():
@@ -570,6 +578,14 @@ def create_app(job_root: str | Path = DEFAULT_JOB_ROOT):
     @app.get("/api/health")
     def health():
         return {"status": "ok"}
+
+    @app.get("/monitor", response_class=HTMLResponse)
+    def monitor_page():
+        return MONITOR_HTML
+
+    @app.get("/api/monitor")
+    def monitor_progress():
+        return season_monitor.snapshot()
 
     @app.get("/api/jobs")
     def list_jobs():
@@ -711,12 +727,18 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--job-root", default=str(DEFAULT_JOB_ROOT))
+    parser.add_argument("--season-root", default=str(DEFAULT_SEASON_ROOT))
+    parser.add_argument("--season-episodes", type=int, default=14)
     args = parser.parse_args()
     try:
         import uvicorn
     except ImportError as error:
         raise SystemExit("Web UI 依赖未安装，请运行：pip install -e .[web]") from error
-    uvicorn.run(create_app(args.job_root), host=args.host, port=args.port)
+    uvicorn.run(
+        create_app(args.job_root, args.season_root, args.season_episodes),
+        host=args.host,
+        port=args.port,
+    )
 
 
 if __name__ == "__main__":
