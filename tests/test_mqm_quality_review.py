@@ -142,6 +142,46 @@ def test_dual_judges_editor_and_dual_rescore_apply_only_proven_improvement():
     assert calls.count("flash-editor") == 1
 
 
+def test_rescore_context_replaces_the_original_target_translation():
+    segment = {"ja": "私は猫です。", "text": "错误译文"}
+    context = _context([segment], 0, 1)
+    judge_prompts = []
+
+    def chat(messages, **kwargs):
+        system = messages[0]["content"]
+        prompt = messages[1]["content"]
+        if "质量总编" in system:
+            return _response(
+                {
+                    "decision": "revise",
+                    "corrected_zh": "修订译文",
+                    "reason": "修正语义错误",
+                    "confidence": 0.98,
+                }
+            )
+        judge_prompts.append(prompt)
+        if "目标中文：修订译文" in prompt:
+            return _response(_judge_payload(score=94))
+        return _response(
+            _judge_payload(
+                recommendation="revise",
+                score=20,
+                suggested_zh="修订译文",
+                severity="critical",
+            )
+        )
+
+    result = review_segment(0, segment, context, "", _config(), chat)
+    rescore_prompts = [
+        prompt for prompt in judge_prompts if "目标中文：修订译文" in prompt
+    ]
+
+    assert result["status"] == "corrected"
+    assert len(rescore_prompts) == 2
+    assert all("[目标 0] 中文：修订译文" in prompt for prompt in rescore_prompts)
+    assert all("[目标 0] 中文：错误译文" not in prompt for prompt in rescore_prompts)
+
+
 def test_flash_judge_uses_distinct_glm_fallback_after_retries_fail():
     calls = []
 
