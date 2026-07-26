@@ -47,7 +47,7 @@ MQM_DIMENSIONS = {
 }
 SEVERITIES = {"none", "minor", "major", "critical"}
 RECOMMENDATIONS = {"keep", "revise"}
-PROMPT_VERSION = "gemba-mqm-dual-judge-v2"
+PROMPT_VERSION = "gemba-mqm-dual-judge-v3"
 MAX_INCOMPLETE_PASSES = 3
 
 
@@ -324,6 +324,15 @@ def _context(segments: list[dict], position: int, window: int) -> str:
             f"[{marker} {index}] 中文：{_segment_text(segments[index])}"
         )
     return "\n".join(lines)
+
+
+def _context_with_target_translation(context: str, position: int, text: str) -> str:
+    """Keep the target line in rescore context consistent with the candidate."""
+    prefix = f"[目标 {position}] 中文："
+    return "\n".join(
+        f"{prefix}{text}" if line.startswith(prefix) else line
+        for line in context.splitlines()
+    )
 
 
 def _segment_key(
@@ -649,7 +658,12 @@ def review_segment(
         ):
             candidate = dict(segment)
             candidate["text"] = editor["corrected_zh"]
-            rescored = _run_judges(candidate, context, glossary, config, chat_fn)
+            rescore_context = _context_with_target_translation(
+                context, position, editor["corrected_zh"]
+            )
+            rescored = _run_judges(
+                candidate, rescore_context, glossary, config, chat_fn
+            )
 
     rescore_errors = [judge for judge in rescored if judge.get("status") != "ok"]
     final_score = min(
