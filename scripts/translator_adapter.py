@@ -461,7 +461,36 @@ class OllamaAdapter(TranslatorAdapter):
                 "content": self._user_prompt(prompt_texts, glossary_terms),
             },
         ]
-        raw = self._call(messages, num_predict=min(4096, max(512, len(texts) * 128)))
+        try:
+            raw = self._call(
+                messages,
+                num_predict=min(4096, max(512, len(texts) * 128)),
+            )
+        except Exception as error:
+            if len(texts) == 1:
+                return [
+                    self._fallback_invalid_single(
+                        texts[0],
+                        glossary_terms,
+                        f"primary translation request failed: {error}",
+                        context_before=context_before,
+                        context_after=context_after,
+                    )
+                ]
+            # A batch-level transport failure may be request-size-specific. Split
+            # it before allowing each individual line to use its fallback chain.
+            middle = len(texts) // 2
+            return self.translate_batch(
+                texts[:middle],
+                glossary_terms,
+                context_before=context_before,
+                context_after=texts[middle:] + list(context_after or []),
+            ) + self.translate_batch(
+                texts[middle:],
+                glossary_terms,
+                context_before=list(context_before or []) + texts[:middle],
+                context_after=context_after,
+            )
         translated = (
             self._parse_tagged_lines(raw, len(texts))
             if tagged_batch
@@ -529,7 +558,15 @@ class OllamaAdapter(TranslatorAdapter):
                     ),
                 },
             ]
-            last_raw = self._call(messages, num_predict=256)
+            try:
+                last_raw = self._call(messages, num_predict=256)
+            except Exception as error:
+                last_raw = (
+                    f"validation retry {attempt}/{self.validation_retries} "
+                    f"request failed: {error}"
+                )
+                print(f"  Translation {last_raw}")
+                break
             parsed = self._parse_lines(last_raw, 1)
             if parsed and self._valid_translation(source, parsed[0]):
                 self._translation_models[source] = self.model
