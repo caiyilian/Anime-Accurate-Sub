@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import inspect
+import json
 from pathlib import Path
 from typing import Sequence
 
@@ -90,6 +90,7 @@ class PipelineTranslator:
                         )
                     model = self._result_model(source)
                     fallback = self._result_is_fallback(source)
+                    error = self._result_error(source)
                     output[index] = self._result(
                         segment,
                         source,
@@ -97,8 +98,9 @@ class PipelineTranslator:
                         cached=False,
                         model=model,
                         fallback=fallback,
+                        error=error,
                     )
-                    if self.memory:
+                    if self.memory and not error:
                         self.memory.store(
                             source,
                             translated[0],
@@ -147,6 +149,7 @@ class PipelineTranslator:
                         segment = segments[index]
                         model = self._result_model(source)
                         fallback = self._result_is_fallback(source)
+                        error = self._result_error(source)
                         output[index] = self._result(
                             segment,
                             source,
@@ -154,8 +157,9 @@ class PipelineTranslator:
                             cached=False,
                             model=model,
                             fallback=fallback,
+                            error=error,
                         )
-                        if self.memory:
+                        if self.memory and not error:
                             self.memory.store(
                                 source,
                                 target,
@@ -225,6 +229,11 @@ class PipelineTranslator:
             return bool(self.adapter.result_is_fallback(source))
         return False
 
+    def _result_error(self, source: str) -> str | None:
+        if hasattr(self.adapter, "result_error"):
+            return self.adapter.result_error(source)
+        return None
+
     def _result(
         self,
         segment: dict,
@@ -233,6 +242,7 @@ class PipelineTranslator:
         cached: bool,
         model: str | None = None,
         fallback: bool = False,
+        error: str | None = None,
     ) -> dict:
         model = model or self._result_model(source)
         result = {
@@ -244,6 +254,8 @@ class PipelineTranslator:
             "translation_cached": cached,
             "translation_fallback": fallback,
         }
+        if error:
+            result["translation_error"] = error
         if "confidence" in segment:
             result["asr_confidence"] = segment["confidence"]
         if segment.get("speaker"):
