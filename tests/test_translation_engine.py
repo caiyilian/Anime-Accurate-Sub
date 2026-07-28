@@ -289,6 +289,55 @@ def test_invalid_single_line_uses_configured_galtransl_fallback():
     assert adapter.result_is_fallback("――あ!……") is True
 
 
+def test_sakura_transport_error_uses_configured_galtransl_fallback():
+    adapter = SakuraAdapter(DEFAULT_CONFIG)
+    fallback = FakeFallbackAdapter(target="啊——！")
+    adapter.fallback_adapter = fallback
+    adapter._call = lambda *args, **kwargs: (_ for _ in ()).throw(
+        RuntimeError("HTTP Error 500")
+    )
+
+    assert adapter.translate_batch(["ああーッ！"]) == ["啊——！"]
+    assert fallback.calls == [(["ああーッ！"], [])]
+    assert adapter.result_model("ああーッ！") == "fake-galtransl"
+    assert adapter.result_is_fallback("ああーッ！") is True
+
+
+def test_sakura_transport_and_galtransl_errors_use_sensenova_rescue(monkeypatch):
+    adapter = SakuraAdapter(
+        {
+            "sakura": {
+                "model": "fake-sakura",
+                "host": "localhost",
+                "validation_rescue_models": ["sensenova-test"],
+                "validation_rescue_base_url": "https://example.invalid/v1",
+                "validation_rescue_api_key_file": "unused-keys",
+                "validation_rescue_attempts": 1,
+            }
+        }
+    )
+
+    class BrokenFallback:
+        series_info = ""
+
+        def translate_batch(self, texts, glossary_terms=None):
+            raise RuntimeError("GalTransl HTTP Error 500")
+
+    adapter.fallback_adapter = BrokenFallback()
+    adapter._call = lambda *args, **kwargs: (_ for _ in ()).throw(
+        RuntimeError("Sakura HTTP Error 500")
+    )
+    monkeypatch.setattr(
+        "scripts.review_agents.model_chat",
+        lambda *args, **kwargs: "啊——！",
+    )
+
+    assert adapter.translate_batch(["ああーッ！"]) == ["啊——！"]
+    assert adapter.result_model("ああーッ！") == "sensenova-test"
+    assert adapter.result_is_fallback("ああーッ！") is True
+    assert adapter.result_error("ああーッ！") is None
+
+
 def test_invalid_local_models_use_sensenova_rescue(monkeypatch):
     adapter = SakuraAdapter(
         {
