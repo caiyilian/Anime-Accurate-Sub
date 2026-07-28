@@ -289,6 +289,83 @@ def test_invalid_single_line_uses_configured_galtransl_fallback():
     assert adapter.result_is_fallback("――あ!……") is True
 
 
+def test_invalid_local_models_use_sensenova_rescue(monkeypatch):
+    adapter = SakuraAdapter(
+        {
+            "sakura": {
+                "model": "fake-sakura",
+                "host": "localhost",
+                "validation_retries": 1,
+                "validation_rescue_models": ["sensenova-test"],
+                "validation_rescue_base_url": "https://example.invalid/v1",
+                "validation_rescue_api_key_file": "unused-keys",
+                "validation_rescue_attempts": 2,
+            }
+        }
+    )
+
+    class BrokenFallback:
+        series_info = ""
+
+        def translate_batch(self, texts, glossary_terms=None):
+            raise RuntimeError("invalid GalTransl response")
+
+    calls = []
+
+    def fake_model_chat(messages, **kwargs):
+        calls.append((messages, kwargs))
+        return "对不起！"
+
+    adapter.fallback_adapter = BrokenFallback()
+    adapter._call = lambda *args, **kwargs: "对不起……对不起……对不起……对不起……"
+    monkeypatch.setattr("scripts.review_agents.model_chat", fake_model_chat)
+
+    assert adapter.translate_batch(["すみません！"]) == ["对不起！"]
+    assert adapter.result_model("すみません！") == "sensenova-test"
+    assert adapter.result_is_fallback("すみません！") is True
+    assert adapter.result_error("すみません！") is None
+    assert len(calls) == 1
+    assert calls[0][1]["json_mode"] is False
+
+
+def test_total_model_failure_is_quarantined_and_not_cached(tmp_path):
+    adapter = SakuraAdapter(
+        {
+            "sakura": {
+                "model": "fake-sakura",
+                "host": "localhost",
+                "validation_retries": 1,
+                "validation_rescue_models": [],
+                "validation_quarantine_on_failure": True,
+            }
+        }
+    )
+
+    class BrokenFallback:
+        series_info = ""
+
+        def translate_batch(self, texts, glossary_terms=None):
+            raise RuntimeError("invalid GalTransl response")
+
+    source = "すみません！"
+    adapter.fallback_adapter = BrokenFallback()
+    adapter._call = lambda *args, **kwargs: "对不起……对不起……对不起……对不起……"
+    memory = TranslationMemory(str(tmp_path / "quarantine-memory.jsonl"), auto_save=False)
+    progress = tmp_path / "translated.json"
+
+    result = PipelineTranslator(adapter, memory=memory).translate(
+        [{"start": 0.0, "end": 1.0, "text": source}],
+        progress_path=progress,
+    )
+
+    assert result[0]["text"] == source
+    assert result[0]["translation_model"] == "untranslated-source-quarantine"
+    assert result[0]["translation_fallback"] is True
+    assert "SenseNova rescue all failed" in result[0]["translation_error"]
+    assert memory.lookup_entry(source) is None
+    assert json.loads(progress.read_text(encoding="utf-8"))[0]["translation_error"]
+
+
 def test_pipeline_persists_fallback_model_provenance(tmp_path):
     adapter = SakuraAdapter(DEFAULT_CONFIG)
     adapter.fallback_adapter = FakeFallbackAdapter(target="啊！")
@@ -299,9 +376,9 @@ def test_pipeline_persists_fallback_model_provenance(tmp_path):
     segments = [{"start": 0, "end": 1, "text": "――あ!……"}]
 
     first = PipelineTranslator(adapter, memory=memory).translate(segments)
-    second = PipelineTranslator(FakeAdapter(), memory=TranslationMemory(str(memory_path))).translate(
-        segments
-    )
+    second = PipelineTranslator(
+        FakeAdapter(), memory=TranslationMemory(str(memory_path))
+    ).translate(segments)
 
     assert first[0]["translation_model"] == "fake-galtransl"
     assert first[0]["translation_fallback"] is True

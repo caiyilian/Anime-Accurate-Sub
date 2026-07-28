@@ -22,14 +22,24 @@
 #   python scripts/translator_adapter.py --list-backends
 #   python scripts/translator_adapter.py --evaluate
 
-import json, os, sys, time, argparse, urllib.request, urllib.error, abc, inspect, re, socket, unicodedata
+import abc
+import argparse
+import inspect
+import json
+import re
+import socket
+import sys
+import time
+import unicodedata
+import urllib.error
+import urllib.request
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Sequence
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.plugin_system import load_plugins, plugin_registry
+from scripts.plugin_system import load_plugins, plugin_registry  # noqa: E402
 
 DEFAULT_CONFIG = {
     "backend": "sakura",
@@ -40,6 +50,14 @@ DEFAULT_CONFIG = {
         "max_retries": 4,
         "validation_retries": 2,
         "validation_fallback_backend": "galtransl",
+        "validation_rescue_models": [
+            "sensenova-6.7-flash-lite",
+            "deepseek-v4-flash",
+        ],
+        "validation_rescue_base_url": "https://token.sensenova.cn/v1",
+        "validation_rescue_api_key_file": "config/sensenova_apikeys",
+        "validation_rescue_attempts": 2,
+        "validation_quarantine_on_failure": True,
         "batch_size": 16,
         "num_ctx": 4096,
         "temperature": 0.1,
@@ -110,6 +128,7 @@ class TranslatorAdapter(abc.ABC):
         self.series_info = ""
         self._translation_models: dict[str, str] = {}
         self._translation_fallbacks: dict[str, bool] = {}
+        self._translation_errors: dict[str, str] = {}
 
     @abc.abstractmethod
     def translate(self, text: str, context_before=None, context_after=None) -> str:
@@ -145,6 +164,10 @@ class TranslatorAdapter(abc.ABC):
 
     def result_is_fallback(self, source: str) -> bool:
         return self._translation_fallbacks.get(source, False)
+
+    def result_error(self, source: str) -> str | None:
+        """Return a terminal recovery error when a line was quarantined."""
+        return self._translation_errors.get(source)
 
     @abc.abstractmethod
     def name(self) -> str:
@@ -560,13 +583,100 @@ class OllamaAdapter(TranslatorAdapter):
 class SakuraAdapter(OllamaAdapter):
     def __init__(self, config: dict):
         super().__init__(config, "sakura")
-        fallback_name = config.get("sakura", {}).get(
+        sakura_config = config.get("sakura", {})
+        fallback_name = sakura_config.get(
             "validation_fallback_backend", "galtransl"
         )
         fallback_config = config.get(fallback_name, {})
         self.fallback_adapter = None
         if fallback_name == "galtransl" and fallback_config.get("model"):
             self.fallback_adapter = GalTranslAdapter(config)
+        self.rescue_models = tuple(sakura_config.get("validation_rescue_models", []))
+        self.rescue_base_url = str(
+            sakura_config.get("validation_rescue_base_url", "")
+        ).rstrip("/")
+        self.rescue_api_key_file = str(
+            sakura_config.get("validation_rescue_api_key_file", "")
+        )
+        self.rescue_attempts = max(
+            1, int(sakura_config.get("validation_rescue_attempts", 2))
+        )
+        self.quarantine_on_failure = bool(
+            sakura_config.get("validation_quarantine_on_failure", True)
+        )
+
+    def _rescue_invalid_single(
+        self,
+        source: str,
+        glossary_terms,
+        context_before=None,
+        context_after=None,
+    ) -> str | None:
+        """Use the rotating SenseNova accounts only after both local models fail."""
+        if not self.rescue_models or not self.rescue_base_url:
+            return None
+        # Import lazily so local-only translation has no review-provider dependency.
+        from scripts.review_agents import model_chat
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    self._system_prompt(self.series_info)
+                    + self._context_block(context_before, context_after)
+                    + "\n本地翻译模型未通过校验。只输出一行简洁准确的简体中文译文；"
+                    "禁止解释、引号包裹、重复或输出日文。"
+                ),
+            },
+            {
+                "role": "user",
+                "content": self._user_prompt([source], glossary_terms),
+            },
+        ]
+        for model in self.rescue_models:
+            for attempt in range(1, self.rescue_attempts + 1):
+                try:
+                    raw = model_chat(
+                        messages,
+                        provider="openai",
+                        base_url=self.rescue_base_url,
+                        api_key_file=self.rescue_api_key_file,
+                        model=model,
+                        json_mode=False,
+                        temperature=0.1,
+                        timeout_s=self.timeout_s,
+                    )
+                except Exception as error:
+                    print(
+                        f"  Translation rescue {model} failed "
+                        f"({attempt}/{self.rescue_attempts}): {error}"
+                    )
+                    continue
+                parsed = self._parse_lines(raw, 1)
+                if parsed and self._valid_translation(source, parsed[0]):
+                    self._translation_models[source] = model
+                    self._translation_fallbacks[source] = True
+                    self._translation_errors.pop(source, None)
+                    print(f"  Translation validation rescue: {self.model} -> {model}")
+                    return parsed[0]
+                print(
+                    f"  Translation rescue {model} returned invalid output "
+                    f"({attempt}/{self.rescue_attempts})"
+                )
+        return None
+
+    def _quarantine_invalid_single(self, source: str, reason: str) -> str:
+        """Preserve a failed line for downstream AI review without poisoning TM."""
+        if not self.quarantine_on_failure:
+            raise RuntimeError(reason)
+        self._translation_models[source] = "untranslated-source-quarantine"
+        self._translation_fallbacks[source] = True
+        self._translation_errors[source] = reason[:1000]
+        print(
+            "  WARNING: translation quarantined for multi-agent/MQM review: "
+            f"{source[:80]}"
+        )
+        return source
 
     def _fallback_invalid_single(
         self,
@@ -576,35 +686,43 @@ class SakuraAdapter(OllamaAdapter):
         context_before=None,
         context_after=None,
     ) -> str:
-        if self.fallback_adapter is None:
-            return super()._fallback_invalid_single(
-                source,
-                glossary_terms,
-                raw,
-                context_before=context_before,
-                context_after=context_after,
-            )
-        self.fallback_adapter.series_info = self.series_info
-        try:
-            target = _call_batch_with_optional_context(
-                self.fallback_adapter,
-                [source],
-                glossary_terms,
-                context_before=context_before,
-                context_after=context_after,
-            )[0]
-        except Exception as error:
-            raise RuntimeError(
-                "Sakura validation retries and configured GalTransl fallback both failed: "
-                f"{error}"
-            ) from error
-        self._translation_models[source] = self.fallback_adapter.result_model(source)
-        self._translation_fallbacks[source] = True
-        print(
-            f"  Translation validation fallback: {self.model} -> "
-            f"{self._translation_models[source]}"
+        fallback_error = "configured GalTransl fallback is unavailable"
+        if self.fallback_adapter is not None:
+            self.fallback_adapter.series_info = self.series_info
+            try:
+                target = _call_batch_with_optional_context(
+                    self.fallback_adapter,
+                    [source],
+                    glossary_terms,
+                    context_before=context_before,
+                    context_after=context_after,
+                )[0]
+            except Exception as error:
+                fallback_error = str(error)
+            else:
+                self._translation_models[source] = self.fallback_adapter.result_model(source)
+                self._translation_fallbacks[source] = True
+                self._translation_errors.pop(source, None)
+                print(
+                    f"  Translation validation fallback: {self.model} -> "
+                    f"{self._translation_models[source]}"
+                )
+                return target
+
+        rescued = self._rescue_invalid_single(
+            source,
+            glossary_terms,
+            context_before=context_before,
+            context_after=context_after,
         )
-        return target
+        if rescued is not None:
+            return rescued
+        reason = (
+            "Sakura validation retries, configured GalTransl fallback, and "
+            f"SenseNova rescue all failed; GalTransl error: {fallback_error}; "
+            f"last Sakura output: {raw[:200]}"
+        )
+        return self._quarantine_invalid_single(source, reason)
 
     def name(self):
         return f"Sakura ({self.model})"
