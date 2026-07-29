@@ -36,6 +36,17 @@ def test_season_monitor_reports_weighted_review_progress_and_redacts_logs(tmp_pa
         {"summary": {"approved": 9, "corrected": 1, "needs_review": 2, "errors": 0, "applied": 1}},
     )
     _write_json(
+        episode1 / "final_adjudication_summary.json",
+        {
+            "summary": {
+                "reviewed": 4,
+                "resolved_needs_review": 2,
+                "needs_review_kept": 1,
+                "needs_review_revised": 1,
+            }
+        },
+    )
+    _write_json(
         episode2 / "checkpoint.json",
         {
             "japanese_subtitle": {"status": "completed"},
@@ -75,7 +86,11 @@ def test_season_monitor_reports_weighted_review_progress_and_redacts_logs(tmp_pa
     }
     assert "secret-token" not in snapshot["log_tail"]
     assert "verysecret" not in snapshot["log_tail"]
-    assert snapshot["episodes"][0]["quality"]["mqm"]["corrected"] == 1
+    final_mqm = snapshot["episodes"][0]["quality"]["mqm"]
+    assert final_mqm["approved"] == 10
+    assert final_mqm["corrected"] == 2
+    assert final_mqm["needs_review"] == 0
+    assert final_mqm["final_reviewed"] == 4
 
 
 def test_season_monitor_marks_old_artifacts_as_stale(tmp_path):
