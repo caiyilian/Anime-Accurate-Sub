@@ -608,17 +608,27 @@ def apply_report(report: dict[str, Any], *, min_confidence: float) -> dict[str, 
     applied = 0
     annotated = 0
     files = []
+    summary_files = []
     for episode_dir, cases in grouped.items():
         path = episode_dir / "mqm_reviewed.json"
         items = _read_json(path)
         changed = False
+        episode_applied = 0
         for case in cases:
             item = items[int(case["index"])]
             if str(item.get("ja", "")) != str(case["ja"]):
                 raise ValueError(f"Stale source at {path}:{case['index']}")
-            if str(item.get("text", "")) != str(case["current_zh"]):
-                raise ValueError(f"Stale translation at {path}:{case['index']}")
             decision = case["result"]["adjudication"]
+            should_revise = (
+                decision["decision"] == "revise"
+                and decision["confidence"] >= min_confidence
+                and decision["corrected_zh"] != case["current_zh"]
+            )
+            valid_translations = {str(case["current_zh"])}
+            if decision["decision"] == "revise" and decision.get("corrected_zh"):
+                valid_translations.add(str(decision["corrected_zh"]))
+            if str(item.get("text", "")) not in valid_translations:
+                raise ValueError(f"Stale translation at {path}:{case['index']}")
             item["final_adjudication"] = {
                 "decision": decision["decision"],
                 "confidence": decision["confidence"],
@@ -627,13 +637,10 @@ def apply_report(report: dict[str, Any], *, min_confidence: float) -> dict[str, 
                 "model": decision["model"],
             }
             annotated += 1
-            if (
-                decision["decision"] == "revise"
-                and decision["confidence"] >= min_confidence
-                and decision["corrected_zh"] != item.get("text")
-            ):
+            if should_revise and decision["corrected_zh"] != item.get("text"):
                 item["text"] = decision["corrected_zh"]
                 applied += 1
+                episode_applied += 1
             changed = True
         if changed:
             backup = path.with_suffix(f".before-final-adjudication{path.suffix}")
@@ -645,21 +652,100 @@ def apply_report(report: dict[str, Any], *, min_confidence: float) -> dict[str, 
             )
             temporary.replace(path)
             files.append(str(path))
-    return {"annotated": annotated, "applied": applied, "files": files}
+
+        needs_review_cases = [
+            case
+            for case in cases
+            if case.get("selection") == "needs_review"
+            and case["result"]["adjudication"]["confidence"] >= min_confidence
+        ]
+        needs_review_revised = sum(
+            case["result"]["adjudication"]["decision"] == "revise"
+            for case in needs_review_cases
+        )
+        applicable_revisions = sum(
+            case["result"]["adjudication"]["decision"] == "revise"
+            and case["result"]["adjudication"]["confidence"] >= min_confidence
+            and case["result"]["adjudication"]["corrected_zh"] != case["current_zh"]
+            for case in cases
+        )
+        final_summary = {
+            "schema": "fansub-final-adjudication-summary-v1",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": {
+                "reviewed": len(cases),
+                "resolved_needs_review": len(needs_review_cases),
+                "needs_review_kept": len(needs_review_cases) - needs_review_revised,
+                "needs_review_revised": needs_review_revised,
+                "applied_revisions": applicable_revisions,
+                "changed_this_run": episode_applied,
+            },
+        }
+        summary_path = episode_dir / "final_adjudication_summary.json"
+        summary_temporary = summary_path.with_suffix(summary_path.suffix + ".tmp")
+        summary_temporary.write_text(
+            json.dumps(final_summary, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        summary_temporary.replace(summary_path)
+        summary_files.append(str(summary_path))
+    return {
+        "annotated": annotated,
+        "applied": applied,
+        "files": files,
+        "summary_files": summary_files,
+    }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--prediction-root", type=Path, required=True)
-    parser.add_argument("--reference-root", type=Path, required=True)
-    parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--progress", type=Path, required=True)
+    parser.add_argument("--prediction-root", type=Path)
+    parser.add_argument("--reference-root", type=Path)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--progress", type=Path)
+    parser.add_argument(
+        "--report-input",
+        type=Path,
+        help="Apply an existing completed report without rerunning model calls",
+    )
     parser.add_argument("--approved-sample-per-episode", type=int, default=0)
     parser.add_argument("--manual-overrides", type=Path)
     parser.add_argument("--min-apply-confidence", type=float)
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
+
+    if args.report_input:
+        report = _read_json(args.report_input)
+        if args.manual_overrides:
+            report = apply_manual_overrides(report, _read_json(args.manual_overrides))
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(
+                json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+        print(json.dumps(report["summary"], ensure_ascii=False))
+        if args.apply:
+            application = apply_report(
+                report,
+                min_confidence=(
+                    args.min_apply_confidence
+                    if args.min_apply_confidence is not None
+                    else float(report.get("config", {}).get("min_apply_confidence", 0.9))
+                ),
+            )
+            print(json.dumps(application, ensure_ascii=False))
+        return 0 if report["summary"].get("missing_or_error", 0) == 0 else 1
+
+    required = {
+        "--prediction-root": args.prediction_root,
+        "--reference-root": args.reference_root,
+        "--config": args.config,
+        "--output": args.output,
+        "--progress": args.progress,
+    }
+    missing = [name for name, value in required.items() if value is None]
+    if missing:
+        parser.error(f"required unless --report-input is used: {', '.join(missing)}")
 
     config = _read_json(args.config)
     cases = collect_cases(
