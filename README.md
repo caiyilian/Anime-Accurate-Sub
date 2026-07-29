@@ -59,7 +59,10 @@
 
 ## 快速开始
 
-> TODO: 待完善
+单个动漫 MP4 的环境准备、远程 Sakura/SenseNova 配置、质量优先完整命令、断点续传、
+`needs_review` 人工校对、Web UI、结果文件和故障排查，请见：
+
+- [单个动漫 MP4 高质量全流程教程](docs/usage/full-pipeline-tutorial.md)
 
 ## 许可证
 
