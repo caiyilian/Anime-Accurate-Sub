@@ -48,7 +48,11 @@ describe('App', () => {
         cancelPipeline: async () => null,
         resumePipeline: async () => { throw new Error('not used') },
         getPipelineSnapshot: async () => null,
-        onPipelineEvent: () => () => undefined
+        onPipelineEvent: () => () => undefined,
+        listResults: async () => [],
+        readResultArtifact: async () => { throw new Error('not used') },
+        openResultDirectory: async () => undefined,
+        exportPipelineLog: async () => null
       }
     })
   })

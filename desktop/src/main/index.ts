@@ -1,14 +1,19 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, protocol } from 'electron'
+import { IPC_CHANNELS } from '../shared/ipc'
 import { buildPipelineCommand } from './command'
 import { runDiagnostics } from './diagnostics'
 import { registerIpcHandlers } from './ipc'
 import { initializeLogging, log } from './logging'
 import { PipelineManager } from './pipeline-manager'
 import { createPipelineSnapshotStore } from './run-store'
+import { ResultService } from './result-service'
 import { createSettingsRepository } from './settings'
 import { createMainWindow } from './windows'
 
 const isSmokeTest = process.argv.includes('--smoke-test')
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'aas-media', privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true } }
+])
 let smokeTimer: NodeJS.Timeout | undefined
 let mainWindow: BrowserWindow | null = null
 let unregisterIpc: (() => void) | undefined
@@ -56,7 +61,9 @@ function attachSmokeTest(window: BrowserWindow): void {
               window.desktopApi?.versions?.electron &&
                 window.desktopApi?.getSettings &&
                 window.desktopApi?.startPipeline &&
-                window.desktopApi?.resumePipeline
+                window.desktopApi?.resumePipeline &&
+                window.desktopApi?.listResults &&
+                window.desktopApi?.readResultArtifact
             ),
             videoIntegration
           }
@@ -129,14 +136,17 @@ if (!hasSingleInstanceLock) {
       },
       emit: (event) => {
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('pipeline:event', event)
+          mainWindow.webContents.send(IPC_CHANNELS.pipelineEvent, event)
         }
       }
     })
+    const results = new ResultService()
+    results.registerProtocol()
     unregisterIpc = registerIpcHandlers({
       getWindow: () => mainWindow,
       settings,
       pipeline: pipelineManager,
+      results,
       logPath
     })
     attachSmokeTest(mainWindow)

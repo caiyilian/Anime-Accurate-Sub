@@ -176,6 +176,41 @@ export type PipelineEvent =
   | { type: 'snapshot'; snapshot: PipelineSnapshot | null }
   | { type: 'log'; runId: string; log: PipelineLogLine }
 
+export type ResultArtifactKind =
+  | 'subtitle-srt'
+  | 'subtitle-ass'
+  | 'video'
+  | 'quality-report'
+  | 'multi-agent-report'
+  | 'mqm-report'
+  | 'checkpoint'
+  | 'translated'
+  | 'reviewed'
+  | 'mqm-reviewed'
+
+export interface ResultArtifact {
+  id: string
+  kind: ResultArtifactKind
+  label: string
+  name: string
+  size: number
+  modifiedAt: string
+  mediaUrl?: string
+}
+
+export interface ResultBundle {
+  jobId: string
+  videoName: string
+  jobStatus: PipelineJobStatus
+  artifacts: ResultArtifact[]
+}
+
+export interface TextArtifactContent {
+  id: string
+  name: string
+  content: string
+}
+
 export type FilePickerKind = 'json' | 'python' | 'subtitle' | 'video'
 
 export interface DesktopApi {
@@ -200,4 +235,8 @@ export interface DesktopApi {
   resumePipeline: () => Promise<PipelineSnapshot>
   getPipelineSnapshot: () => Promise<PipelineSnapshot | null>
   onPipelineEvent: (listener: (event: PipelineEvent) => void) => () => void
+  listResults: () => Promise<ResultBundle[]>
+  readResultArtifact: (artifactId: string) => Promise<TextArtifactContent>
+  openResultDirectory: (jobId: string) => Promise<void>
+  exportPipelineLog: () => Promise<string | null>
 }
