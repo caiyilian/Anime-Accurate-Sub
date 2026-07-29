@@ -78,6 +78,7 @@ export default function PipelineConfig({ settings, onChange, onPickDirectory, on
         <Toggle label="优先日文字幕" detail="侧挂/内嵌日文字幕优先，缺失时回退 ASR。" checked={settings.preferJapaneseSubtitles} onChange={(value) => update('preferJapaneseSubtitles', value)} />
         <Toggle label="硬件自动配置" detail="让 Python 根据 GPU 与显存调整后端参数。" checked={settings.autoHardware} onChange={(value) => update('autoHardware', value)} />
         <Toggle label="OP/ED best-effort" detail="主题识别失败时继续主流程。" checked={settings.opedBestEffort} onChange={(value) => update('opedBestEffort', value)} />
+        <Toggle label="单集失败后继续" detail="某一集失败时保存错误并继续后续视频；最终队列标记为失败。" checked={settings.continueOnError} onChange={(value) => update('continueOnError', value)} />
       </div>
 
       <details className="mt-5 rounded-2xl border border-white/10 bg-slate-950/35 p-4" open>
