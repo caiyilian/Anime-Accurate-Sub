@@ -1,0 +1,20 @@
+{
+  "provider": "openai",
+  "base_url": "https://token.sensenova.cn/v1",
+  "api_key_file": "config/sensenova_apikeys",
+  "review_models": [
+    "sensenova-6.7-flash-lite",
+    "deepseek-v4-flash"
+  ],
+  "review_fallback_models": {
+    "sensenova-6.7-flash-lite": "glm-5.2",
+    "deepseek-v4-flash": "glm-5.2"
+  },
+  "adjudicator_model": "sensenova-6.7-flash-lite",
+  "adjudicator_fallback_model": "deepseek-v4-flash",
+  "max_workers": 6,
+  "context_window": 5,
+  "retries": 3,
+  "timeout_s": 600,
+  "min_apply_confidence": 0.9
+}
