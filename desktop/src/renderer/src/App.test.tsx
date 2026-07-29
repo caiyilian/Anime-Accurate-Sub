@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
 
@@ -22,9 +22,20 @@ describe('App', () => {
         getSettings: async () => settings,
         saveSettings: async () => settings,
         resetSettings: async () => settings,
-        pickVideos: async () => [],
+        pickVideos: async () => ['E:\\anime\\01.mp4'],
         pickFile: async () => null,
         pickDirectory: async () => null,
+        getPathForFile: () => '',
+        inspectVideos: async () => ({
+          videos: [{
+            id: 'episode-1',
+            path: 'E:\\anime\\01.mp4',
+            name: '01.mp4',
+            size: 1024,
+            modifiedAt: '2026-07-29T00:00:00.000Z'
+          }],
+          rejected: []
+        }),
         runDiagnostics: async () => ({
           ready: true,
           checkedAt: '2026-07-29T00:00:00.000Z',
@@ -37,14 +48,18 @@ describe('App', () => {
     })
   })
 
-  it('renders settings and completed environment diagnostics', async () => {
+  it('renders the workbench and adds validated videos from the native picker', async () => {
     render(<App />)
 
     expect(screen.getByTestId('desktop-root')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: '设置与运行环境' })).toBeInTheDocument()
-    expect(screen.getByText('43.2.0')).toBeInTheDocument()
-    expect(screen.getByText('win32')).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByText('Python 3.11')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: '字幕生成工作台' })).toBeInTheDocument()
+    expect(await screen.findByLabelText(/质量检查/)).toBeChecked()
+    expect(screen.getByLabelText(/五 Agent 审查/)).toBeChecked()
+    await waitFor(() => expect(screen.getByText('Python · OK')).toBeInTheDocument())
     expect(screen.getByText('READY')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('video-drop-zone'))
+    await waitFor(() => expect(screen.getByText('01.mp4')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('python')).toBeInTheDocument())
   })
 })

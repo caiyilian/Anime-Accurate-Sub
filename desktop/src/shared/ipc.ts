@@ -5,6 +5,7 @@ export const IPC_CHANNELS = Object.freeze({
   pickVideos: 'dialog:pick-videos',
   pickFile: 'dialog:pick-file',
   pickDirectory: 'dialog:pick-directory',
+  inspectVideos: 'videos:inspect',
   runDiagnostics: 'diagnostics:run',
   previewCommand: 'pipeline:preview-command'
 })

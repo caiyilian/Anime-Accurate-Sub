@@ -11,6 +11,7 @@ let unregisterIpc: (() => void) | undefined
 
 function attachSmokeTest(window: BrowserWindow): void {
   if (isSmokeTest) {
+    const smokeVideo = process.env.DESKTOP_SMOKE_VIDEO ?? ''
     smokeTimer = setTimeout(() => {
       console.error('DESKTOP_SMOKE_TIMEOUT')
       app.exit(1)
@@ -25,22 +26,45 @@ function attachSmokeTest(window: BrowserWindow): void {
             await new Promise((resolve) => setTimeout(resolve, 100))
           }
           const text = document.body.innerText
+          let videoIntegration = null
+          const smokeVideo = ${JSON.stringify(smokeVideo)}
+          if (smokeVideo) {
+            const inspection = await window.desktopApi.inspectVideos([smokeVideo])
+            const command = inspection.videos.length
+              ? await window.desktopApi.previewCommand({ videoPath: inspection.videos[0].path })
+              : null
+            videoIntegration = {
+              accepted: inspection.videos.length,
+              rejected: inspection.rejected.length,
+              hasQuality: Boolean(command?.args.includes('--quality-check')),
+              hasMultiAgent: Boolean(command?.args.includes('--multi-agent-review')),
+              hasMqm: Boolean(command?.args.includes('--mqm-quality-review'))
+            }
+          }
           return {
             root: Boolean(document.querySelector('[data-testid="desktop-root"]')),
             title: document.title,
             text,
             diagnosticsSettled: !text.includes('正在读取桌面设置') && !text.includes('正在诊断'),
             hasNodeRequire: typeof window.require !== 'undefined',
-            hasDesktopApi: Boolean(window.desktopApi?.versions?.electron && window.desktopApi?.getSettings)
+            hasDesktopApi: Boolean(window.desktopApi?.versions?.electron && window.desktopApi?.getSettings),
+            videoIntegration
           }
         })()`)
         if (
           !result.root ||
           result.title !== 'Anime Accurate Sub' ||
-          !result.text.includes('设置与运行环境') ||
+          !result.text.includes('字幕生成工作台') ||
           !result.diagnosticsSettled ||
           result.hasNodeRequire ||
-          !result.hasDesktopApi
+          !result.hasDesktopApi ||
+          (smokeVideo &&
+            (!result.videoIntegration ||
+              result.videoIntegration.accepted !== 1 ||
+              result.videoIntegration.rejected !== 0 ||
+              !result.videoIntegration.hasQuality ||
+              !result.videoIntegration.hasMultiAgent ||
+              !result.videoIntegration.hasMqm))
         ) {
           throw new Error(`Unexpected renderer state: ${JSON.stringify(result)}`)
         }
