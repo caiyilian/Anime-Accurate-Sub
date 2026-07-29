@@ -5,11 +5,13 @@ import type {
   DiagnosticsResult,
   FilePickerKind,
   PipelineSnapshot,
-  PipelineSettings
+  PipelineSettings,
+  ResultBundle
 } from '../../shared/types'
 import PipelineConfig from './PipelineConfig'
 import LogConsole from './LogConsole'
 import PipelineProgress from './PipelineProgress'
+import ResultsPanel from './ResultsPanel'
 import { mergeVideoQueue, moveQueueItem, type QueuedVideo } from './queue'
 import VideoQueue from './VideoQueue'
 
@@ -36,6 +38,7 @@ export default function App(): React.JSX.Element {
   const [preview, setPreview] = useState<CommandPreview | null>(null)
   const [previewRevision, setPreviewRevision] = useState(0)
   const [pipeline, setPipeline] = useState<PipelineSnapshot | null>(null)
+  const [results, setResults] = useState<ResultBundle[]>([])
   const [message, setMessage] = useState('正在读取桌面设置…')
   const [busy, setBusy] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -58,6 +61,10 @@ export default function App(): React.JSX.Element {
     const result = await runtime.runDiagnostics()
     setDiagnostics(result)
     return result
+  }, [runtime])
+
+  const refreshResults = useCallback(async (): Promise<void> => {
+    setResults(await runtime.listResults())
   }, [runtime])
 
   useEffect(() => {
@@ -102,6 +109,11 @@ export default function App(): React.JSX.Element {
       unsubscribe()
     }
   }, [applyPipelineSnapshot, runtime])
+
+  const resultRevision = `${pipeline?.runId ?? ''}:${pipeline?.jobs.map((job) => job.status).join('|') ?? ''}`
+  useEffect(() => {
+    void refreshResults().catch((error) => setMessage(error instanceof Error ? error.message : String(error)))
+  }, [refreshResults, resultRevision])
 
   const firstVideo = queue[0]
   useEffect(() => {
@@ -277,7 +289,7 @@ export default function App(): React.JSX.Element {
       <main className="mx-auto max-w-[1500px] px-7 py-7">
         <section className="mb-6 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-300">D5 / Live progress & logs</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-300">D6 / Results preview & export</div>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight">字幕生成工作台</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">先排列视频，再启用项目已经完成的上下文、审查和 MQM 能力。参考字幕只用于评测；正式生成不依赖字幕组译文。</p>
           </div>
@@ -347,6 +359,7 @@ export default function App(): React.JSX.Element {
         </section>
         {pipeline && <PipelineProgress snapshot={pipeline} />}
         {pipeline && <LogConsole logs={pipeline.logs} jobs={pipeline.jobs} />}
+        <ResultsPanel bundles={results} api={runtime} onRefresh={() => void refreshResults()} />
       </main>
     </div>
   )

@@ -10,11 +10,13 @@ import type { SettingsRepository } from './settings'
 import { sanitizeSettings } from './settings'
 import { inspectVideoPaths } from './videos'
 import type { PipelineJobInput, PipelineManager } from './pipeline-manager'
+import type { ResultService } from './result-service'
 
 interface IpcDependencies {
   getWindow: () => BrowserWindow | null
   settings: SettingsRepository
   pipeline: PipelineManager
+  results: ResultService
   logPath: string
 }
 
@@ -165,6 +167,20 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
   register(IPC_CHANNELS.cancelPipeline, () => dependencies.pipeline.cancel())
   register(IPC_CHANNELS.resumePipeline, () => dependencies.pipeline.resume())
   register(IPC_CHANNELS.getPipelineSnapshot, () => dependencies.pipeline.getSnapshot())
+  register(IPC_CHANNELS.listResults, () => dependencies.results.registry.refresh(dependencies.pipeline.getSnapshot()))
+  register(IPC_CHANNELS.readResultArtifact, async (_event, artifactId: string) => {
+    if (typeof artifactId !== 'string') throw new TypeError('artifact ID 无效')
+    await dependencies.results.registry.refresh(dependencies.pipeline.getSnapshot())
+    return dependencies.results.registry.readText(artifactId)
+  })
+  register(IPC_CHANNELS.openResultDirectory, async (_event, jobId: string) => {
+    if (typeof jobId !== 'string') throw new TypeError('job ID 无效')
+    await dependencies.results.registry.refresh(dependencies.pipeline.getSnapshot())
+    return dependencies.results.openDirectory(jobId)
+  })
+  register(IPC_CHANNELS.exportPipelineLog, () =>
+    dependencies.results.exportLog(dependencies.pipeline.getSnapshot(), dependencies.getWindow()!)
+  )
 
   return () => {
     for (const channel of Object.values(IPC_CHANNELS)) {

@@ -12,5 +12,9 @@ export const IPC_CHANNELS = Object.freeze({
   cancelPipeline: 'pipeline:cancel',
   resumePipeline: 'pipeline:resume',
   getPipelineSnapshot: 'pipeline:get-snapshot',
-  pipelineEvent: 'pipeline:event'
+  pipelineEvent: 'pipeline:event',
+  listResults: 'results:list',
+  readResultArtifact: 'results:read-text',
+  openResultDirectory: 'results:open-directory',
+  exportPipelineLog: 'results:export-log'
 })
