@@ -9,6 +9,15 @@ import type {
   PipelineSettings,
   VideoInput
 } from '../shared/types'
+import {
+  completeProgress,
+  createInitialProgress,
+  failProgress,
+  mergeProgress,
+  readProgressFromFiles,
+  sanitizeLogLine,
+  updateProgressFromLine
+} from './progress'
 
 export interface PipelineSnapshotStore {
   load(): PipelineSnapshot | null
@@ -30,6 +39,8 @@ export interface PipelineManagerOptions {
   now?: () => Date
   idFactory?: () => string
   maxLogLines?: number
+  maxLogEventsPerSecond?: number
+  progressReader?: (job: PipelineJob) => Promise<PipelineJob['progress']>
 }
 
 function cloneSnapshot(snapshot: PipelineSnapshot | null): PipelineSnapshot | null {
@@ -77,6 +88,13 @@ export class PipelineManager {
   private readonly now: () => Date
   private readonly idFactory: () => string
   private readonly maxLogLines: number
+  private readonly maxLogEventsPerSecond: number
+  private readonly progressReader: (job: PipelineJob) => Promise<PipelineJob['progress']>
+  private progressTimer: NodeJS.Timeout | undefined
+  private logsSincePersist = 0
+  private logWindowStartedAt = 0
+  private logEventsInWindow = 0
+  private droppedLogEvents = 0
 
   constructor(private readonly options: PipelineManagerOptions) {
     this.spawnProcess = options.spawnProcess ?? spawn
@@ -84,6 +102,8 @@ export class PipelineManager {
     this.now = options.now ?? (() => new Date())
     this.idFactory = options.idFactory ?? randomUUID
     this.maxLogLines = options.maxLogLines ?? 500
+    this.maxLogEventsPerSecond = options.maxLogEventsPerSecond ?? 200
+    this.progressReader = options.progressReader ?? readProgressFromFiles
     this.snapshot = this.recover(options.store.load())
     if (this.snapshot) this.persistAndEmit()
   }
@@ -97,6 +117,8 @@ export class PipelineManager {
     const recovered = cloneSnapshot(snapshot)!
     let interrupted = recovered.status === 'running' || recovered.status === 'canceling'
     for (const job of recovered.jobs) {
+      job.progress ??= createInitialProgress(job.settings, Boolean(job.japaneseSubtitlePath), this.timestamp())
+      if (job.status === 'succeeded') job.progress = completeProgress(job.progress, this.timestamp())
       if (job.status === 'running') {
         job.status = 'interrupted'
         job.finishedAt = this.timestamp()
@@ -104,6 +126,7 @@ export class PipelineManager {
         interrupted = true
       }
     }
+    recovered.overallPercent = this.calculateOverall(recovered)
     if (interrupted) {
       recovered.status = 'interrupted'
       recovered.currentJobId = undefined
@@ -122,19 +145,82 @@ export class PipelineManager {
   }
 
   private persistAndEmit(): void {
-    if (this.snapshot) this.snapshot.updatedAt = this.timestamp()
+    if (this.snapshot) {
+      this.snapshot.updatedAt = this.timestamp()
+      this.snapshot.overallPercent = this.calculateOverall(this.snapshot)
+    }
     this.options.store.save(cloneSnapshot(this.snapshot))
+    this.logsSincePersist = 0
     this.options.emit?.({ type: 'snapshot', snapshot: cloneSnapshot(this.snapshot) })
   }
 
-  private addLog(jobId: string, stream: PipelineLogLine['stream'], line: string): void {
-    if (!this.snapshot || !line.trim()) return
-    const log: PipelineLogLine = { at: this.timestamp(), jobId, stream, line: line.trimEnd() }
+  private calculateOverall(snapshot: PipelineSnapshot): number {
+    if (!snapshot.jobs.length) return 0
+    const total = snapshot.jobs.reduce((sum, job) => sum + (job.status === 'succeeded' ? 100 : job.progress?.overallPercent ?? 0), 0)
+    return Math.round((total / snapshot.jobs.length) * 10) / 10
+  }
+
+  private appendLog(log: PipelineLogLine): void {
+    if (!this.snapshot) return
     this.snapshot.logs.push(log)
     if (this.snapshot.logs.length > this.maxLogLines) {
       this.snapshot.logs.splice(0, this.snapshot.logs.length - this.maxLogLines)
     }
     this.options.emit?.({ type: 'log', runId: this.snapshot.runId, log: structuredClone(log) })
+    this.logsSincePersist += 1
+    if (this.logsSincePersist >= 20) {
+      this.options.store.save(cloneSnapshot(this.snapshot))
+      this.logsSincePersist = 0
+    }
+  }
+
+  private flushDroppedLogSummary(jobId: string): void {
+    if (!this.droppedLogEvents) return
+    this.appendLog({
+      at: this.timestamp(),
+      jobId,
+      stream: 'system',
+      line: `有 ${this.droppedLogEvents} 行高频日志被限流`
+    })
+    this.droppedLogEvents = 0
+  }
+
+  private addLog(jobId: string, stream: PipelineLogLine['stream'], line: string): void {
+    if (!this.snapshot || !line.trim()) return
+    const now = this.now()
+    const sanitized = sanitizeLogLine(line.trimEnd())
+    if (stream === 'system') {
+      this.appendLog({ at: now.toISOString(), jobId, stream, line: sanitized })
+      return
+    }
+    if (!this.logWindowStartedAt || now.getTime() - this.logWindowStartedAt >= 1_000) {
+      if (this.droppedLogEvents > 0) {
+        this.appendLog({
+          at: now.toISOString(),
+          jobId,
+          stream: 'system',
+          line: `上一秒有 ${this.droppedLogEvents} 行高频日志被限流`
+        })
+      }
+      this.logWindowStartedAt = now.getTime()
+      this.logEventsInWindow = 0
+      this.droppedLogEvents = 0
+    }
+    if (this.logEventsInWindow >= this.maxLogEventsPerSecond) {
+      this.droppedLogEvents += 1
+      return
+    }
+    this.logEventsInWindow += 1
+    const log: PipelineLogLine = { at: now.toISOString(), jobId, stream, line: sanitized }
+    this.appendLog(log)
+    const job = this.snapshot.jobs.find((candidate) => candidate.id === jobId)
+    if (job) {
+      const next = updateProgressFromLine(job.progress, sanitized, job.settings, log.at)
+      if (next !== job.progress) {
+        job.progress = next
+        this.persistAndEmit()
+      }
+    }
   }
 
   private attachLineReader(
@@ -168,12 +254,14 @@ export class PipelineManager {
       createdAt,
       updatedAt: createdAt,
       startedAt: createdAt,
+      overallPercent: 0,
       jobs: inputs.map((input) => ({
         id: this.idFactory(),
         video: structuredClone(input.video),
         japaneseSubtitlePath: input.japaneseSubtitlePath,
         settings: structuredClone(input.settings),
-        status: 'pending'
+        status: 'pending',
+        progress: createInitialProgress(input.settings, Boolean(input.japaneseSubtitlePath), createdAt)
       })),
       logs: []
     }
@@ -218,6 +306,7 @@ export class PipelineManager {
   async shutdown(): Promise<void> {
     if (!this.snapshot || !this.isActive()) return
     this.shuttingDown = true
+    this.stopProgressPolling()
     const current = this.snapshot.jobs.find((job) => job.id === this.snapshot?.currentJobId)
     if (current) {
       current.status = 'interrupted'
@@ -247,6 +336,7 @@ export class PipelineManager {
     this.snapshot.status = 'canceled'
     this.snapshot.currentJobId = undefined
     this.snapshot.finishedAt = this.timestamp()
+    this.stopProgressPolling()
     this.persistAndEmit()
     this.resolveIdleWaiters()
   }
@@ -256,6 +346,7 @@ export class PipelineManager {
     this.snapshot.status = this.snapshot.jobs.some((job) => job.status === 'failed') ? 'failed' : 'completed'
     this.snapshot.currentJobId = undefined
     this.snapshot.finishedAt = this.timestamp()
+    this.stopProgressPolling()
     this.persistAndEmit()
     this.resolveIdleWaiters()
   }
@@ -265,11 +356,37 @@ export class PipelineManager {
     job.status = 'failed'
     job.finishedAt = this.timestamp()
     job.error = error instanceof Error ? error.message : String(error)
+    job.progress = failProgress(job.progress, this.timestamp())
     this.addLog(job.id, 'system', `任务准备失败：${job.error}`)
     this.snapshot.currentJobId = undefined
     this.persistAndEmit()
     if (this.snapshot.continueOnError) await this.runNext()
     else this.finishRun()
+  }
+
+  private stopProgressPolling(): void {
+    if (this.progressTimer) clearInterval(this.progressTimer)
+    this.progressTimer = undefined
+  }
+
+  private async refreshProgress(job: PipelineJob): Promise<void> {
+    if (!this.snapshot || job.status !== 'running') return
+    try {
+      const incoming = await this.progressReader(structuredClone(job))
+      const merged = mergeProgress(job.progress, incoming)
+      if (JSON.stringify(merged) !== JSON.stringify(job.progress)) {
+        job.progress = merged
+        this.persistAndEmit()
+      }
+    } catch (error) {
+      this.addLog(job.id, 'system', `进度文件读取失败：${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  private startProgressPolling(job: PipelineJob): void {
+    this.stopProgressPolling()
+    void this.refreshProgress(job)
+    this.progressTimer = setInterval(() => void this.refreshProgress(job), 1_000)
   }
 
   private async runNext(): Promise<void> {
@@ -308,6 +425,10 @@ export class PipelineManager {
       return
     }
     this.child = child
+    this.logWindowStartedAt = this.now().getTime()
+    this.logEventsInWindow = 0
+    this.droppedLogEvents = 0
+    this.startProgressPolling(job)
     this.addLog(job.id, 'system', `启动：${command.display}`)
     this.attachLineReader(child.stdout, job.id, 'stdout')
     this.attachLineReader(child.stderr, job.id, 'stderr')
@@ -315,6 +436,8 @@ export class PipelineManager {
     const settle = async (code: number | null, error?: Error): Promise<void> => {
       if (settled || !this.snapshot) return
       settled = true
+      this.stopProgressPolling()
+      this.flushDroppedLogSummary(job.id)
       this.child = null
       job.finishedAt = this.timestamp()
       job.exitCode = code
@@ -332,9 +455,11 @@ export class PipelineManager {
       if (error || code !== 0) {
         job.status = 'failed'
         job.error = error?.message ?? `Python 退出码 ${code}`
+        job.progress = failProgress(job.progress, this.timestamp())
         this.addLog(job.id, 'system', `任务失败：${job.error}`)
       } else {
         job.status = 'succeeded'
+        job.progress = completeProgress(job.progress, this.timestamp())
         this.addLog(job.id, 'system', '任务完成')
       }
       this.snapshot.currentJobId = undefined
