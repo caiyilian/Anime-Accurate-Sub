@@ -34,7 +34,11 @@ const desktopApi: Readonly<DesktopApi> = Object.freeze({
     const handler = (_event: Electron.IpcRendererEvent, value: PipelineEvent): void => listener(value)
     ipcRenderer.on(IPC_CHANNELS.pipelineEvent, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.pipelineEvent, handler)
-  }
+  },
+  listResults: () => ipcRenderer.invoke(IPC_CHANNELS.listResults),
+  readResultArtifact: (artifactId: string) => ipcRenderer.invoke(IPC_CHANNELS.readResultArtifact, artifactId),
+  openResultDirectory: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.openResultDirectory, jobId),
+  exportPipelineLog: () => ipcRenderer.invoke(IPC_CHANNELS.exportPipelineLog)
 })
 
 contextBridge.exposeInMainWorld('desktopApi', desktopApi)
