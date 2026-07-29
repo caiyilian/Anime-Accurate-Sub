@@ -4,6 +4,7 @@ import type {
   DiagnosticCheck,
   DiagnosticsResult,
   FilePickerKind,
+  PipelineSnapshot,
   PipelineSettings
 } from '../../shared/types'
 import PipelineConfig from './PipelineConfig'
@@ -32,9 +33,24 @@ export default function App(): React.JSX.Element {
   const [queue, setQueue] = useState<QueuedVideo[]>([])
   const [preview, setPreview] = useState<CommandPreview | null>(null)
   const [previewRevision, setPreviewRevision] = useState(0)
+  const [pipeline, setPipeline] = useState<PipelineSnapshot | null>(null)
   const [message, setMessage] = useState('正在读取桌面设置…')
   const [busy, setBusy] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+
+  const applyPipelineSnapshot = useCallback((snapshot: PipelineSnapshot | null): void => {
+    setPipeline(snapshot)
+    if (snapshot?.jobs.length) {
+      setQueue((current) =>
+        current.length
+          ? current
+          : snapshot.jobs.map((job) => ({
+              ...job.video,
+              japaneseSubtitlePath: job.japaneseSubtitlePath
+            }))
+      )
+    }
+  }, [])
 
   const diagnose = useCallback(async (): Promise<DiagnosticsResult> => {
     const result = await runtime.runDiagnostics()
@@ -58,6 +74,18 @@ export default function App(): React.JSX.Element {
       active = false
     }
   }, [diagnose, runtime])
+
+  useEffect(() => {
+    let active = true
+    runtime.getPipelineSnapshot().then((snapshot) => active && applyPipelineSnapshot(snapshot))
+    const unsubscribe = runtime.onPipelineEvent((event) => {
+      if (event.type === 'snapshot') applyPipelineSnapshot(event.snapshot)
+    })
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [applyPipelineSnapshot, runtime])
 
   const firstVideo = queue[0]
   useEffect(() => {
@@ -151,10 +179,65 @@ export default function App(): React.JSX.Element {
     setPreviewRevision((value) => value + 1)
   }
 
+  const startPipeline = async (): Promise<void> => {
+    if (!settings || !queue.length) return
+    setBusy(true)
+    try {
+      const saved = await runtime.saveSettings(settings)
+      setSettings(saved)
+      const snapshot = await runtime.startPipeline({
+        videos: queue.map((video) => ({
+          path: video.path,
+          japaneseSubtitlePath: video.japaneseSubtitlePath || undefined
+        })),
+        settings: saved
+      })
+      applyPipelineSnapshot(snapshot)
+      setMessage('Python 管线已启动，视频将严格按队列顺序执行。')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancelPipeline = async (): Promise<void> => {
+    setBusy(true)
+    try {
+      applyPipelineSnapshot(await runtime.cancelPipeline())
+      setMessage('正在终止 Python/FFmpeg 进程树；checkpoint 与输出会保留。')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const resumePipeline = async (): Promise<void> => {
+    setBusy(true)
+    try {
+      applyPipelineSnapshot(await runtime.resumePipeline())
+      setMessage('已跳过成功项，并从未完成任务的 Python checkpoint 继续。')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const readySummary = useMemo(() => {
     if (!diagnostics) return 'CHECKING'
     return diagnostics.ready ? 'READY' : 'BLOCKED'
   }, [diagnostics])
+
+  const pipelineActive = pipeline?.status === 'running' || pipeline?.status === 'canceling'
+  const canResume = Boolean(
+    pipeline &&
+      ['interrupted', 'canceled', 'failed'].includes(pipeline.status) &&
+      pipeline.jobs.some((job) => job.status !== 'succeeded')
+  )
+  const pipelineStatuses = useMemo(
+    () => Object.fromEntries(pipeline?.jobs.map((job) => [job.video.path, job.status]) ?? []),
+    [pipeline]
+  )
 
   return (
     <div data-testid="desktop-root" className="min-h-screen bg-slate-950 text-slate-100">
@@ -178,7 +261,7 @@ export default function App(): React.JSX.Element {
       <main className="mx-auto max-w-[1500px] px-7 py-7">
         <section className="mb-6 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-300">D3 / Quality-first workbench</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-300">D4 / Resumable pipeline queue</div>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight">字幕生成工作台</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">先排列视频，再启用项目已经完成的上下文、审查和 MQM 能力。参考字幕只用于评测；正式生成不依赖字幕组译文。</p>
           </div>
@@ -204,6 +287,8 @@ export default function App(): React.JSX.Element {
             onRemove={(id) => setQueue((current) => current.filter((item) => item.id !== id))}
             onClear={() => setQueue([])}
             onAttachSubtitle={(id) => void attachSubtitle(id)}
+            statuses={pipelineStatuses}
+            locked={pipelineActive}
           />
           {settings && (
             <PipelineConfig
@@ -222,11 +307,24 @@ export default function App(): React.JSX.Element {
               <h2 className="mt-2 text-lg font-semibold">实际 Python 命令</h2>
             </div>
             <div className="flex gap-2">
-              <button disabled={busy || !settings} onClick={() => void resetSettings()} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-400 hover:bg-white/5 disabled:opacity-40">恢复默认</button>
-              <button disabled={busy || !settings} onClick={() => void saveSettings()} className="rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">保存配置</button>
-              <button disabled className="rounded-xl bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 opacity-40" title="D4 接入真实执行">开始完整流程</button>
+              <button disabled={busy || !settings || pipelineActive} onClick={() => void resetSettings()} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-400 hover:bg-white/5 disabled:opacity-40">恢复默认</button>
+              <button disabled={busy || !settings || pipelineActive} onClick={() => void saveSettings()} className="rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">保存配置</button>
+              {canResume && <button disabled={busy || pipelineActive} onClick={() => void resumePipeline()} className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-5 py-2 text-sm font-semibold text-amber-200 disabled:opacity-40">继续未完成任务</button>}
+              {pipelineActive ? (
+                <button disabled={busy} onClick={() => void cancelPipeline()} className="rounded-xl bg-rose-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">取消并保留断点</button>
+              ) : (
+                <button disabled={busy || !settings || !queue.length || !diagnostics?.ready} onClick={() => void startPipeline()} className="rounded-xl bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-40">开始完整流程</button>
+              )}
             </div>
           </div>
+          {pipeline && (
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
+              <span className="rounded-full bg-white/5 px-3 py-1">队列状态：{pipeline.status}</span>
+              <span className="rounded-full bg-white/5 px-3 py-1">成功 {pipeline.jobs.filter((job) => job.status === 'succeeded').length}</span>
+              <span className="rounded-full bg-white/5 px-3 py-1">失败 {pipeline.jobs.filter((job) => job.status === 'failed').length}</span>
+              <span className="rounded-full bg-white/5 px-3 py-1">待处理 {pipeline.jobs.filter((job) => job.status === 'pending').length}</span>
+            </div>
+          )}
           <pre className="mt-4 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-2xl border border-white/8 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-400">
             {preview?.display ?? (queue.length ? '正在生成命令预览…' : '加入视频后显示首个任务的完整命令；执行时仍使用参数数组，不经过 shell。')}
           </pre>

@@ -32,7 +32,8 @@ export const DEFAULT_SETTINGS: Readonly<PipelineSettings> = Object.freeze({
   multiAgentReview: true,
   mqmQualityReview: true,
   autoHardware: false,
-  opedBestEffort: true
+  opedBestEffort: true,
+  continueOnError: true
 })
 
 const PATH_FIELDS = [
@@ -53,7 +54,8 @@ const BOOLEAN_FIELDS = [
   'multiAgentReview',
   'mqmQualityReview',
   'autoHardware',
-  'opedBestEffort'
+  'opedBestEffort',
+  'continueOnError'
 ] as const
 
 const ALLOWED_FIELDS = new Set<keyof PipelineSettings>([

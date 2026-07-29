@@ -7,5 +7,10 @@ export const IPC_CHANNELS = Object.freeze({
   pickDirectory: 'dialog:pick-directory',
   inspectVideos: 'videos:inspect',
   runDiagnostics: 'diagnostics:run',
-  previewCommand: 'pipeline:preview-command'
+  previewCommand: 'pipeline:preview-command',
+  startPipeline: 'pipeline:start',
+  cancelPipeline: 'pipeline:cancel',
+  resumePipeline: 'pipeline:resume',
+  getPipelineSnapshot: 'pipeline:get-snapshot',
+  pipelineEvent: 'pipeline:event'
 })
