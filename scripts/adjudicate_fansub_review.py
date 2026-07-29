@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import copy
 import hashlib
 import json
 import shutil
@@ -467,6 +468,133 @@ def build_report(
     }
 
 
+def apply_manual_overrides(
+    report: dict[str, Any], overrides: dict[str, Any]
+) -> dict[str, Any]:
+    """Merge stale-safe human decisions into a completed adjudication report.
+
+    Overrides may also add a segment that was not selected by the automatic
+    sampler. Every entry repeats the expected source and translation so a later
+    pipeline run cannot silently receive a decision made against stale text.
+    """
+    if overrides.get("schema") != "fansub-final-manual-overrides-v1":
+        raise ValueError("Unsupported manual override schema")
+
+    merged = copy.deepcopy(report)
+    rows = merged.setdefault("cases", [])
+    by_key = {(int(row["episode"]), int(row["index"])): row for row in rows}
+    episode_dirs = {int(row["episode"]): Path(row["episode_dir"]) for row in rows}
+    reviewer = str(overrides.get("reviewer") or "human-review")
+    seen: set[tuple[int, int]] = set()
+
+    for override in overrides.get("overrides", []):
+        episode = int(override["episode"])
+        index = int(override["index"])
+        key = (episode, index)
+        if key in seen:
+            raise ValueError(f"Duplicate manual override: E{episode:02d}:{index}")
+        seen.add(key)
+
+        expected_ja = str(override["ja"])
+        expected_zh = str(override["current_zh"])
+        row = by_key.get(key)
+        if row is None:
+            episode_dir = episode_dirs.get(episode)
+            if episode_dir is None:
+                raise ValueError(f"Episode is absent from report: E{episode:02d}")
+            items = _read_json(episode_dir / "mqm_reviewed.json")
+            if index < 0 or index >= len(items):
+                raise ValueError(f"Segment index is out of range: E{episode:02d}:{index}")
+            item = items[index]
+            row = {
+                "case_id": _case_id(episode, index, expected_ja, expected_zh),
+                "episode": episode,
+                "episode_dir": str(episode_dir),
+                "index": index,
+                "selection": "manual_override",
+                "start": item.get("start"),
+                "end": item.get("end"),
+                "ja": str(item.get("ja", "")),
+                "current_zh": str(item.get("text", "")),
+                "context_before": [],
+                "context_after": [],
+                "fansub_reference": "",
+                "fansub_alignment": None,
+                "mqm_evidence": _compact_mqm_evidence(item.get("mqm_review")),
+                "result": None,
+            }
+            rows.append(row)
+            by_key[key] = row
+
+        if str(row.get("ja", "")) != expected_ja:
+            raise ValueError(f"Stale manual source at E{episode:02d}:{index}")
+        if str(row.get("current_zh", "")) != expected_zh:
+            raise ValueError(f"Stale manual translation at E{episode:02d}:{index}")
+
+        decision = str(override["decision"])
+        corrected_zh = override.get("corrected_zh")
+        if decision not in VALID_DECISIONS:
+            raise ValueError(f"Invalid manual decision at E{episode:02d}:{index}")
+        if decision == "revise" and not str(corrected_zh or "").strip():
+            raise ValueError(f"Manual revision has no correction: E{episode:02d}:{index}")
+        if decision == "keep":
+            corrected_zh = None
+
+        previous = row.get("result") or {}
+        row["result"] = {
+            **previous,
+            "case_id": row["case_id"],
+            "status": "ok",
+            "selection": row["selection"],
+            "episode": episode,
+            "index": index,
+            "ja": expected_ja,
+            "current_zh": expected_zh,
+            "fansub_reference": row.get("fansub_reference", ""),
+            "adjudication": {
+                "decision": decision,
+                "corrected_zh": corrected_zh,
+                "severity": str(override.get("severity") or "manual"),
+                "reason": str(override["reason"]),
+                "confidence": 1.0,
+                "reference_reliability": "manual_review",
+                "model": f"manual:{reviewer}",
+                "primary_model": f"manual:{reviewer}",
+                "fallback_used": False,
+                "attempt": 1,
+                "time_s": 0.0,
+            },
+            "manual_review": {
+                "reviewer": reviewer,
+                "previous_adjudication": previous.get("adjudication"),
+            },
+        }
+
+    successful = [row for row in rows if (row.get("result") or {}).get("status") == "ok"]
+    revised = [
+        row
+        for row in successful
+        if row["result"]["adjudication"]["decision"] == "revise"
+    ]
+    min_confidence = float(merged.get("config", {}).get("min_apply_confidence", 0.9))
+    low_confidence = [
+        row
+        for row in successful
+        if float(row["result"]["adjudication"]["confidence"]) < min_confidence
+    ]
+    merged["summary"] = {
+        **merged.get("summary", {}),
+        "total": len(rows),
+        "completed": len(successful),
+        "missing_or_error": len(rows) - len(successful),
+        "keep": len(successful) - len(revised),
+        "revise": len(revised),
+        "low_confidence": len(low_confidence),
+        "manual_overrides": len(seen),
+    }
+    return merged
+
+
 def apply_report(report: dict[str, Any], *, min_confidence: float) -> dict[str, Any]:
     """Atomically apply confident final decisions to each episode JSON."""
     grouped: dict[Path, list[dict[str, Any]]] = {}
@@ -528,6 +656,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--progress", type=Path, required=True)
     parser.add_argument("--approved-sample-per-episode", type=int, default=0)
+    parser.add_argument("--manual-overrides", type=Path)
+    parser.add_argument("--min-apply-confidence", type=float)
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
 
@@ -540,13 +670,19 @@ def main() -> int:
     )
     results = run_adjudication(cases, config, args.progress)
     report = build_report(cases, results, config)
+    if args.manual_overrides:
+        report = apply_manual_overrides(report, _read_json(args.manual_overrides))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(report["summary"], ensure_ascii=False))
     if args.apply:
         application = apply_report(
             report,
-            min_confidence=float(config.get("min_apply_confidence", 0.9)),
+            min_confidence=(
+                args.min_apply_confidence
+                if args.min_apply_confidence is not None
+                else float(config.get("min_apply_confidence", 0.9))
+            ),
         )
         print(json.dumps(application, ensure_ascii=False))
     return 0 if report["summary"]["missing_or_error"] == 0 else 1
