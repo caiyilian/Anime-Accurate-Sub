@@ -1,0 +1,37 @@
+{
+  "backend": "sakura",
+  "sakura": {
+    "model": "crosery/sakura-14b-qwen2.5-v1.0-q6k:latest",
+    "host": "172.31.102.189",
+    "timeout_s": 300,
+    "max_retries": 4,
+    "validation_retries": 2,
+    "validation_fallback_backend": "galtransl",
+    "validation_rescue_models": [
+      "sensenova-6.7-flash-lite",
+      "deepseek-v4-flash"
+    ],
+    "validation_rescue_base_url": "https://token.sensenova.cn/v1",
+    "validation_rescue_api_key_file": "config/sensenova_apikeys",
+    "validation_rescue_attempts": 2,
+    "validation_quarantine_on_failure": true,
+    "batch_size": 16,
+    "num_ctx": 4096,
+    "temperature": 0.1,
+    "top_p": 0.3,
+    "repeat_penalty": 1.0,
+    "frequency_penalty": 0.1
+  },
+  "galtransl": {
+    "model": "crosery/GalTransl-7B-v2.6:Q6_k",
+    "host": "172.31.102.189",
+    "timeout_s": 300,
+    "max_retries": 4,
+    "batch_size": 10,
+    "num_ctx": 4096,
+    "temperature": 0.2,
+    "top_p": 0.8,
+    "repeat_penalty": 1.1,
+    "frequency_penalty": 0.1
+  }
+}
