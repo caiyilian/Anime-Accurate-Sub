@@ -1,5 +1,5 @@
 {
-  "include": ["electron.vite.config.*", "electron-builder.config.*", "vitest.config.*", "src/main/**/*", "src/preload/**/*"],
+  "include": ["electron.vite.config.*", "electron-builder.config.*", "vitest.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
