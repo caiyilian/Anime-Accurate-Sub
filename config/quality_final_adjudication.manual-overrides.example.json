@@ -1,0 +1,24 @@
+{
+  "schema": "fansub-final-manual-overrides-v1",
+  "reviewer": "final-qc",
+  "overrides": [
+    {
+      "episode": 1,
+      "index": 60,
+      "ja": "しッ しまった",
+      "current_zh": "糟 糕了",
+      "decision": "revise",
+      "corrected_zh": "糟糕了",
+      "severity": "minor",
+      "reason": "人工复核确认词内不应保留空格。"
+    },
+    {
+      "episode": 1,
+      "index": 56,
+      "ja": "プリントを…？",
+      "current_zh": "发给大家…？",
+      "decision": "keep",
+      "reason": "结合上一句老师的完整指令，当前译文比孤立直译名词更连贯。"
+    }
+  ]
+}
