@@ -1,6 +1,10 @@
 import { app, BrowserWindow } from 'electron'
+import { buildPipelineCommand } from './command'
+import { runDiagnostics } from './diagnostics'
 import { registerIpcHandlers } from './ipc'
 import { initializeLogging, log } from './logging'
+import { PipelineManager } from './pipeline-manager'
+import { createPipelineSnapshotStore } from './run-store'
 import { createSettingsRepository } from './settings'
 import { createMainWindow } from './windows'
 
@@ -8,6 +12,7 @@ const isSmokeTest = process.argv.includes('--smoke-test')
 let smokeTimer: NodeJS.Timeout | undefined
 let mainWindow: BrowserWindow | null = null
 let unregisterIpc: (() => void) | undefined
+let pipelineManager: PipelineManager | undefined
 
 function attachSmokeTest(window: BrowserWindow): void {
   if (isSmokeTest) {
@@ -47,7 +52,12 @@ function attachSmokeTest(window: BrowserWindow): void {
             text,
             diagnosticsSettled: !text.includes('正在读取桌面设置') && !text.includes('正在诊断'),
             hasNodeRequire: typeof window.require !== 'undefined',
-            hasDesktopApi: Boolean(window.desktopApi?.versions?.electron && window.desktopApi?.getSettings),
+            hasDesktopApi: Boolean(
+              window.desktopApi?.versions?.electron &&
+                window.desktopApi?.getSettings &&
+                window.desktopApi?.startPipeline &&
+                window.desktopApi?.resumePipeline
+            ),
             videoIntegration
           }
         })()`)
@@ -98,7 +108,37 @@ if (!hasSingleInstanceLock) {
     const logPath = initializeLogging()
     const settings = createSettingsRepository()
     mainWindow = createMainWindow(!isSmokeTest)
-    unregisterIpc = registerIpcHandlers({ getWindow: () => mainWindow, settings, logPath })
+    pipelineManager = new PipelineManager({
+      store: createPipelineSnapshotStore(),
+      commandFactory: async (job) => {
+        const diagnostics = await runDiagnostics(job.settings, {
+          appPath: app.getAppPath(),
+          resourcesPath: process.resourcesPath,
+          logPath
+        })
+        if (!diagnostics.ready) throw new Error('恢复任务前的环境诊断未通过')
+        return buildPipelineCommand(
+          {
+            videoPath: job.video.path,
+            japaneseSubtitlePath: job.japaneseSubtitlePath || undefined,
+            settings: job.settings
+          },
+          job.settings,
+          diagnostics
+        )
+      },
+      emit: (event) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('pipeline:event', event)
+        }
+      }
+    })
+    unregisterIpc = registerIpcHandlers({
+      getWindow: () => mainWindow,
+      settings,
+      pipeline: pipelineManager,
+      logPath
+    })
     attachSmokeTest(mainWindow)
     mainWindow.once('closed', () => {
       mainWindow = null
@@ -118,4 +158,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
+let shutdownInProgress = false
+app.on('before-quit', (event) => {
+  if (shutdownInProgress) return
+  event.preventDefault()
+  shutdownInProgress = true
+  const shutdown = pipelineManager?.shutdown() ?? Promise.resolve()
+  void shutdown.finally(() => app.quit())
+})
 app.on('will-quit', () => unregisterIpc?.())

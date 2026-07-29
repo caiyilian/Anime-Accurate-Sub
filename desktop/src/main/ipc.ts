@@ -1,17 +1,20 @@
 import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { existsSync } from 'node:fs'
-import { extname, normalize } from 'node:path'
+import { extname, isAbsolute, normalize } from 'node:path'
 import { IPC_CHANNELS } from '../shared/ipc'
-import type { CommandPreviewRequest, FilePickerKind } from '../shared/types'
+import type { CommandPreviewRequest, FilePickerKind, StartPipelineRequest } from '../shared/types'
 import { buildPipelineCommand } from './command'
 import { runDiagnostics } from './diagnostics'
 import { log } from './logging'
 import type { SettingsRepository } from './settings'
+import { sanitizeSettings } from './settings'
 import { inspectVideoPaths } from './videos'
+import type { PipelineJobInput, PipelineManager } from './pipeline-manager'
 
 interface IpcDependencies {
   getWindow: () => BrowserWindow | null
   settings: SettingsRepository
+  pipeline: PipelineManager
   logPath: string
 }
 
@@ -120,8 +123,52 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
     })
     return preview
   })
+  register(IPC_CHANNELS.startPipeline, async (_event, request: StartPipelineRequest) => {
+    if (!request || typeof request !== 'object' || !Array.isArray(request.videos)) {
+      throw new TypeError('启动请求无效')
+    }
+    const settings = sanitizeSettings(request.settings)
+    const inspection = await inspectVideoPaths(request.videos.map((video) => video?.path))
+    if (inspection.rejected.length || inspection.videos.length !== request.videos.length) {
+      throw new TypeError(
+        `视频队列校验失败：${inspection.rejected.map((item) => `${item.path}: ${item.reason}`).join('；')}`
+      )
+    }
+    const diagnostics = await runDiagnostics(settings, {
+      appPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      logPath: dependencies.logPath
+    })
+    if (!diagnostics.ready) {
+      const blockers = diagnostics.checks.filter((check) => check.status === 'error').map((check) => check.label)
+      throw new Error(`运行环境未就绪：${blockers.join('、')}`)
+    }
+    const inputs: PipelineJobInput[] = inspection.videos.map((video, index) => {
+      const japaneseSubtitlePath = request.videos[index].japaneseSubtitlePath?.trim() ?? ''
+      if (
+        japaneseSubtitlePath &&
+        (!isAbsolute(japaneseSubtitlePath) ||
+          !existsSync(japaneseSubtitlePath) ||
+          !['.srt', '.ass', '.vtt'].includes(extname(japaneseSubtitlePath).toLocaleLowerCase('en-US')))
+      ) {
+        throw new TypeError(`日文字幕路径无效：${japaneseSubtitlePath}`)
+      }
+      buildPipelineCommand(
+        { videoPath: video.path, japaneseSubtitlePath: japaneseSubtitlePath || undefined, settings },
+        settings,
+        diagnostics
+      )
+      return { video, japaneseSubtitlePath: japaneseSubtitlePath ? normalize(japaneseSubtitlePath) : '', settings }
+    })
+    return dependencies.pipeline.start(inputs, settings.continueOnError)
+  })
+  register(IPC_CHANNELS.cancelPipeline, () => dependencies.pipeline.cancel())
+  register(IPC_CHANNELS.resumePipeline, () => dependencies.pipeline.resume())
+  register(IPC_CHANNELS.getPipelineSnapshot, () => dependencies.pipeline.getSnapshot())
 
   return () => {
-    for (const channel of Object.values(IPC_CHANNELS)) ipcMain.removeHandler(channel)
+    for (const channel of Object.values(IPC_CHANNELS)) {
+      if (channel !== IPC_CHANNELS.pipelineEvent) ipcMain.removeHandler(channel)
+    }
   }
 }

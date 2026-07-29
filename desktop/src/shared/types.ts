@@ -28,6 +28,7 @@ export interface PipelineSettings {
   mqmQualityReview: boolean
   autoHardware: boolean
   opedBestEffort: boolean
+  continueOnError: boolean
 }
 
 export interface DiagnosticCheck {
@@ -82,6 +83,66 @@ export interface VideoInspectionResult {
   rejected: RejectedVideoInput[]
 }
 
+export type PipelineJobStatus =
+  | 'pending'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'canceled'
+  | 'interrupted'
+
+export type PipelineRunStatus =
+  | 'idle'
+  | 'running'
+  | 'canceling'
+  | 'canceled'
+  | 'completed'
+  | 'failed'
+  | 'interrupted'
+
+export interface PipelineLogLine {
+  at: string
+  jobId: string
+  stream: 'stdout' | 'stderr' | 'system'
+  line: string
+}
+
+export interface PipelineJob {
+  id: string
+  video: VideoInput
+  japaneseSubtitlePath: string
+  settings: PipelineSettings
+  status: PipelineJobStatus
+  command?: Pick<CommandPreview, 'executable' | 'args' | 'cwd' | 'display'>
+  startedAt?: string
+  finishedAt?: string
+  exitCode?: number | null
+  error?: string
+}
+
+export interface PipelineSnapshot {
+  schemaVersion: 1
+  runId: string
+  status: PipelineRunStatus
+  continueOnError: boolean
+  createdAt: string
+  updatedAt: string
+  startedAt?: string
+  finishedAt?: string
+  currentJobId?: string
+  jobs: PipelineJob[]
+  logs: PipelineLogLine[]
+}
+
+export interface StartPipelineRequest {
+  videos: Array<{ path: string; japaneseSubtitlePath?: string }>
+  settings: PipelineSettings
+}
+
+export type PipelineEvent =
+  | { type: 'snapshot'; snapshot: PipelineSnapshot | null }
+  | { type: 'log'; runId: string; log: PipelineLogLine }
+
 export type FilePickerKind = 'json' | 'python' | 'subtitle' | 'video'
 
 export interface DesktopApi {
@@ -101,4 +162,9 @@ export interface DesktopApi {
   inspectVideos: (paths: string[]) => Promise<VideoInspectionResult>
   runDiagnostics: () => Promise<DiagnosticsResult>
   previewCommand: (request: CommandPreviewRequest) => Promise<CommandPreview>
+  startPipeline: (request: StartPipelineRequest) => Promise<PipelineSnapshot>
+  cancelPipeline: () => Promise<PipelineSnapshot | null>
+  resumePipeline: () => Promise<PipelineSnapshot>
+  getPipelineSnapshot: () => Promise<PipelineSnapshot | null>
+  onPipelineEvent: (listener: (event: PipelineEvent) => void) => () => void
 }
