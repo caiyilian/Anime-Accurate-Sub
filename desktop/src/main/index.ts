@@ -1,32 +1,15 @@
 import { app, BrowserWindow } from 'electron'
-import { join } from 'node:path'
+import { registerIpcHandlers } from './ipc'
+import { initializeLogging, log } from './logging'
+import { createSettingsRepository } from './settings'
+import { createMainWindow } from './windows'
 
 const isSmokeTest = process.argv.includes('--smoke-test')
 let smokeTimer: NodeJS.Timeout | undefined
+let mainWindow: BrowserWindow | null = null
+let unregisterIpc: (() => void) | undefined
 
-function createWindow(): BrowserWindow {
-  const window = new BrowserWindow({
-    width: 1240,
-    height: 820,
-    minWidth: 960,
-    minHeight: 640,
-    show: !isSmokeTest,
-    backgroundColor: '#080d19',
-    title: 'Anime Accurate Sub',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
-    }
-  })
-
-  if (process.env.ELECTRON_RENDERER_URL) {
-    void window.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    void window.loadFile(join(__dirname, '../renderer/index.html'))
-  }
-
+function attachSmokeTest(window: BrowserWindow): void {
   if (isSmokeTest) {
     smokeTimer = setTimeout(() => {
       console.error('DESKTOP_SMOKE_TIMEOUT')
@@ -35,17 +18,27 @@ function createWindow(): BrowserWindow {
 
     window.webContents.once('did-finish-load', async () => {
       try {
-        const result = await window.webContents.executeJavaScript(`({
-          root: Boolean(document.querySelector('[data-testid="desktop-root"]')),
-          title: document.title,
-          text: document.body.innerText,
-          hasNodeRequire: typeof window.require !== 'undefined',
-          hasDesktopApi: Boolean(window.desktopApi?.versions?.electron)
-        })`)
+        const result = await window.webContents.executeJavaScript(`(async () => {
+          for (let attempt = 0; attempt < 100; attempt += 1) {
+            const status = document.querySelector('[role="status"]')?.textContent || ''
+            if (status && !status.includes('正在')) break
+            await new Promise((resolve) => setTimeout(resolve, 100))
+          }
+          const text = document.body.innerText
+          return {
+            root: Boolean(document.querySelector('[data-testid="desktop-root"]')),
+            title: document.title,
+            text,
+            diagnosticsSettled: !text.includes('正在读取桌面设置') && !text.includes('正在诊断'),
+            hasNodeRequire: typeof window.require !== 'undefined',
+            hasDesktopApi: Boolean(window.desktopApi?.versions?.electron && window.desktopApi?.getSettings)
+          }
+        })()`)
         if (
           !result.root ||
           result.title !== 'Anime Accurate Sub' ||
-          !result.text.includes('桌面端基础框架已就绪') ||
+          !result.text.includes('设置与运行环境') ||
+          !result.diagnosticsSettled ||
           result.hasNodeRequire ||
           !result.hasDesktopApi
         ) {
@@ -62,7 +55,6 @@ function createWindow(): BrowserWindow {
     })
   }
 
-  return window
 }
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
@@ -79,13 +71,27 @@ if (!hasSingleInstanceLock) {
   })
 
   app.whenReady().then(() => {
-    createWindow()
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    const logPath = initializeLogging()
+    const settings = createSettingsRepository()
+    mainWindow = createMainWindow(!isSmokeTest)
+    unregisterIpc = registerIpcHandlers({ getWindow: () => mainWindow, settings, logPath })
+    attachSmokeTest(mainWindow)
+    mainWindow.once('closed', () => {
+      mainWindow = null
     })
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow(true)
+      }
+    })
+  }).catch((error) => {
+    log.error('Desktop startup failed', error)
+    app.exit(1)
   })
 }
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
+
+app.on('will-quit', () => unregisterIpc?.())
