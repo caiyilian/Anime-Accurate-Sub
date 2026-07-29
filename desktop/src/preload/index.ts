@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { IPC_CHANNELS } from '../shared/ipc'
-import type { CommandPreviewRequest, DesktopApi, FilePickerKind, PipelineSettings } from '../shared/types'
+import type {
+  CommandPreviewRequest,
+  DesktopApi,
+  FilePickerKind,
+  PipelineEvent,
+  PipelineSettings,
+  StartPipelineRequest
+} from '../shared/types'
 
 const desktopApi: Readonly<DesktopApi> = Object.freeze({
   platform: process.platform,
@@ -18,7 +25,16 @@ const desktopApi: Readonly<DesktopApi> = Object.freeze({
   getPathForFile: (file: unknown) => webUtils.getPathForFile(file as File),
   inspectVideos: (paths: string[]) => ipcRenderer.invoke(IPC_CHANNELS.inspectVideos, paths),
   runDiagnostics: () => ipcRenderer.invoke(IPC_CHANNELS.runDiagnostics),
-  previewCommand: (request: CommandPreviewRequest) => ipcRenderer.invoke(IPC_CHANNELS.previewCommand, request)
+  previewCommand: (request: CommandPreviewRequest) => ipcRenderer.invoke(IPC_CHANNELS.previewCommand, request),
+  startPipeline: (request: StartPipelineRequest) => ipcRenderer.invoke(IPC_CHANNELS.startPipeline, request),
+  cancelPipeline: () => ipcRenderer.invoke(IPC_CHANNELS.cancelPipeline),
+  resumePipeline: () => ipcRenderer.invoke(IPC_CHANNELS.resumePipeline),
+  getPipelineSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.getPipelineSnapshot),
+  onPipelineEvent: (listener: (event: PipelineEvent) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, value: PipelineEvent): void => listener(value)
+    ipcRenderer.on(IPC_CHANNELS.pipelineEvent, handler)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.pipelineEvent, handler)
+  }
 })
 
 contextBridge.exposeInMainWorld('desktopApi', desktopApi)

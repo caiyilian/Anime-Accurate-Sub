@@ -10,7 +10,7 @@ describe('App', () => {
     translationMemoryPath: '', japaneseSubtitleDir: '', speakerMapPath: '', opedSeries: '',
     translationBatchSize: 0, translationContextWindow: 3, preferJapaneseSubtitles: true,
     qualityCheck: true, multiAgentReview: true, mqmQualityReview: true, autoHardware: false,
-    opedBestEffort: true
+    opedBestEffort: true, continueOnError: true
   } as const
 
   beforeEach(() => {
@@ -43,7 +43,12 @@ describe('App', () => {
           resolved: { projectRoot: 'E:\\repo', pythonPath: 'python', outputRoot: 'E:\\out', ffmpegPath: 'ffmpeg' },
           logPath: 'E:\\logs\\desktop.log'
         }),
-        previewCommand: async () => ({ executable: 'python', args: [], cwd: 'E:\\repo', display: 'python' })
+        previewCommand: async () => ({ executable: 'python', args: [], cwd: 'E:\\repo', display: 'python' }),
+        startPipeline: async () => { throw new Error('not used') },
+        cancelPipeline: async () => null,
+        resumePipeline: async () => { throw new Error('not used') },
+        getPipelineSnapshot: async () => null,
+        onPipelineEvent: () => () => undefined
       }
     })
   })
@@ -61,5 +66,6 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('video-drop-zone'))
     await waitFor(() => expect(screen.getByText('01.mp4')).toBeInTheDocument())
     await waitFor(() => expect(screen.getByText('python')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: '开始完整流程' })).toBeEnabled()
   })
 })
