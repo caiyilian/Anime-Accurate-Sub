@@ -1,4 +1,5 @@
 import json
+import sys
 
 from scripts.adjudicate_fansub_review import (
     _parse_decision,
@@ -6,6 +7,7 @@ from scripts.adjudicate_fansub_review import (
     apply_manual_overrides,
     apply_report,
     build_report,
+    main,
 )
 
 
@@ -111,6 +113,17 @@ def test_apply_report_backs_up_and_applies_only_confident_revision(tmp_path):
     assert updated[2]["text"] == "糟糕了"
     assert updated[2]["final_adjudication"]["decision"] == "revise"
     assert path.with_suffix(".before-final-adjudication.json").exists()
+    summary_path = episode_dir / "final_adjudication_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))["summary"]
+    assert summary["resolved_needs_review"] == 1
+    assert summary["needs_review_revised"] == 1
+
+    repeated = apply_report(report, min_confidence=0.9)
+    assert repeated["applied"] == 0
+    assert repeated["summary_files"] == [str(summary_path)]
+    repeated_summary = json.loads(summary_path.read_text(encoding="utf-8"))["summary"]
+    assert repeated_summary["applied_revisions"] == 1
+    assert repeated_summary["changed_this_run"] == 0
 
 
 def test_manual_overrides_replace_decision_and_add_unselected_segment(tmp_path):
@@ -201,3 +214,53 @@ def test_manual_override_rejects_stale_translation(tmp_path):
         assert "Stale manual translation" in str(error)
     else:
         raise AssertionError("stale override must be rejected")
+
+
+def test_main_applies_existing_report_without_model_pipeline(tmp_path, monkeypatch):
+    case = _case(tmp_path)
+    episode_dir = tmp_path / "轻音少女_第01集"
+    episode_dir.mkdir()
+    translated = episode_dir / "mqm_reviewed.json"
+    translated.write_text(
+        json.dumps(
+            [
+                {"ja": "前", "text": "前"},
+                {"ja": "中", "text": "中"},
+                {"ja": "しまった", "text": "糟糕了"},
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    result = {
+        "case_id": case["case_id"],
+        "status": "ok",
+        "adjudication": {
+            "decision": "revise",
+            "corrected_zh": "糟糕了",
+            "confidence": 0.99,
+            "reason": "删除词内空格",
+            "model": "flash",
+        },
+    }
+    report_path = tmp_path / "reviewed.json"
+    report_path.write_text(
+        json.dumps(
+            build_report([case], [result], {"min_apply_confidence": 0.9}),
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "adjudicate_fansub_review.py",
+            "--report-input",
+            str(report_path),
+            "--apply",
+        ],
+    )
+
+    assert main() == 0
+    assert (episode_dir / "final_adjudication_summary.json").exists()
