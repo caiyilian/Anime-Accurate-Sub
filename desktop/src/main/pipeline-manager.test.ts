@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { CommandPreview, PipelineJob, PipelineSnapshot, VideoInput } from '../shared/types'
 import { PipelineManager, type PipelineJobInput, type PipelineSnapshotStore } from './pipeline-manager'
+import { completeProgress, createInitialProgress } from './progress'
 import { DEFAULT_SETTINGS } from './settings'
 
 class MemoryStore implements PipelineSnapshotStore {
@@ -42,7 +43,8 @@ function nodeCommand(job: PipelineJob, delay = 25): Promise<CommandPreview> {
 
 describe('PipelineManager', () => {
   it('runs jobs strictly in sequence and retains bounded line logs', async () => {
-    const manager = new PipelineManager({ store: new MemoryStore(), commandFactory: nodeCommand, maxLogLines: 20 })
+    const store = new MemoryStore()
+    const manager = new PipelineManager({ store, commandFactory: nodeCommand, maxLogLines: 20 })
     await manager.start([input('01.mp4'), input('02.mp4')], true)
     await manager.waitForIdle()
 
@@ -55,6 +57,8 @@ describe('PipelineManager', () => {
       'start:02.mp4',
       'end:02.mp4'
     ])
+    const reconnected = new PipelineManager({ store, commandFactory: nodeCommand, maxLogLines: 20 })
+    expect(reconnected.getSnapshot()!.logs).toEqual(snapshot.logs)
   })
 
   it('continues after a failure when configured and rejects a concurrent start', async () => {
@@ -110,9 +114,10 @@ describe('PipelineManager', () => {
       createdAt: '2026-07-29T00:00:00.000Z',
       updatedAt: '2026-07-29T00:00:00.000Z',
       currentJobId: 'job-2',
+      overallPercent: 50,
       jobs: [
-        { id: 'job-1', video: video('done.mp4'), japaneseSubtitlePath: '', settings, status: 'succeeded' },
-        { id: 'job-2', video: video('resume.mp4'), japaneseSubtitlePath: '', settings, status: 'running' }
+        { id: 'job-1', video: video('done.mp4'), japaneseSubtitlePath: '', settings, status: 'succeeded', progress: completeProgress(createInitialProgress(settings, false)) },
+        { id: 'job-2', video: video('resume.mp4'), japaneseSubtitlePath: '', settings, status: 'running', progress: createInitialProgress(settings, false) }
       ],
       logs: []
     })
@@ -131,5 +136,25 @@ describe('PipelineManager', () => {
     await manager.waitForIdle()
     expect(commands).toBe(1)
     expect(manager.getSnapshot()!.jobs.map((job) => job.status)).toEqual(['succeeded', 'succeeded'])
+  })
+
+  it('sanitizes, truncates, rate-limits and bounds hostile child output', async () => {
+    const manager = new PipelineManager({
+      store: new MemoryStore(),
+      commandFactory: async () => ({
+        executable: process.execPath,
+        args: ['-e', `console.log('\\u001b[31m'+'x'.repeat(5000));for(let i=0;i<20;i++)console.log('spam-'+i)`],
+        cwd: process.cwd(),
+        display: 'node noisy-worker'
+      }),
+      maxLogLines: 5,
+      maxLogEventsPerSecond: 3
+    })
+    await manager.start([input('noisy.mp4')], true)
+    await manager.waitForIdle()
+    const logs = manager.getSnapshot()!.logs
+    expect(logs.length).toBeLessThanOrEqual(5)
+    expect(logs.some((line) => line.line.includes('\u001b'))).toBe(false)
+    expect(logs.some((line) => line.line.includes('[已截断]'))).toBe(true)
   })
 })

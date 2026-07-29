@@ -100,6 +100,37 @@ export type PipelineRunStatus =
   | 'failed'
   | 'interrupted'
 
+export type PipelineStageKey =
+  | 'prepare'
+  | 'extract_audio'
+  | 'japanese_subtitle'
+  | 'asr'
+  | 'translate'
+  | 'multi_agent_review'
+  | 'mqm_quality_review'
+  | 'subtitle'
+  | 'embed_subtitle'
+  | 'quality_check'
+  | 'completed'
+
+export interface PipelineStageProgress {
+  key: PipelineStageKey
+  label: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  percent: number
+}
+
+export interface PipelineProgress {
+  activeStage: PipelineStageKey
+  activeStageLabel: string
+  stagePercent: number
+  overallPercent: number
+  completedStages: number
+  totalStages: number
+  lastActivityAt: string
+  stages: PipelineStageProgress[]
+}
+
 export interface PipelineLogLine {
   at: string
   jobId: string
@@ -118,6 +149,7 @@ export interface PipelineJob {
   finishedAt?: string
   exitCode?: number | null
   error?: string
+  progress: PipelineProgress
 }
 
 export interface PipelineSnapshot {
@@ -130,6 +162,7 @@ export interface PipelineSnapshot {
   startedAt?: string
   finishedAt?: string
   currentJobId?: string
+  overallPercent: number
   jobs: PipelineJob[]
   logs: PipelineLogLine[]
 }
