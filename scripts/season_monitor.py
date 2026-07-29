@@ -174,6 +174,24 @@ class SeasonProgressMonitor:
                 key: mqm["summary"].get(key, 0)
                 for key in ("approved", "corrected", "needs_review", "errors", "applied")
             }
+            final = _read_json(episode_dir / "final_adjudication_summary.json")
+            if isinstance(final, dict) and isinstance(final.get("summary"), dict):
+                final_summary = final["summary"]
+                resolved = min(
+                    int(result["mqm"]["needs_review"]),
+                    int(final_summary.get("resolved_needs_review", 0)),
+                )
+                kept = min(resolved, int(final_summary.get("needs_review_kept", 0)))
+                revised = min(
+                    resolved - kept,
+                    int(final_summary.get("needs_review_revised", 0)),
+                )
+                result["mqm"]["approved"] += kept
+                result["mqm"]["corrected"] += revised
+                result["mqm"]["needs_review"] -= resolved
+                result["mqm"]["final_reviewed"] = int(
+                    final_summary.get("reviewed", resolved)
+                )
         quality = _read_json(episode_dir / "quality_report.json")
         if isinstance(quality, dict) and isinstance(quality.get("stats"), dict):
             result["rules"] = {
