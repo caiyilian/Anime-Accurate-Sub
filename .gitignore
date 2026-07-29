@@ -69,4 +69,13 @@ docker-compose.override.yml
 
 # OS
 desktop.ini
+
+# Desktop application
+desktop/node_modules/
+desktop/out/
+desktop/dist/
+desktop/release/
+desktop/.vite/
+desktop/.electron-vite/
+desktop/*.tsbuildinfo
 # Visual Studio.vs/

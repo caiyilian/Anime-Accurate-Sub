@@ -1,0 +1,39 @@
+{
+  "name": "anime-accurate-sub-desktop",
+  "version": "0.1.0",
+  "description": "Anime Accurate Sub desktop application",
+  "main": "./out/main/index.js",
+  "author": "Anime Accurate Sub contributors",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "smoke": "npm run build && electron . --smoke-test"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "electron-log": "5.4.4",
+    "electron-store": "11.0.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "24.10.13",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.4",
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3",
+    "electron-vite": "5.0.0",
+    "jsdom": "28.0.0",
+    "typescript": "6.0.2",
+    "vite": "7.3.6",
+    "vitest": "4.1.2"
+  }
+}
