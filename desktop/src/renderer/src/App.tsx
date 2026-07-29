@@ -8,6 +8,8 @@ import type {
   PipelineSettings
 } from '../../shared/types'
 import PipelineConfig from './PipelineConfig'
+import LogConsole from './LogConsole'
+import PipelineProgress from './PipelineProgress'
 import { mergeVideoQueue, moveQueueItem, type QueuedVideo } from './queue'
 import VideoQueue from './VideoQueue'
 
@@ -80,6 +82,20 @@ export default function App(): React.JSX.Element {
     runtime.getPipelineSnapshot().then((snapshot) => active && applyPipelineSnapshot(snapshot))
     const unsubscribe = runtime.onPipelineEvent((event) => {
       if (event.type === 'snapshot') applyPipelineSnapshot(event.snapshot)
+      else {
+        setPipeline((current) => {
+          if (!current || current.runId !== event.runId) return current
+          const last = current.logs.at(-1)
+          if (
+            last &&
+            last.at === event.log.at &&
+            last.jobId === event.log.jobId &&
+            last.stream === event.log.stream &&
+            last.line === event.log.line
+          ) return current
+          return { ...current, logs: [...current.logs, event.log].slice(-500) }
+        })
+      }
     })
     return () => {
       active = false
@@ -235,7 +251,7 @@ export default function App(): React.JSX.Element {
       pipeline.jobs.some((job) => job.status !== 'succeeded')
   )
   const pipelineStatuses = useMemo(
-    () => Object.fromEntries(pipeline?.jobs.map((job) => [job.video.path, job.status]) ?? []),
+    () => Object.fromEntries(pipeline?.jobs.map((job) => [job.video.path, `${job.status} · ${job.progress.overallPercent.toFixed(0)}%`]) ?? []),
     [pipeline]
   )
 
@@ -261,7 +277,7 @@ export default function App(): React.JSX.Element {
       <main className="mx-auto max-w-[1500px] px-7 py-7">
         <section className="mb-6 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-300">D4 / Resumable pipeline queue</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/8 px-3 py-1 text-xs text-cyan-300">D5 / Live progress & logs</div>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight">字幕生成工作台</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">先排列视频，再启用项目已经完成的上下文、审查和 MQM 能力。参考字幕只用于评测；正式生成不依赖字幕组译文。</p>
           </div>
@@ -329,6 +345,8 @@ export default function App(): React.JSX.Element {
             {preview?.display ?? (queue.length ? '正在生成命令预览…' : '加入视频后显示首个任务的完整命令；执行时仍使用参数数组，不经过 shell。')}
           </pre>
         </section>
+        {pipeline && <PipelineProgress snapshot={pipeline} />}
+        {pipeline && <LogConsole logs={pipeline.logs} jobs={pipeline.jobs} />}
       </main>
     </div>
   )
