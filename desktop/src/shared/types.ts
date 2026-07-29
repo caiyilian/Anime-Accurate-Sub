@@ -1,6 +1,6 @@
 export const TRANSLATION_BACKENDS = ['sakura', 'qwen', 'galtransl', 'external'] as const
 export const ASR_BACKENDS = ['anime_whisper'] as const
-export const SUBTITLE_STYLES = ['anime', 'default', 'cinema'] as const
+export const SUBTITLE_STYLES = ['anime', 'anime_bilingual', 'classic', 'karaoke'] as const
 
 export type TranslationBackend = (typeof TRANSLATION_BACKENDS)[number]
 export type AsrBackend = (typeof ASR_BACKENDS)[number]
@@ -64,6 +64,24 @@ export interface CommandPreview {
   display: string
 }
 
+export interface VideoInput {
+  id: string
+  path: string
+  name: string
+  size: number
+  modifiedAt: string
+}
+
+export interface RejectedVideoInput {
+  path: string
+  reason: string
+}
+
+export interface VideoInspectionResult {
+  videos: VideoInput[]
+  rejected: RejectedVideoInput[]
+}
+
 export type FilePickerKind = 'json' | 'python' | 'subtitle' | 'video'
 
 export interface DesktopApi {
@@ -79,6 +97,8 @@ export interface DesktopApi {
   pickVideos: () => Promise<string[]>
   pickFile: (kind: FilePickerKind) => Promise<string | null>
   pickDirectory: () => Promise<string | null>
+  getPathForFile: (file: unknown) => string
+  inspectVideos: (paths: string[]) => Promise<VideoInspectionResult>
   runDiagnostics: () => Promise<DiagnosticsResult>
   previewCommand: (request: CommandPreviewRequest) => Promise<CommandPreview>
 }

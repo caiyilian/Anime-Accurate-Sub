@@ -7,6 +7,7 @@ import { buildPipelineCommand } from './command'
 import { runDiagnostics } from './diagnostics'
 import { log } from './logging'
 import type { SettingsRepository } from './settings'
+import { inspectVideoPaths } from './videos'
 
 interface IpcDependencies {
   getWindow: () => BrowserWindow | null
@@ -91,6 +92,7 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
     })
     return result.canceled ? null : normalize(result.filePaths[0])
   })
+  register(IPC_CHANNELS.inspectVideos, (_event, paths) => inspectVideoPaths(paths))
   register(IPC_CHANNELS.runDiagnostics, async () => {
     const result = await runDiagnostics(dependencies.settings.get(), {
       appPath: app.getAppPath(),
