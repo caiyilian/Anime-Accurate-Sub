@@ -1,13 +1,6 @@
 /// <reference types="vite/client" />
 
-interface DesktopApi {
-  platform: NodeJS.Platform
-  versions: Readonly<{
-    chrome: string
-    electron: string
-    node: string
-  }>
-}
+import type { DesktopApi } from '../../shared/types'
 
 declare global {
   interface Window {

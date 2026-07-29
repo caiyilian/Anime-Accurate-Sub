@@ -1,5 +1,5 @@
 {
-  "include": ["src/renderer/src/**/*", "src/renderer/src/**/*.tsx"],
+  "include": ["src/renderer/src/**/*", "src/renderer/src/**/*.tsx", "src/shared/**/*"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
