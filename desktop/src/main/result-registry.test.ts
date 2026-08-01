@@ -25,15 +25,28 @@ function snapshot(outputRoot: string): PipelineSnapshot {
     updatedAt: '2026-07-29T00:01:00.000Z',
     finishedAt: '2026-07-29T00:01:00.000Z',
     overallPercent: 100,
-    jobs: [{
-      id: 'job-1',
-      video: { id: 'video-1', path: resolve('episode.mp4'), name: 'episode.mp4', size: 1, modifiedAt: '2026-07-29T00:00:00.000Z' },
-      japaneseSubtitlePath: '',
-      settings,
-      status: 'succeeded',
-      progress: completeProgress(createInitialProgress(settings, false)),
-      command: { executable: 'python', args: ['anime_sub.py', '--output-dir', outputRoot], cwd: resolve('.'), display: 'python anime_sub.py' }
-    }],
+    jobs: [
+      {
+        id: 'job-1',
+        video: {
+          id: 'video-1',
+          path: resolve('episode.mp4'),
+          name: 'episode.mp4',
+          size: 1,
+          modifiedAt: '2026-07-29T00:00:00.000Z'
+        },
+        japaneseSubtitlePath: '',
+        settings,
+        status: 'succeeded',
+        progress: completeProgress(createInitialProgress(settings, false)),
+        command: {
+          executable: 'python',
+          args: ['anime_sub.py', '--output-dir', outputRoot],
+          cwd: resolve('.'),
+          display: 'python anime_sub.py'
+        }
+      }
+    ],
     logs: [{ at: '2026-07-29T00:00:01.000Z', jobId: 'job-1', stream: 'stdout', line: 'done' }]
   }
 }
@@ -43,7 +56,11 @@ describe('ResultRegistry', () => {
     temporary = await mkdtemp(join(tmpdir(), 'anime-sub-results-'))
     const workDir = join(temporary, 'episode')
     await mkdir(workDir)
-    await writeFile(join(workDir, 'episode.srt'), '1\n00:00:00,000 --> 00:00:01,000\n你好\n', 'utf8')
+    await writeFile(
+      join(workDir, 'episode.srt'),
+      '1\n00:00:00,000 --> 00:00:01,000\n你好\n',
+      'utf8'
+    )
     await writeFile(join(workDir, 'episode_subs.mp4'), 'video')
     await writeFile(join(workDir, 'quality_report.json'), '{"ok":true}', 'utf8')
     await writeFile(join(workDir, 'unregistered-secret.txt'), 'never expose', 'utf8')
@@ -51,11 +68,17 @@ describe('ResultRegistry', () => {
     const registry = new ResultRegistry()
     const bundles = await registry.refresh(snapshot(temporary))
     expect(bundles).toHaveLength(1)
-    expect(bundles[0].artifacts.map((item) => item.kind)).toEqual(['subtitle-srt', 'video', 'quality-report'])
+    expect(bundles[0].artifacts.map((item) => item.kind)).toEqual([
+      'subtitle-srt',
+      'video',
+      'quality-report'
+    ])
     const video = bundles[0].artifacts.find((item) => item.kind === 'video')!
     expect(video.mediaUrl).toMatch(/^aas-media:\/\/artifact\/[a-f0-9]{32}$/)
     expect(video.mediaUrl).not.toContain(temporary)
-    expect(await registry.readText(bundles[0].artifacts[0].id)).toMatchObject({ content: expect.stringContaining('你好') })
+    expect(await registry.readText(bundles[0].artifacts[0].id)).toMatchObject({
+      content: expect.stringContaining('你好')
+    })
     expect(() => registry.getVideoPath('0'.repeat(32))).toThrow('未知视频')
     await expect(registry.readText('0'.repeat(32))).rejects.toThrow('未知或不可读取')
   })

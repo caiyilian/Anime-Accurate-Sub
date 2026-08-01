@@ -1,26 +1,58 @@
 import '@testing-library/jest-dom/vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { PipelineJob, PipelineLogLine, PipelineProgress, PipelineSettings } from '../../shared/types'
+import type {
+  PipelineJob,
+  PipelineLogLine,
+  PipelineProgress,
+  PipelineSettings
+} from '../../shared/types'
 import LogConsole from './LogConsole'
 
 const settings: PipelineSettings = {
-  projectRoot: '', pythonPath: '', outputRoot: '', backend: 'sakura', asrBackend: 'anime_whisper',
-  subtitleStyle: 'anime', translationConfigPath: '', memoryPath: '', glossaryPath: '',
-  translationMemoryPath: '', japaneseSubtitleDir: '', speakerMapPath: '', opedSeries: '',
-  translationBatchSize: 0, translationContextWindow: 3, preferJapaneseSubtitles: true,
-  qualityCheck: true, multiAgentReview: true, mqmQualityReview: true, autoHardware: false,
-  opedBestEffort: true, continueOnError: true
+  projectRoot: '',
+  pythonPath: '',
+  outputRoot: '',
+  backend: 'sakura',
+  asrBackend: 'anime_whisper',
+  subtitleStyle: 'anime',
+  translationConfigPath: '',
+  memoryPath: '',
+  glossaryPath: '',
+  translationMemoryPath: '',
+  japaneseSubtitleDir: '',
+  speakerMapPath: '',
+  opedSeries: '',
+  translationBatchSize: 0,
+  translationContextWindow: 3,
+  preferJapaneseSubtitles: true,
+  qualityCheck: true,
+  multiAgentReview: true,
+  mqmQualityReview: true,
+  autoHardware: false,
+  opedBestEffort: true,
+  continueOnError: true
 }
 const progress: PipelineProgress = {
-  activeStage: 'translate', activeStageLabel: '上下文翻译', stagePercent: 50, overallPercent: 40,
-  completedStages: 3, totalStages: 9, lastActivityAt: '2026-07-29T00:00:00.000Z',
+  activeStage: 'translate',
+  activeStageLabel: '上下文翻译',
+  stagePercent: 50,
+  overallPercent: 40,
+  completedStages: 3,
+  totalStages: 9,
+  lastActivityAt: '2026-07-29T00:00:00.000Z',
   stages: [{ key: 'translate', label: '上下文翻译', status: 'running', percent: 50 }]
 }
 
 const job: PipelineJob = {
   id: 'job-1',
-  video: { id: 'video', path: 'E:\\01.mp4', name: '01.mp4', size: 1, modifiedAt: '2026-07-29T00:00:00.000Z' },
+  video: {
+    id: 'video',
+    path: 'E:\\01.mp4',
+    name: '01.mp4',
+    size: 1,
+    modifiedAt: '2026-07-29T00:00:00.000Z'
+  },
   japaneseSubtitlePath: '',
   settings,
   status: 'running',

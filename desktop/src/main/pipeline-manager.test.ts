@@ -2,7 +2,11 @@
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { CommandPreview, PipelineJob, PipelineSnapshot, VideoInput } from '../shared/types'
-import { PipelineManager, type PipelineJobInput, type PipelineSnapshotStore } from './pipeline-manager'
+import {
+  PipelineManager,
+  type PipelineJobInput,
+  type PipelineSnapshotStore
+} from './pipeline-manager'
 import { completeProgress, createInitialProgress } from './progress'
 import { DEFAULT_SETTINGS } from './settings'
 
@@ -51,12 +55,9 @@ describe('PipelineManager', () => {
     const snapshot = manager.getSnapshot()!
     expect(snapshot.status).toBe('completed')
     expect(snapshot.jobs.map((job) => job.status)).toEqual(['succeeded', 'succeeded'])
-    expect(snapshot.logs.filter((line) => line.stream === 'stdout').map((line) => line.line)).toEqual([
-      'start:01.mp4',
-      'end:01.mp4',
-      'start:02.mp4',
-      'end:02.mp4'
-    ])
+    expect(
+      snapshot.logs.filter((line) => line.stream === 'stdout').map((line) => line.line)
+    ).toEqual(['start:01.mp4', 'end:01.mp4', 'start:02.mp4', 'end:02.mp4'])
     const reconnected = new PipelineManager({ store, commandFactory: nodeCommand, maxLogLines: 20 })
     expect(reconnected.getSnapshot()!.logs).toEqual(snapshot.logs)
   })
@@ -78,7 +79,9 @@ describe('PipelineManager', () => {
 
     expect(manager.getSnapshot()!.status).toBe('failed')
     expect(manager.getSnapshot()!.jobs.map((job) => job.status)).toEqual(['failed', 'pending'])
-    expect(manager.getSnapshot()!.logs.some((line) => line.line.includes('start:never-started'))).toBe(false)
+    expect(
+      manager.getSnapshot()!.logs.some((line) => line.line.includes('start:never-started'))
+    ).toBe(false)
   })
 
   it('cancels the active child and preserves unfinished jobs for resume', async () => {
@@ -116,8 +119,22 @@ describe('PipelineManager', () => {
       currentJobId: 'job-2',
       overallPercent: 50,
       jobs: [
-        { id: 'job-1', video: video('done.mp4'), japaneseSubtitlePath: '', settings, status: 'succeeded', progress: completeProgress(createInitialProgress(settings, false)) },
-        { id: 'job-2', video: video('resume.mp4'), japaneseSubtitlePath: '', settings, status: 'running', progress: createInitialProgress(settings, false) }
+        {
+          id: 'job-1',
+          video: video('done.mp4'),
+          japaneseSubtitlePath: '',
+          settings,
+          status: 'succeeded',
+          progress: completeProgress(createInitialProgress(settings, false))
+        },
+        {
+          id: 'job-2',
+          video: video('resume.mp4'),
+          japaneseSubtitlePath: '',
+          settings,
+          status: 'running',
+          progress: createInitialProgress(settings, false)
+        }
       ],
       logs: []
     })
@@ -143,7 +160,10 @@ describe('PipelineManager', () => {
       store: new MemoryStore(),
       commandFactory: async () => ({
         executable: process.execPath,
-        args: ['-e', `console.log('\\u001b[31m'+'x'.repeat(5000));for(let i=0;i<20;i++)console.log('spam-'+i)`],
+        args: [
+          '-e',
+          `console.log('\\u001b[31m'+'x'.repeat(5000));for(let i=0;i<20;i++)console.log('spam-'+i)`
+        ],
         cwd: process.cwd(),
         display: 'node noisy-worker'
       }),

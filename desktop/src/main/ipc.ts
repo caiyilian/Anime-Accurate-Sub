@@ -17,6 +17,7 @@ interface IpcDependencies {
   settings: SettingsRepository
   pipeline: PipelineManager
   results: ResultService
+  userDataPath: string
   logPath: string
 }
 
@@ -88,7 +89,7 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
       properties: ['openFile'],
       filters: filters[kind]
     })
-    return result.canceled ? null : normalizeExistingPaths(result.filePaths)[0] ?? null
+    return result.canceled ? null : (normalizeExistingPaths(result.filePaths)[0] ?? null)
   })
   register(IPC_CHANNELS.pickDirectory, async () => {
     const result = await dialog.showOpenDialog(dependencies.getWindow()!, {
@@ -102,6 +103,7 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
     const result = await runDiagnostics(dependencies.settings.get(), {
       appPath: app.getAppPath(),
       resourcesPath: process.resourcesPath,
+      userDataPath: dependencies.userDataPath,
       logPath: dependencies.logPath
     })
     log.info('Environment diagnostics completed', {
@@ -115,6 +117,7 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
     const diagnostics = await runDiagnostics(dependencies.settings.get(), {
       appPath: app.getAppPath(),
       resourcesPath: process.resourcesPath,
+      userDataPath: dependencies.userDataPath,
       logPath: dependencies.logPath
     })
     const preview = buildPipelineCommand(request, dependencies.settings.get(), diagnostics)
@@ -139,10 +142,13 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
     const diagnostics = await runDiagnostics(settings, {
       appPath: app.getAppPath(),
       resourcesPath: process.resourcesPath,
+      userDataPath: dependencies.userDataPath,
       logPath: dependencies.logPath
     })
     if (!diagnostics.ready) {
-      const blockers = diagnostics.checks.filter((check) => check.status === 'error').map((check) => check.label)
+      const blockers = diagnostics.checks
+        .filter((check) => check.status === 'error')
+        .map((check) => check.label)
       throw new Error(`运行环境未就绪：${blockers.join('、')}`)
     }
     const inputs: PipelineJobInput[] = inspection.videos.map((video, index) => {
@@ -151,23 +157,35 @@ export function registerIpcHandlers(dependencies: IpcDependencies): () => void {
         japaneseSubtitlePath &&
         (!isAbsolute(japaneseSubtitlePath) ||
           !existsSync(japaneseSubtitlePath) ||
-          !['.srt', '.ass', '.vtt'].includes(extname(japaneseSubtitlePath).toLocaleLowerCase('en-US')))
+          !['.srt', '.ass', '.vtt'].includes(
+            extname(japaneseSubtitlePath).toLocaleLowerCase('en-US')
+          ))
       ) {
         throw new TypeError(`日文字幕路径无效：${japaneseSubtitlePath}`)
       }
       buildPipelineCommand(
-        { videoPath: video.path, japaneseSubtitlePath: japaneseSubtitlePath || undefined, settings },
+        {
+          videoPath: video.path,
+          japaneseSubtitlePath: japaneseSubtitlePath || undefined,
+          settings
+        },
         settings,
         diagnostics
       )
-      return { video, japaneseSubtitlePath: japaneseSubtitlePath ? normalize(japaneseSubtitlePath) : '', settings }
+      return {
+        video,
+        japaneseSubtitlePath: japaneseSubtitlePath ? normalize(japaneseSubtitlePath) : '',
+        settings
+      }
     })
     return dependencies.pipeline.start(inputs, settings.continueOnError)
   })
   register(IPC_CHANNELS.cancelPipeline, () => dependencies.pipeline.cancel())
   register(IPC_CHANNELS.resumePipeline, () => dependencies.pipeline.resume())
   register(IPC_CHANNELS.getPipelineSnapshot, () => dependencies.pipeline.getSnapshot())
-  register(IPC_CHANNELS.listResults, () => dependencies.results.registry.refresh(dependencies.pipeline.getSnapshot()))
+  register(IPC_CHANNELS.listResults, () =>
+    dependencies.results.registry.refresh(dependencies.pipeline.getSnapshot())
+  )
   register(IPC_CHANNELS.readResultArtifact, async (_event, artifactId: string) => {
     if (typeof artifactId !== 'string') throw new TypeError('artifact ID 无效')
     await dependencies.results.registry.refresh(dependencies.pipeline.getSnapshot())

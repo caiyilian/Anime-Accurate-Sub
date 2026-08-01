@@ -84,21 +84,10 @@ export interface VideoInspectionResult {
 }
 
 export type PipelineJobStatus =
-  | 'pending'
-  | 'running'
-  | 'succeeded'
-  | 'failed'
-  | 'canceled'
-  | 'interrupted'
+  'pending' | 'running' | 'succeeded' | 'failed' | 'canceled' | 'interrupted'
 
 export type PipelineRunStatus =
-  | 'idle'
-  | 'running'
-  | 'canceling'
-  | 'canceled'
-  | 'completed'
-  | 'failed'
-  | 'interrupted'
+  'idle' | 'running' | 'canceling' | 'canceled' | 'completed' | 'failed' | 'interrupted'
 
 export type PipelineStageKey =
   | 'prepare'

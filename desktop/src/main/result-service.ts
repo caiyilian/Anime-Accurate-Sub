@@ -28,7 +28,10 @@ export class ResultService {
     if (error) throw new Error(error)
   }
 
-  async exportLog(snapshot: PipelineSnapshot | null, window: BrowserWindow): Promise<string | null> {
+  async exportLog(
+    snapshot: PipelineSnapshot | null,
+    window: BrowserWindow
+  ): Promise<string | null> {
     if (!snapshot) throw new Error('没有可导出的运行日志')
     const result = await dialog.showSaveDialog(window, {
       title: '导出运行日志',

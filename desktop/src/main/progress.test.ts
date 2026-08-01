@@ -49,13 +49,28 @@ describe('pipeline progress', () => {
     temporary = await mkdtemp(join(tmpdir(), 'anime-sub-progress-'))
     const workDir = join(temporary, 'episode')
     await mkdir(workDir)
-    await writeFile(join(workDir, 'checkpoint.json'), JSON.stringify({ extract_audio: { status: 'completed' }, asr: { status: 'completed' } }))
-    await writeFile(join(workDir, 'asr_results.json'), JSON.stringify(new Array(10).fill({ text: 'ja' })))
-    await writeFile(join(workDir, 'translated.json'), JSON.stringify(new Array(4).fill({ text: 'zh' })))
+    await writeFile(
+      join(workDir, 'checkpoint.json'),
+      JSON.stringify({ extract_audio: { status: 'completed' }, asr: { status: 'completed' } })
+    )
+    await writeFile(
+      join(workDir, 'asr_results.json'),
+      JSON.stringify(new Array(10).fill({ text: 'ja' }))
+    )
+    await writeFile(
+      join(workDir, 'translated.json'),
+      JSON.stringify(new Array(4).fill({ text: 'zh' }))
+    )
     const settings = { ...DEFAULT_SETTINGS, outputRoot: temporary }
     const job: PipelineJob = {
       id: 'job',
-      video: { id: 'video', path: resolve('episode.mp4'), name: 'episode.mp4', size: 1, modifiedAt: new Date().toISOString() },
+      video: {
+        id: 'video',
+        path: resolve('episode.mp4'),
+        name: 'episode.mp4',
+        size: 1,
+        modifiedAt: new Date().toISOString()
+      },
       japaneseSubtitlePath: '',
       settings,
       status: 'running',
