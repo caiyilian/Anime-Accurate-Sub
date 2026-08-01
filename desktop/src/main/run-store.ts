@@ -2,9 +2,8 @@ import ElectronStore from 'electron-store'
 import type { PipelineSnapshot } from '../shared/types'
 import type { PipelineSnapshotStore } from './pipeline-manager'
 
-const StoreConstructor = (
-  ElectronStore as unknown as { default?: typeof ElectronStore }
-).default ?? ElectronStore
+const StoreConstructor =
+  (ElectronStore as unknown as { default?: typeof ElectronStore }).default ?? ElectronStore
 
 interface RunStateStore {
   snapshot: PipelineSnapshot | null

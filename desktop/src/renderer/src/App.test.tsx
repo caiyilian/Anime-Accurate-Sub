@@ -5,12 +5,28 @@ import App from './App'
 
 describe('App', () => {
   const settings = {
-    projectRoot: '', pythonPath: '', outputRoot: '', backend: 'sakura', asrBackend: 'anime_whisper',
-    subtitleStyle: 'anime', translationConfigPath: '', memoryPath: '', glossaryPath: '',
-    translationMemoryPath: '', japaneseSubtitleDir: '', speakerMapPath: '', opedSeries: '',
-    translationBatchSize: 0, translationContextWindow: 3, preferJapaneseSubtitles: true,
-    qualityCheck: true, multiAgentReview: true, mqmQualityReview: true, autoHardware: false,
-    opedBestEffort: true, continueOnError: true
+    projectRoot: '',
+    pythonPath: '',
+    outputRoot: '',
+    backend: 'sakura',
+    asrBackend: 'anime_whisper',
+    subtitleStyle: 'anime',
+    translationConfigPath: '',
+    memoryPath: '',
+    glossaryPath: '',
+    translationMemoryPath: '',
+    japaneseSubtitleDir: '',
+    speakerMapPath: '',
+    opedSeries: '',
+    translationBatchSize: 0,
+    translationContextWindow: 3,
+    preferJapaneseSubtitles: true,
+    qualityCheck: true,
+    multiAgentReview: true,
+    mqmQualityReview: true,
+    autoHardware: false,
+    opedBestEffort: true,
+    continueOnError: true
   } as const
 
   beforeEach(() => {
@@ -27,30 +43,48 @@ describe('App', () => {
         pickDirectory: async () => null,
         getPathForFile: () => '',
         inspectVideos: async () => ({
-          videos: [{
-            id: 'episode-1',
-            path: 'E:\\anime\\01.mp4',
-            name: '01.mp4',
-            size: 1024,
-            modifiedAt: '2026-07-29T00:00:00.000Z'
-          }],
+          videos: [
+            {
+              id: 'episode-1',
+              path: 'E:\\anime\\01.mp4',
+              name: '01.mp4',
+              size: 1024,
+              modifiedAt: '2026-07-29T00:00:00.000Z'
+            }
+          ],
           rejected: []
         }),
         runDiagnostics: async () => ({
           ready: true,
           checkedAt: '2026-07-29T00:00:00.000Z',
           checks: [{ id: 'python', label: 'Python', status: 'ok', detail: 'Python 3.11' }],
-          resolved: { projectRoot: 'E:\\repo', pythonPath: 'python', outputRoot: 'E:\\out', ffmpegPath: 'ffmpeg' },
+          resolved: {
+            projectRoot: 'E:\\repo',
+            pythonPath: 'python',
+            outputRoot: 'E:\\out',
+            ffmpegPath: 'ffmpeg'
+          },
           logPath: 'E:\\logs\\desktop.log'
         }),
-        previewCommand: async () => ({ executable: 'python', args: [], cwd: 'E:\\repo', display: 'python' }),
-        startPipeline: async () => { throw new Error('not used') },
+        previewCommand: async () => ({
+          executable: 'python',
+          args: [],
+          cwd: 'E:\\repo',
+          display: 'python'
+        }),
+        startPipeline: async () => {
+          throw new Error('not used')
+        },
         cancelPipeline: async () => null,
-        resumePipeline: async () => { throw new Error('not used') },
+        resumePipeline: async () => {
+          throw new Error('not used')
+        },
         getPipelineSnapshot: async () => null,
         onPipelineEvent: () => () => undefined,
         listResults: async () => [],
-        readResultArtifact: async () => { throw new Error('not used') },
+        readResultArtifact: async () => {
+          throw new Error('not used')
+        },
         openResultDirectory: async () => undefined,
         exportPipelineLog: async () => null
       }
