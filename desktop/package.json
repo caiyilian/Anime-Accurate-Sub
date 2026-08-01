@@ -5,13 +5,23 @@
   "main": "./out/main/index.js",
   "author": "Anime Accurate Sub contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/caiyilian/Anime-Accurate-Sub.git"
+  },
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
-    "smoke": "npm run build && electron . --smoke-test"
+    "smoke": "npm run build && electron . --smoke-test",
+    "package": "npm run build && electron-builder --config electron-builder.config.ts --win nsis --x64 --publish never",
+    "package:dir": "npm run build && electron-builder --config electron-builder.config.ts --win dir --x64 --publish never",
+    "verify:release": "node scripts/verify-release.mjs release ../config/.githubtoken.txt ../config/sensenova_apikeys"
   },
   "dependencies": {
     "@tailwindcss/vite": "4.3.3",
@@ -22,6 +32,7 @@
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@types/node": "24.10.13",
@@ -31,8 +42,13 @@
     "electron": "43.2.0",
     "electron-builder": "26.15.3",
     "electron-vite": "5.0.0",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.8.0",
     "jsdom": "28.0.0",
+    "prettier": "^3.9.6",
     "typescript": "6.0.2",
+    "typescript-eslint": "^8.65.0",
     "vite": "7.3.6",
     "vitest": "4.1.2"
   }

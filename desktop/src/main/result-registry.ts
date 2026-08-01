@@ -27,7 +27,12 @@ const ARTIFACT_SPECS: ArtifactSpec[] = [
   { kind: 'subtitle-ass', label: 'ASS 字幕', file: (stem) => `${stem}.ass`, text: true },
   { kind: 'video', label: '嵌字视频', file: (stem) => `${stem}_subs.mp4`, text: false },
   { kind: 'quality-report', label: '质量报告', file: () => 'quality_report.json', text: true },
-  { kind: 'multi-agent-report', label: '多 Agent 报告', file: () => 'multi_agent_review.json', text: true },
+  {
+    kind: 'multi-agent-report',
+    label: '多 Agent 报告',
+    file: () => 'multi_agent_review.json',
+    text: true
+  },
   { kind: 'mqm-report', label: 'MQM 报告', file: () => 'mqm_quality_report.json', text: true },
   { kind: 'checkpoint', label: '断点状态', file: () => 'checkpoint.json', text: true },
   { kind: 'translated', label: '翻译结果', file: () => 'translated.json', text: true },
@@ -83,7 +88,10 @@ export class ResultRegistry {
         try {
           const info = await lstat(path)
           if (!info.isFile()) continue
-          const id = createHash('sha256').update(`${job.id}\0${spec.kind}\0${path}`).digest('hex').slice(0, 32)
+          const id = createHash('sha256')
+            .update(`${job.id}\0${spec.kind}\0${path}`)
+            .digest('hex')
+            .slice(0, 32)
           const artifact: RegisteredArtifact = {
             id,
             kind: spec.kind,

@@ -6,7 +6,11 @@ import { DEFAULT_SETTINGS } from './settings'
 
 describe('diagnostic discovery', () => {
   it('prioritizes explicit settings and environment variables without duplicates', () => {
-    const settings = { ...DEFAULT_SETTINGS, projectRoot: resolve('chosen-root'), pythonPath: resolve('python.exe') }
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      projectRoot: resolve('chosen-root'),
+      pythonPath: resolve('python.exe')
+    }
     const roots = projectRootCandidates(settings, {
       appPath: resolve('desktop'),
       resourcesPath: resolve('resources'),
@@ -21,5 +25,16 @@ describe('diagnostic discovery', () => {
     })
     expect(pythons.slice(0, 2)).toEqual([settings.pythonPath, resolve('env-python.exe')])
     expect(new Set(pythons).size).toBe(pythons.length)
+  })
+
+  it('keeps the packaged backend ahead of development fallbacks', () => {
+    const resourcesPath = resolve('packaged-resources')
+    const roots = projectRootCandidates(DEFAULT_SETTINGS, {
+      appPath: resolve('app.asar'),
+      resourcesPath,
+      userDataPath: resolve('user-data'),
+      env: { PATH: '' }
+    })
+    expect(roots[0]).toBe(resolve(resourcesPath, 'backend'))
   })
 })

@@ -117,8 +117,13 @@ export class PipelineManager {
     const recovered = cloneSnapshot(snapshot)!
     let interrupted = recovered.status === 'running' || recovered.status === 'canceling'
     for (const job of recovered.jobs) {
-      job.progress ??= createInitialProgress(job.settings, Boolean(job.japaneseSubtitlePath), this.timestamp())
-      if (job.status === 'succeeded') job.progress = completeProgress(job.progress, this.timestamp())
+      job.progress ??= createInitialProgress(
+        job.settings,
+        Boolean(job.japaneseSubtitlePath),
+        this.timestamp()
+      )
+      if (job.status === 'succeeded')
+        job.progress = completeProgress(job.progress, this.timestamp())
       if (job.status === 'running') {
         job.status = 'interrupted'
         job.finishedAt = this.timestamp()
@@ -156,7 +161,10 @@ export class PipelineManager {
 
   private calculateOverall(snapshot: PipelineSnapshot): number {
     if (!snapshot.jobs.length) return 0
-    const total = snapshot.jobs.reduce((sum, job) => sum + (job.status === 'succeeded' ? 100 : job.progress?.overallPercent ?? 0), 0)
+    const total = snapshot.jobs.reduce(
+      (sum, job) => sum + (job.status === 'succeeded' ? 100 : (job.progress?.overallPercent ?? 0)),
+      0
+    )
     return Math.round((total / snapshot.jobs.length) * 10) / 10
   }
 
@@ -261,7 +269,11 @@ export class PipelineManager {
         japaneseSubtitlePath: input.japaneseSubtitlePath,
         settings: structuredClone(input.settings),
         status: 'pending',
-        progress: createInitialProgress(input.settings, Boolean(input.japaneseSubtitlePath), createdAt)
+        progress: createInitialProgress(
+          input.settings,
+          Boolean(input.japaneseSubtitlePath),
+          createdAt
+        )
       })),
       logs: []
     }
@@ -343,7 +355,9 @@ export class PipelineManager {
 
   private finishRun(): void {
     if (!this.snapshot) return
-    this.snapshot.status = this.snapshot.jobs.some((job) => job.status === 'failed') ? 'failed' : 'completed'
+    this.snapshot.status = this.snapshot.jobs.some((job) => job.status === 'failed')
+      ? 'failed'
+      : 'completed'
     this.snapshot.currentJobId = undefined
     this.snapshot.finishedAt = this.timestamp()
     this.stopProgressPolling()
@@ -379,7 +393,11 @@ export class PipelineManager {
         this.persistAndEmit()
       }
     } catch (error) {
-      this.addLog(job.id, 'system', `进度文件读取失败：${error instanceof Error ? error.message : String(error)}`)
+      this.addLog(
+        job.id,
+        'system',
+        `进度文件读取失败：${error instanceof Error ? error.message : String(error)}`
+      )
     }
   }
 
