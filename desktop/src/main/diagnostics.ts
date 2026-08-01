@@ -7,6 +7,7 @@ import type { DiagnosticCheck, DiagnosticsResult, PipelineSettings } from '../sh
 export interface DiagnosticContext {
   appPath: string
   resourcesPath: string
+  userDataPath?: string
   env?: NodeJS.ProcessEnv
   logPath?: string
 }
@@ -16,7 +17,10 @@ export interface ProbeResult {
   detail: string
 }
 
-export function projectRootCandidates(settings: PipelineSettings, context: DiagnosticContext): string[] {
+export function projectRootCandidates(
+  settings: PipelineSettings,
+  context: DiagnosticContext
+): string[] {
   const env = context.env ?? process.env
   const candidates = [
     settings.projectRoot,
@@ -37,7 +41,11 @@ export function resolveProjectRoot(settings: PipelineSettings, context: Diagnost
   )
 }
 
-export function pythonCandidates(settings: PipelineSettings, projectRoot: string, env = process.env): string[] {
+export function pythonCandidates(
+  settings: PipelineSettings,
+  projectRoot: string,
+  env = process.env
+): string[] {
   const fromPath = (env.PATH ?? '')
     .split(delimiter)
     .filter(Boolean)
@@ -141,7 +149,13 @@ export async function runDiagnostics(
     path: ffmpeg.ok ? 'ffmpeg' : undefined
   })
 
-  const outputRoot = settings.outputRoot || (projectRoot ? join(projectRoot, 'output', 'desktop') : '')
+  const outputRoot =
+    settings.outputRoot ||
+    (context.userDataPath
+      ? join(context.userDataPath, 'output')
+      : projectRoot
+        ? join(projectRoot, 'output', 'desktop')
+        : '')
   const writable = outputRoot
     ? await checkWritableDirectory(outputRoot)
     : { ok: false, detail: '项目根目录和输出目录均未设置' }
@@ -169,7 +183,8 @@ export async function runDiagnostics(
   }
 
   return {
-    ready: checks.filter((check) => ['project-root', 'python', 'ffmpeg', 'output-root'].includes(check.id))
+    ready: checks
+      .filter((check) => ['project-root', 'python', 'ffmpeg', 'output-root'].includes(check.id))
       .every((check) => check.status === 'ok'),
     checkedAt: new Date().toISOString(),
     checks,

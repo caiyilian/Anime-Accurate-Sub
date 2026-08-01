@@ -37,7 +37,12 @@ describe('buildPipelineCommand', () => {
 
   it('rejects relative video paths before command construction', () => {
     expect(() =>
-      buildPipelineCommand({ videoPath: 'episode.mp4' }, { ...DEFAULT_SETTINGS }, diagnostics, false)
+      buildPipelineCommand(
+        { videoPath: 'episode.mp4' },
+        { ...DEFAULT_SETTINGS },
+        diagnostics,
+        false
+      )
     ).toThrow('绝对路径')
   })
 })

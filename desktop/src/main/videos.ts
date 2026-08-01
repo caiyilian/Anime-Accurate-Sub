@@ -12,7 +12,8 @@ function rejected(path: string, reason: string): RejectedVideoInput {
 
 export async function inspectVideoPaths(value: unknown): Promise<VideoInspectionResult> {
   if (!Array.isArray(value)) throw new TypeError('视频路径必须是数组')
-  if (value.length > MAX_VIDEO_INPUTS) throw new RangeError(`一次最多添加 ${MAX_VIDEO_INPUTS} 个视频`)
+  if (value.length > MAX_VIDEO_INPUTS)
+    throw new RangeError(`一次最多添加 ${MAX_VIDEO_INPUTS} 个视频`)
 
   const videos: VideoInput[] = []
   const rejectedItems: RejectedVideoInput[] = []

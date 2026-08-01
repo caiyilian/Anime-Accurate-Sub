@@ -1,6 +1,11 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute, join, normalize } from 'node:path'
-import type { CommandPreview, CommandPreviewRequest, DiagnosticsResult, PipelineSettings } from '../shared/types'
+import type {
+  CommandPreview,
+  CommandPreviewRequest,
+  DiagnosticsResult,
+  PipelineSettings
+} from '../shared/types'
 import { sanitizeSettings } from './settings'
 
 function assertAbsoluteFile(path: string, field: string, requireExisting = true): string {
@@ -57,15 +62,26 @@ export function buildPipelineCommand(
   addPathOption(args, '--japanese-subtitle-dir', settings.japaneseSubtitleDir)
   addPathOption(args, '--speaker-map', settings.speakerMapPath)
   if (request.japaneseSubtitlePath) {
-    args.push('--japanese-subtitle', assertAbsoluteFile(request.japaneseSubtitlePath, 'japaneseSubtitlePath'))
+    args.push(
+      '--japanese-subtitle',
+      assertAbsoluteFile(request.japaneseSubtitlePath, 'japaneseSubtitlePath')
+    )
   }
   if (settings.preferJapaneseSubtitles) args.push('--prefer-japanese-subtitles')
   if (settings.qualityCheck) args.push('--quality-check')
   if (settings.multiAgentReview) {
-    args.push('--multi-agent-review', '--review-config', join(projectRoot, 'config', 'quality_review.sensenova.json'))
+    args.push(
+      '--multi-agent-review',
+      '--review-config',
+      join(projectRoot, 'config', 'quality_review.sensenova.json')
+    )
   }
   if (settings.mqmQualityReview) {
-    args.push('--mqm-quality-review', '--mqm-config', join(projectRoot, 'config', 'quality_mqm.sensenova.json'))
+    args.push(
+      '--mqm-quality-review',
+      '--mqm-config',
+      join(projectRoot, 'config', 'quality_mqm.sensenova.json')
+    )
   }
   if (settings.autoHardware) args.push('--auto')
   if (settings.opedSeries) args.push('--oped-series', settings.opedSeries)

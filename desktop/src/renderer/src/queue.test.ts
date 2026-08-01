@@ -12,8 +12,14 @@ const video = (id: string, path: string): VideoInput => ({
 
 describe('video queue helpers', () => {
   it('deduplicates normalized Windows paths and preserves insertion order', () => {
-    const first = mergeVideoQueue([], [video('1', 'E:\\Anime\\01.mp4'), video('2', 'E:\\Anime\\02.mp4')])
-    const second = mergeVideoQueue(first.queue, [video('3', 'e:\\anime\\01.mp4'), video('4', 'E:\\Anime\\03.mp4')])
+    const first = mergeVideoQueue(
+      [],
+      [video('1', 'E:\\Anime\\01.mp4'), video('2', 'E:\\Anime\\02.mp4')]
+    )
+    const second = mergeVideoQueue(first.queue, [
+      video('3', 'e:\\anime\\01.mp4'),
+      video('4', 'E:\\Anime\\03.mp4')
+    ])
     expect(second.queue.map((item) => item.id)).toEqual(['1', '2', '4'])
     expect(second.duplicates).toBe(1)
   })

@@ -17,7 +17,8 @@ const desktopApi: Readonly<DesktopApi> = Object.freeze({
     node: process.versions.node
   }),
   getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.getSettings),
-  saveSettings: (settings: PipelineSettings) => ipcRenderer.invoke(IPC_CHANNELS.saveSettings, settings),
+  saveSettings: (settings: PipelineSettings) =>
+    ipcRenderer.invoke(IPC_CHANNELS.saveSettings, settings),
   resetSettings: () => ipcRenderer.invoke(IPC_CHANNELS.resetSettings),
   pickVideos: () => ipcRenderer.invoke(IPC_CHANNELS.pickVideos),
   pickFile: (kind: FilePickerKind) => ipcRenderer.invoke(IPC_CHANNELS.pickFile, kind),
@@ -25,19 +26,24 @@ const desktopApi: Readonly<DesktopApi> = Object.freeze({
   getPathForFile: (file: unknown) => webUtils.getPathForFile(file as File),
   inspectVideos: (paths: string[]) => ipcRenderer.invoke(IPC_CHANNELS.inspectVideos, paths),
   runDiagnostics: () => ipcRenderer.invoke(IPC_CHANNELS.runDiagnostics),
-  previewCommand: (request: CommandPreviewRequest) => ipcRenderer.invoke(IPC_CHANNELS.previewCommand, request),
-  startPipeline: (request: StartPipelineRequest) => ipcRenderer.invoke(IPC_CHANNELS.startPipeline, request),
+  previewCommand: (request: CommandPreviewRequest) =>
+    ipcRenderer.invoke(IPC_CHANNELS.previewCommand, request),
+  startPipeline: (request: StartPipelineRequest) =>
+    ipcRenderer.invoke(IPC_CHANNELS.startPipeline, request),
   cancelPipeline: () => ipcRenderer.invoke(IPC_CHANNELS.cancelPipeline),
   resumePipeline: () => ipcRenderer.invoke(IPC_CHANNELS.resumePipeline),
   getPipelineSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.getPipelineSnapshot),
   onPipelineEvent: (listener: (event: PipelineEvent) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, value: PipelineEvent): void => listener(value)
+    const handler = (_event: Electron.IpcRendererEvent, value: PipelineEvent): void =>
+      listener(value)
     ipcRenderer.on(IPC_CHANNELS.pipelineEvent, handler)
     return () => ipcRenderer.removeListener(IPC_CHANNELS.pipelineEvent, handler)
   },
   listResults: () => ipcRenderer.invoke(IPC_CHANNELS.listResults),
-  readResultArtifact: (artifactId: string) => ipcRenderer.invoke(IPC_CHANNELS.readResultArtifact, artifactId),
-  openResultDirectory: (jobId: string) => ipcRenderer.invoke(IPC_CHANNELS.openResultDirectory, jobId),
+  readResultArtifact: (artifactId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.readResultArtifact, artifactId),
+  openResultDirectory: (jobId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.openResultDirectory, jobId),
   exportPipelineLog: () => ipcRenderer.invoke(IPC_CHANNELS.exportPipelineLog)
 })
 

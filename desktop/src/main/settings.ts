@@ -7,9 +7,8 @@ import {
   type PipelineSettings
 } from '../shared/types'
 
-const StoreConstructor = (
-  ElectronStore as unknown as { default?: typeof ElectronStore }
-).default ?? ElectronStore
+const StoreConstructor =
+  (ElectronStore as unknown as { default?: typeof ElectronStore }).default ?? ElectronStore
 
 export const DEFAULT_SETTINGS: Readonly<PipelineSettings> = Object.freeze({
   projectRoot: '',
@@ -104,7 +103,9 @@ export function sanitizeSettings(value: unknown): PipelineSettings {
     throw new TypeError('设置必须是对象')
   }
   const input = value as Record<string, unknown>
-  const unknown = Object.keys(input).filter((key) => !ALLOWED_FIELDS.has(key as keyof PipelineSettings))
+  const unknown = Object.keys(input).filter(
+    (key) => !ALLOWED_FIELDS.has(key as keyof PipelineSettings)
+  )
   if (unknown.length) throw new TypeError(`未知设置字段：${unknown.join(', ')}`)
 
   const result = { ...DEFAULT_SETTINGS } as PipelineSettings

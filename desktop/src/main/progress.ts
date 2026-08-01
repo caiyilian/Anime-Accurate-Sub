@@ -22,7 +22,8 @@ export const STAGE_LABELS: Record<PipelineStageKey, string> = {
   completed: '已完成'
 }
 
-const STAGE_MARKER = /^\s*\[(extract_audio|japanese_subtitle|asr|translate|multi_agent_review|mqm_quality_review|subtitle|embed_subtitle|quality_check)]\s*$/i
+const STAGE_MARKER =
+  /^\s*\[(extract_audio|japanese_subtitle|asr|translate|multi_agent_review|mqm_quality_review|subtitle|embed_subtitle|quality_check)]\s*$/i
 
 function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value * 10) / 10))
@@ -74,14 +75,26 @@ export function createInitialProgress(
 
 function withPlan(progress: PipelineProgress, plan: PipelineStageKey[]): PipelineProgress {
   const existing = new Map(progress.stages.map((stage) => [stage.key, stage]))
-  const stages = plan.map((key) => existing.get(key) ?? {
-    key,
-    label: STAGE_LABELS[key],
-    status: 'pending' as const,
-    percent: 0
-  })
-  const active = stages.find((stage) => stage.status === 'running') ?? stages.find((stage) => stage.status === 'pending') ?? stages.at(-1)!
-  return { ...progress, stages, totalStages: stages.length, activeStage: active.key, activeStageLabel: active.label }
+  const stages = plan.map(
+    (key) =>
+      existing.get(key) ?? {
+        key,
+        label: STAGE_LABELS[key],
+        status: 'pending' as const,
+        percent: 0
+      }
+  )
+  const active =
+    stages.find((stage) => stage.status === 'running') ??
+    stages.find((stage) => stage.status === 'pending') ??
+    stages.at(-1)!
+  return {
+    ...progress,
+    stages,
+    totalStages: stages.length,
+    activeStage: active.key,
+    activeStageLabel: active.label
+  }
 }
 
 function recalculate(progress: PipelineProgress, at: string): PipelineProgress {
@@ -93,8 +106,14 @@ function recalculate(progress: PipelineProgress, at: string): PipelineProgress {
     : 100
   return {
     ...progress,
-    activeStage: active?.key ?? (completedStages === progress.stages.length ? 'completed' : progress.activeStage),
-    activeStageLabel: active?.label ?? (completedStages === progress.stages.length ? STAGE_LABELS.completed : progress.activeStageLabel),
+    activeStage:
+      active?.key ??
+      (completedStages === progress.stages.length ? 'completed' : progress.activeStage),
+    activeStageLabel:
+      active?.label ??
+      (completedStages === progress.stages.length
+        ? STAGE_LABELS.completed
+        : progress.activeStageLabel),
     stagePercent,
     overallPercent: Math.max(progress.overallPercent, overallPercent),
     completedStages,
@@ -119,13 +138,22 @@ function activateStage(
   if (currentIndex > index) return original
   progress.stages = progress.stages.map((stage, stageIndex) => {
     if (stageIndex < index) return { ...stage, status: 'completed', percent: 100 }
-    if (stageIndex === index) return { ...stage, status: 'running', percent: stage.status === 'completed' ? 100 : stage.percent }
+    if (stageIndex === index)
+      return {
+        ...stage,
+        status: 'running',
+        percent: stage.status === 'completed' ? 100 : stage.percent
+      }
     return stage.status === 'completed' ? stage : { ...stage, status: 'pending', percent: 0 }
   })
   return recalculate(progress, at)
 }
 
-function updateActivePercent(progress: PipelineProgress, percent: number, at: string): PipelineProgress {
+function updateActivePercent(
+  progress: PipelineProgress,
+  percent: number,
+  at: string
+): PipelineProgress {
   const next = structuredClone(progress)
   const active = next.stages.find((stage) => stage.status === 'running')
   if (!active) return progress
@@ -140,7 +168,8 @@ export function updateProgressFromLine(
   at = new Date().toISOString()
 ): PipelineProgress {
   const marker = line.match(STAGE_MARKER)
-  if (marker) return activateStage(progress, marker[1].toLowerCase() as PipelineStageKey, settings, at)
+  if (marker)
+    return activateStage(progress, marker[1].toLowerCase() as PipelineStageKey, settings, at)
 
   const pipelineSummary = line.match(/Pipeline:\s*(\d+)\s*\/\s*(\d+)\s*stages?\s*completed/i)
   if (pipelineSummary) {
@@ -161,7 +190,10 @@ export function updateProgressFromLine(
   return progress
 }
 
-export function completeProgress(progress: PipelineProgress, at = new Date().toISOString()): PipelineProgress {
+export function completeProgress(
+  progress: PipelineProgress,
+  at = new Date().toISOString()
+): PipelineProgress {
   return {
     ...progress,
     activeStage: 'completed',
@@ -174,26 +206,40 @@ export function completeProgress(progress: PipelineProgress, at = new Date().toI
   }
 }
 
-export function failProgress(progress: PipelineProgress, at = new Date().toISOString()): PipelineProgress {
+export function failProgress(
+  progress: PipelineProgress,
+  at = new Date().toISOString()
+): PipelineProgress {
   const next = structuredClone(progress)
   const active = next.stages.find((stage) => stage.status === 'running')
   if (active) active.status = 'failed'
   return { ...next, lastActivityAt: at }
 }
 
-export function mergeProgress(current: PipelineProgress, incoming: PipelineProgress): PipelineProgress {
+export function mergeProgress(
+  current: PipelineProgress,
+  incoming: PipelineProgress
+): PipelineProgress {
   if (incoming.overallPercent < current.overallPercent) return current
   const currentByKey = new Map(current.stages.map((stage) => [stage.key, stage]))
   const stages = incoming.stages.map((stage) => {
     const previous = currentByKey.get(stage.key)
-    return previous && previous.percent > stage.percent ? { ...stage, percent: previous.percent } : stage
+    return previous && previous.percent > stage.percent
+      ? { ...stage, percent: previous.percent }
+      : stage
   })
-  return { ...incoming, overallPercent: Math.max(current.overallPercent, incoming.overallPercent), stages }
+  return {
+    ...incoming,
+    overallPercent: Math.max(current.overallPercent, incoming.overallPercent),
+    stages
+  }
 }
 
 export function sanitizeLogLine(line: string, maxLength = 4_000): string {
   const withoutAnsi = String(line).replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '')
-  return withoutAnsi.length > maxLength ? `${withoutAnsi.slice(0, maxLength)}…[已截断]` : withoutAnsi
+  return withoutAnsi.length > maxLength
+    ? `${withoutAnsi.slice(0, maxLength)}…[已截断]`
+    : withoutAnsi
 }
 
 async function jsonArrayLength(path: string): Promise<number> {
@@ -242,7 +288,9 @@ export async function readProgressFromFiles(job: PipelineJob): Promise<PipelineP
   } catch {
     // The first stage may not have produced its checkpoint yet.
   }
-  const useJapanese = Boolean(checkpoint.japanese_subtitle) || job.progress.stages.some((stage) => stage.key === 'japanese_subtitle')
+  const useJapanese =
+    Boolean(checkpoint.japanese_subtitle) ||
+    job.progress.stages.some((stage) => stage.key === 'japanese_subtitle')
   const plan = pipelineStagePlan(job.settings, useJapanese)
   const next = createInitialProgress(job.settings, useJapanese, checkpointTime)
   const hasCheckpoint = Object.keys(checkpoint).length > 0
