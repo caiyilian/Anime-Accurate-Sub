@@ -1,0 +1,179 @@
+{
+  "model": "EasonONLINE/Sakura-qwen2.5-v1.0:7b",
+  "stats": {
+    "model": "EasonONLINE/Sakura-qwen2.5-v1.0:7b",
+    "samples_total": 20,
+    "samples_success": 20,
+    "samples_failed": 0,
+    "total_time_s": 7.42,
+    "avg_time_per_sample_s": 0.37,
+    "avg_chars_per_sec": 38.15,
+    "char_name_preservation": {
+      "total_with_names": 0,
+      "preserved": 0,
+      "rate": null
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "ja": "ひと～つ、人の生き血をすすり",
+      "zh_translated": "一　吸食人血。",
+      "zh_ref": null,
+      "time_s": 0.63,
+      "ja_chars": 14
+    },
+    {
+      "index": 1,
+      "ja": "うぅ…ひっく、ひっく…行っちゃやですぅ",
+      "zh_translated": "呜……咿、咿……我不要你走～",
+      "zh_ref": null,
+      "time_s": 0.39,
+      "ja_chars": 19
+    },
+    {
+      "index": 2,
+      "ja": "ふた～つ、不埒な悪行三昧",
+      "zh_translated": "第2条　为非作歹无恶不赦",
+      "zh_ref": null,
+      "time_s": 0.41,
+      "ja_chars": 12
+    },
+    {
+      "index": 3,
+      "ja": "うえぇぇぇんっ！ええぇぇぇんっ！",
+      "zh_translated": "呜哇啊———！呜哇啊———！",
+      "zh_ref": null,
+      "time_s": 0.41,
+      "ja_chars": 16
+    },
+    {
+      "index": 4,
+      "ja": "み～つ、醜き江都の鬼を",
+      "zh_translated": "美～津，丑陋的江都之鬼啊。",
+      "zh_ref": null,
+      "time_s": 0.43,
+      "ja_chars": 11
+    },
+    {
+      "index": 5,
+      "ja": "魔神アンゴルモアよ",
+      "zh_translated": "魔神安哥尔摩亚啊——",
+      "zh_ref": null,
+      "time_s": 0.35,
+      "ja_chars": 9
+    },
+    {
+      "index": 6,
+      "ja": "ふにゃふにゃ…にいさぁん",
+      "zh_translated": "软绵绵……哥哥～",
+      "zh_ref": null,
+      "time_s": 0.27,
+      "ja_chars": 12
+    },
+    {
+      "index": 7,
+      "ja": "退治してくれよう、桃太郎ッ！",
+      "zh_translated": "桃太郎啊，请你去打倒他们吧！",
+      "zh_ref": null,
+      "time_s": 0.41,
+      "ja_chars": 14
+    },
+    {
+      "index": 8,
+      "ja": "このような姿に成り果ててまで、おぬしは何を求めたのじゃ",
+      "zh_translated": "不惜变成这副模样，汝究竟追求何物？",
+      "zh_ref": null,
+      "time_s": 0.41,
+      "ja_chars": 27
+    },
+    {
+      "index": 9,
+      "ja": "んん…知ってまふ",
+      "zh_translated": "嗯……我知道。",
+      "zh_ref": null,
+      "time_s": 0.25,
+      "ja_chars": 8
+    },
+    {
+      "index": 10,
+      "ja": "わかっておる",
+      "zh_translated": "我知道啦。",
+      "zh_ref": null,
+      "time_s": 0.22,
+      "ja_chars": 6
+    },
+    {
+      "index": 11,
+      "ja": "刀を捨てて神妙にお縄につきなさい。命だけは助けましょう",
+      "zh_translated": "快把刀丢掉乖乖束手就擒吧，我会饶你一命的。",
+      "zh_ref": null,
+      "time_s": 0.56,
+      "ja_chars": 27
+    },
+    {
+      "index": 12,
+      "ja": "へへ、悪いですね兄さん。このベッド、二人用なのれす",
+      "zh_translated": "嘿嘿，不好意思哦，哥哥。这张床是双人床呢。",
+      "zh_ref": null,
+      "time_s": 0.46,
+      "ja_chars": 25
+    },
+    {
+      "index": 13,
+      "ja": "きゃあ！？",
+      "zh_translated": "呀啊！？",
+      "zh_ref": null,
+      "time_s": 0.25,
+      "ja_chars": 5
+    },
+    {
+      "index": 14,
+      "ja": "だからこそ、最期は妾の手で",
+      "zh_translated": "正因如此，在最后要由妾身亲手——",
+      "zh_ref": null,
+      "time_s": 0.37,
+      "ja_chars": 13
+    },
+    {
+      "index": 15,
+      "ja": "んん…むにゃむにゃ",
+      "zh_translated": "嗯……唔呣唔呣。",
+      "zh_ref": null,
+      "time_s": 0.32,
+      "ja_chars": 9
+    },
+    {
+      "index": 16,
+      "ja": "けほけほっ！煙幕とは卑怯ですよっ！",
+      "zh_translated": "咳咳！用烟雾弹太卑鄙了啦！",
+      "zh_ref": null,
+      "time_s": 0.41,
+      "ja_chars": 17
+    },
+    {
+      "index": 17,
+      "ja": "さらばじゃ。",
+      "zh_translated": "再会了。",
+      "zh_ref": null,
+      "time_s": 0.24,
+      "ja_chars": 6
+    },
+    {
+      "index": 18,
+      "ja": "うにゃ…そんなのお口に入らないですよぉ",
+      "zh_translated": "呜喵……那个塞不进嘴巴啦～",
+      "zh_ref": null,
+      "time_s": 0.35,
+      "ja_chars": 19
+    },
+    {
+      "index": 19,
+      "ja": "なんじゃ。おっぱいをご所望か",
+      "zh_translated": "怎么？想要胸部吗？",
+      "zh_ref": null,
+      "time_s": 0.28,
+      "ja_chars": 14
+    }
+  ]
+}

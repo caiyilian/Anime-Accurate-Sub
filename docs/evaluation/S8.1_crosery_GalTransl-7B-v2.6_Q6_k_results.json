@@ -1,0 +1,99 @@
+{
+  "model": "crosery/GalTransl-7B-v2.6:Q6_k",
+  "stats": {
+    "model": "crosery/GalTransl-7B-v2.6:Q6_k",
+    "samples_total": 10,
+    "samples_success": 10,
+    "samples_failed": 0,
+    "total_time_s": 11.57,
+    "avg_time_per_sample_s": 1.16,
+    "avg_chars_per_sec": 12.27,
+    "char_name_preservation": {
+      "total_with_names": 0,
+      "preserved": 0,
+      "rate": null
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "ja": "ひと～つ、人の生き血をすすり",
+      "zh_translated": "吸一口~人的鲜血",
+      "zh_ref": null,
+      "time_s": 8.65,
+      "ja_chars": 14
+    },
+    {
+      "index": 1,
+      "ja": "うぅ…ひっく、ひっく…行っちゃやですぅ",
+      "zh_translated": "“呜呜…呜呜…不要走啊”",
+      "zh_ref": null,
+      "time_s": 0.28,
+      "ja_chars": 19
+    },
+    {
+      "index": 2,
+      "ja": "ふた～つ、不埒な悪行三昧",
+      "zh_translated": "两~三，无耻恶行三昧",
+      "zh_ref": null,
+      "time_s": 0.29,
+      "ja_chars": 12
+    },
+    {
+      "index": 3,
+      "ja": "うえぇぇぇんっ！ええぇぇぇんっ！",
+      "zh_translated": "“呜诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶诶",
+      "zh_ref": null,
+      "time_s": 0.76,
+      "ja_chars": 16
+    },
+    {
+      "index": 4,
+      "ja": "み～つ、醜き江都の鬼を",
+      "zh_translated": "美~人，丑陋的江都之鬼",
+      "zh_ref": null,
+      "time_s": 0.29,
+      "ja_chars": 11
+    },
+    {
+      "index": 5,
+      "ja": "魔神アンゴルモアよ",
+      "zh_translated": "魔神安哥尔摩啊",
+      "zh_ref": null,
+      "time_s": 0.26,
+      "ja_chars": 9
+    },
+    {
+      "index": 6,
+      "ja": "ふにゃふにゃ…にいさぁん",
+      "zh_translated": "“呼喵呼喵…哥哥”",
+      "zh_ref": null,
+      "time_s": 0.28,
+      "ja_chars": 12
+    },
+    {
+      "index": 7,
+      "ja": "退治してくれよう、桃太郎ッ！",
+      "zh_translated": "桃太郎，快去消灭它们吧！",
+      "zh_ref": null,
+      "time_s": 0.25,
+      "ja_chars": 14
+    },
+    {
+      "index": 8,
+      "ja": "このような姿に成り果ててまで、おぬしは何を求めたのじゃ",
+      "zh_translated": "“变成这副模样，汝到底在追求什么啊”",
+      "zh_ref": null,
+      "time_s": 0.29,
+      "ja_chars": 27
+    },
+    {
+      "index": 9,
+      "ja": "んん…知ってまふ",
+      "zh_translated": "：嗯嗯……我知道了",
+      "zh_ref": null,
+      "time_s": 0.22,
+      "ja_chars": 8
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "model": "qwen2.5:14b",
+  "stats": {
+    "model": "qwen2.5:14b",
+    "samples_total": 10,
+    "samples_success": 10,
+    "samples_failed": 0,
+    "total_time_s": 6.58,
+    "avg_time_per_sample_s": 0.66,
+    "avg_chars_per_sec": 21.58,
+    "char_name_preservation": {
+      "total_with_names": 0,
+      "preserved": 0,
+      "rate": null
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "ja": "ひと～つ、人の生き血をすすり",
+      "zh_translated": "喝一口人的鲜血——",
+      "zh_ref": null,
+      "time_s": 3.19,
+      "ja_chars": 14
+    },
+    {
+      "index": 1,
+      "ja": "うぅ…ひっく、ひっく…行っちゃやですぅ",
+      "zh_translated": "呜...哼哼、哼哼...不要去嘛...",
+      "zh_ref": null,
+      "time_s": 0.31,
+      "ja_chars": 19
+    },
+    {
+      "index": 2,
+      "ja": "ふた～つ、不埒な悪行三昧",
+      "zh_translated": "这句话可以翻译为：“两～三次，放纵邪恶的行为。”这里的“ふた～つ”表示大约两次到三次之间，而“不埒な悪行三昧”则表示沉迷于不道德或邪恶的行为中。",
+      "zh_ref": null,
+      "time_s": 0.82,
+      "ja_chars": 12
+    },
+    {
+      "index": 3,
+      "ja": "うえぇぇぇんっ！ええぇぇぇんっ！",
+      "zh_translated": "呃啊啊啊嗯！啊啊啊嗯！",
+      "zh_ref": null,
+      "time_s": 0.33,
+      "ja_chars": 16
+    },
+    {
+      "index": 4,
+      "ja": "み～つ、醜き江都の鬼を",
+      "zh_translated": "三、丑恶的江都的鬼怪们",
+      "zh_ref": null,
+      "time_s": 0.28,
+      "ja_chars": 11
+    },
+    {
+      "index": 5,
+      "ja": "魔神アンゴルモアよ",
+      "zh_translated": "魔神安格拉莫亚啊",
+      "zh_ref": null,
+      "time_s": 0.31,
+      "ja_chars": 9
+    },
+    {
+      "index": 6,
+      "ja": "ふにゃふにゃ…にいさぁん",
+      "zh_translated": "软绵绵的……呢呀～（昵称，类似于“哥哥”的称呼，但在这里更像是撒娇的语气）",
+      "zh_ref": null,
+      "time_s": 0.46,
+      "ja_chars": 12
+    },
+    {
+      "index": 7,
+      "ja": "退治してくれよう、桃太郎ッ！",
+      "zh_translated": "来吧，桃太郎，除掉它！",
+      "zh_ref": null,
+      "time_s": 0.31,
+      "ja_chars": 14
+    },
+    {
+      "index": 8,
+      "ja": "このような姿に成り果ててまで、おぬしは何を求めたのじゃ",
+      "zh_translated": "你变成这副模样，究竟在追求什么呢？",
+      "zh_ref": null,
+      "time_s": 0.31,
+      "ja_chars": 27
+    },
+    {
+      "index": 9,
+      "ja": "んん…知ってまふ",
+      "zh_translated": "嗯嗯…我知道了。",
+      "zh_ref": null,
+      "time_s": 0.27,
+      "ja_chars": 8
+    }
+  ]
+}
