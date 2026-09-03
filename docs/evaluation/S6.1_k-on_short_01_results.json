@@ -1,0 +1,30 @@
+{
+  "audio_file": "E:\\projects\\Anime-Accurate-Sub\\.omo\\tmp\\k-on_short_01.wav",
+  "duration": 15.0,
+  "methods": {
+    "vad+embed+cluster+asr": {
+      "segments": [
+        {
+          "speaker": "SPEAKER_03",
+          "text": "クラブ見学園部だよ、軽音部!気持ちよく行こうぜ!クラブ見学?軽音部だよ軽音部!",
+          "start": 0.0,
+          "end": 15.04
+        }
+      ],
+      "speakers": [
+        "SPEAKER_03"
+      ],
+      "num_speakers_found": 1,
+      "method": "vad+embed+cluster+asr",
+      "elapsed": 1.48,
+      "rtf": 0.098,
+      "stats": {
+        "vad_s": 0.0,
+        "embed_s": 0.27,
+        "cluster_s": 0.61,
+        "asr_s": 0.6,
+        "assign_s": 0.0
+      }
+    }
+  }
+}

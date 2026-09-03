@@ -1,0 +1,99 @@
+{
+  "model": "qwen2.5:7b",
+  "stats": {
+    "model": "qwen2.5:7b",
+    "samples_total": 10,
+    "samples_success": 10,
+    "samples_failed": 0,
+    "total_time_s": 8.36,
+    "avg_time_per_sample_s": 0.84,
+    "avg_chars_per_sec": 16.99,
+    "char_name_preservation": {
+      "total_with_names": 0,
+      "preserved": 0,
+      "rate": null
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "ja": "ひと～つ、人の生き血をすすり",
+      "zh_translated": "这句话可以翻译为：“吸一个人的鲜血。”请注意，这个句子描述的内容是负面且暴力的，在大多数情况下不建议使用或提及此类内容。",
+      "zh_ref": null,
+      "time_s": 4.63,
+      "ja_chars": 14
+    },
+    {
+      "index": 1,
+      "ja": "うぅ…ひっく、ひっく…行っちゃやですぅ",
+      "zh_translated": "啊啊……喜欢、喜欢……我去啦～",
+      "zh_ref": null,
+      "time_s": 0.3,
+      "ja_chars": 19
+    },
+    {
+      "index": 2,
+      "ja": "ふた～つ、不埒な悪行三昧",
+      "zh_translated": "这句话可以翻译为：“两件不洁的恶作剧”或“两件无耻的恶作剧”。其中，“不埒”在这里用作形容词，表示不正当、不纯洁的意思。",
+      "zh_ref": null,
+      "time_s": 0.85,
+      "ja_chars": 12
+    },
+    {
+      "index": 3,
+      "ja": "うえぇぇぇんっ！ええぇぇぇんっ！",
+      "zh_translated": "喂喂喂！嗯喂喂喂！",
+      "zh_ref": null,
+      "time_s": 0.28,
+      "ja_chars": 16
+    },
+    {
+      "index": 4,
+      "ja": "み～つ、醜き江都の鬼を",
+      "zh_translated": "“三只，丑陋的江都鬼。”",
+      "zh_ref": null,
+      "time_s": 0.32,
+      "ja_chars": 11
+    },
+    {
+      "index": 5,
+      "ja": "魔神アンゴルモアよ",
+      "zh_translated": "魔神安格摩亚啊",
+      "zh_ref": null,
+      "time_s": 0.26,
+      "ja_chars": 9
+    },
+    {
+      "index": 6,
+      "ja": "ふにゃふにゃ…にいさぁん",
+      "zh_translated": "这段文本看起来像是拟声词“ふにゃふにゃ”（nnyanya），后面跟着的是“にいさぁん”（niisaans）。在中文中可以这样翻译：\n\n软绵绵……哥哥啊",
+      "zh_ref": null,
+      "time_s": 0.89,
+      "ja_chars": 12
+    },
+    {
+      "index": 7,
+      "ja": "退治してくれよう、桃太郎ッ！",
+      "zh_translated": "来打倒它们吧，桃太郎！",
+      "zh_ref": null,
+      "time_s": 0.3,
+      "ja_chars": 14
+    },
+    {
+      "index": 8,
+      "ja": "このような姿に成り果ててまで、おぬしは何を求めたのじゃ",
+      "zh_translated": "把你自己变成这样，到底是为了得到什么？",
+      "zh_ref": null,
+      "time_s": 0.3,
+      "ja_chars": 27
+    },
+    {
+      "index": 9,
+      "ja": "んん…知ってまふ",
+      "zh_translated": "嗯嗯……知道啦。",
+      "zh_ref": null,
+      "time_s": 0.24,
+      "ja_chars": 8
+    }
+  ]
+}

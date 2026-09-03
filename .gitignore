@@ -78,4 +78,15 @@ desktop/release/
 desktop/.vite/
 desktop/.electron-vite/
 desktop/*.tsbuildinfo
-# Visual Studio.vs/
+
+# Visual Studio
+.vs/
+
+# Reference projects (large)
+packages/
+
+# Clean season outputs (large)
+output_clean/
+
+# Pip bootstrap script
+get-pip.py
